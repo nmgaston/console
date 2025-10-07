@@ -1,7 +1,11 @@
 package redfish
 
 import (
+	"fmt"
+	"math/rand"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -29,6 +33,10 @@ const (
 	cimPowerStandby = 4
 	cimPowerSoftOff = 7
 	cimPowerHardOff = 8
+
+	// Redfish Base Message Registry v1.0.0 Message IDs
+	baseSuccessMessageID = "Base.1.0.Success"
+	baseErrorMessageID   = "Base.1.0.GeneralError"
 )
 
 // NewSystemsRoutes registers minimal Redfish ComputerSystem routes.
@@ -138,7 +146,11 @@ func postSystemResetHandler(d devices.Feature, l logger.Interface) gin.HandlerFu
 					"message": "Malformed JSON in request body: " + err.Error(),
 				},
 			}
-			c.Header("Content-Type", "application/json")
+			// Set Redfish-compliant headers
+			c.Header("Content-Type", "application/json; charset=utf-8")
+			c.Header("OData-Version", "4.0")
+			c.Header("Cache-Control", "no-cache")
+
 			c.JSON(http.StatusBadRequest, errorResponse)
 
 			return
@@ -171,39 +183,110 @@ func postSystemResetHandler(d devices.Feature, l logger.Interface) gin.HandlerFu
 					"message": "The parameter ResetType with value '" + body.ResetType + "' is not supported.",
 				},
 			}
-			c.Header("Content-Type", "application/json")
+			// Set Redfish-compliant headers
+			c.Header("Content-Type", "application/json; charset=utf-8")
+			c.Header("OData-Version", "4.0")
+			c.Header("Cache-Control", "no-cache")
+
 			c.JSON(http.StatusBadRequest, errorResponse)
 
 			return
 		}
 
-		_, err := d.SendPowerAction(c.Request.Context(), id, action)
+		res, err := d.SendPowerAction(c.Request.Context(), id, action)
 		if err != nil {
 			l.Error(err, "http - redfish - ComputerSystem.Reset")
+
+			// Check if this is a "not found" error
+			var statusCode int
+			var messageID, message, severity, resolution string
+
+			if strings.Contains(strings.ToLower(err.Error()), "not found") ||
+				strings.Contains(err.Error(), "DevicesUseCase") {
+				// Device not found - return 404
+				statusCode = http.StatusNotFound
+				messageID = "Base.1.0.ResourceNotFound"
+				message = "The requested resource of type ComputerSystem named '" + id + "' was not found."
+				severity = "Critical"
+				resolution = "Provide a valid resource identifier and resubmit the request."
+			} else {
+				// General error - return 500
+				statusCode = http.StatusInternalServerError
+				messageID = "Base.1.0.GeneralError"
+				message = "A general error has occurred. See ExtendedInfo for more information."
+				severity = "Critical"
+				resolution = "None."
+			}
+
 			// Return Redfish-compliant error response
 			errorResponse := map[string]any{
 				"error": map[string]any{
 					"@Message.ExtendedInfo": []map[string]any{
 						{
-							"MessageId":  "Base.1.0.GeneralError",
-							"Message":    "A general error has occurred. See ExtendedInfo for more information.",
-							"Severity":   "Critical",
-							"Resolution": "None.",
+							"MessageId":  messageID,
+							"Message":    message,
+							"Severity":   severity,
+							"Resolution": resolution,
 						},
 					},
-					"code":    "Base.1.0.GeneralError",
-					"message": "Action failed: " + err.Error(),
+					"code":    messageID,
+					"message": message,
 				},
 			}
-			c.Header("Content-Type", "application/json")
-			c.JSON(http.StatusInternalServerError, errorResponse)
+			// Set Redfish-compliant headers
+			c.Header("Content-Type", "application/json; charset=utf-8")
+			c.Header("OData-Version", "4.0")
+			c.Header("Cache-Control", "no-cache")
+
+			c.JSON(statusCode, errorResponse)
 
 			return
 		}
 
-		// For successful reset actions, return HTTP 204 No Content
-		// This indicates the action was completed successfully with no response body
-		c.Header("Content-Type", "application/json")
-		c.Status(http.StatusNoContent)
+		// Generate a task ID for this reset operation
+		taskID := fmt.Sprintf("%d", rand.Intn(999999)+100000)
+
+		// Determine task state based on the result
+		taskState := "Completed"
+		taskStatus := "OK"
+		messageID := baseSuccessMessageID
+		message := "The request completed successfully."
+
+		// Check if the operation was successful based on ReturnValue
+		if int(res.ReturnValue) != 0 {
+			taskState = "Exception"
+			taskStatus = "Critical"
+			messageID = baseErrorMessageID
+			message = "A general error has occurred."
+		}
+
+		// Return Redfish-compliant Task response
+		taskResponse := map[string]any{
+			"@odata.context": "/redfish/v1/$metadata#Task.Task",
+			"@odata.id":      "/redfish/v1/TaskService/Tasks/" + taskID,
+			"@odata.type":    "#Task.v1_6_0.Task",
+			"Id":             taskID,
+			"Name":           "System Reset Task",
+			"TaskState":      taskState,
+			"TaskStatus":     taskStatus,
+			"StartTime":      time.Now().UTC().Format(time.RFC3339),
+			"EndTime":        time.Now().UTC().Format(time.RFC3339),
+			"Messages": []map[string]any{
+				{
+					"MessageId": messageID,
+					"Message":   message,
+					"Severity":  taskStatus,
+				},
+			},
+		}
+
+		// Set Redfish-compliant headers
+		c.Header("Content-Type", "application/json; charset=utf-8")
+		c.Header("OData-Version", "4.0")
+		c.Header("Cache-Control", "no-cache")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Content-Security-Policy", "default-src 'self'")
+
+		c.JSON(http.StatusOK, taskResponse)
 	}
 }

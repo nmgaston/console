@@ -1,0 +1,463 @@
+openapi: 3.0.3
+info:
+  title: Redfish Service API v1
+  description: |
+    This document describes the Redfish v1 service API endpoints for basic resource management.
+    Based on DMTF Redfish specifications from DSP8010.
+  version: "1.0.0"
+  contact:
+    name: Device Management Toolkit Console
+    url: https://github.com/device-management-toolkit/console
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: /redfish/v1
+    description: Redfish v1 API
+
+paths:
+  # Service Root - Entry point for all Redfish services
+  /:
+    get:
+      operationId: getServiceRoot
+      summary: Get Redfish Service Root
+      description: Returns the Redfish service root which provides links to all available resources
+      responses:
+        "200":
+          description: Service root resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceRoot"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Systems Collection
+  /Systems:
+    get:
+      operationId: getSystemsCollection
+      summary: Get Computer Systems Collection
+      description: Returns a collection of computer systems available in the service
+      responses:
+        "200":
+          description: Systems collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComputerSystemCollection"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Individual System
+  /Systems/{systemId}:
+    get:
+      operationId: getSystem
+      summary: Get Computer System
+      description: Returns details about a specific computer system
+      parameters:
+        - name: systemId
+          in: path
+          required: true
+          description: The ID of the computer system
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Computer system details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComputerSystem"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Chassis Collection
+  /Chassis:
+    get:
+      operationId: getChassisCollection
+      summary: Get Chassis Collection
+      description: Returns a collection of chassis available in the service
+      responses:
+        "200":
+          description: Chassis collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChassisCollection"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Individual Chassis
+  /Chassis/{chassisId}:
+    get:
+      operationId: getChassis
+      summary: Get Chassis
+      description: Returns details about a specific chassis
+      parameters:
+        - name: chassisId
+          in: path
+          required: true
+          description: The ID of the chassis
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chassis details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chassis"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Managers Collection
+  /Managers:
+    get:
+      operationId: getManagersCollection
+      summary: Get Managers Collection
+      description: Returns a collection of managers available in the service
+      responses:
+        "200":
+          description: Managers collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagerCollection"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Individual Manager
+  /Managers/{managerId}:
+    get:
+      operationId: getManager
+      summary: Get Manager
+      description: Returns details about a specific manager
+      parameters:
+        - name: managerId
+          in: path
+          required: true
+          description: The ID of the manager
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Manager details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Manager"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  schemas:
+    # Base Redfish Schema Types
+    ODataType:
+      type: string
+      pattern: '^#[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$'
+      description: The OData type annotation for this object
+
+    ODataId:
+      type: string
+      format: uri-reference
+      description: The URI of the resource
+
+    ODataContext:
+      type: string
+      format: uri
+      description: The OData context annotation for this object
+
+    # Resource base schema
+    Resource:
+      type: object
+      required:
+        - "@odata.type"
+        - "@odata.id"
+        - Id
+        - Name
+      properties:
+        "@odata.type":
+          $ref: "#/components/schemas/ODataType"
+        "@odata.id":
+          $ref: "#/components/schemas/ODataId"
+        "@odata.context":
+          $ref: "#/components/schemas/ODataContext"
+        Id:
+          type: string
+          description: The unique identifier for this resource
+        Name:
+          type: string
+          description: The name of the resource
+        Description:
+          type: string
+          description: Description of this resource
+
+    # Collection base schema
+    Collection:
+      type: object
+      required:
+        - "@odata.type"
+        - "@odata.id"
+        - Name
+        - Members
+        - "Members@odata.count"
+      properties:
+        "@odata.type":
+          $ref: "#/components/schemas/ODataType"
+        "@odata.id":
+          $ref: "#/components/schemas/ODataId"
+        "@odata.context":
+          $ref: "#/components/schemas/ODataContext"
+        Name:
+          type: string
+          description: The name of the collection
+        Description:
+          type: string
+          description: Description of this collection
+        Members:
+          type: array
+          items:
+            type: object
+            properties:
+              "@odata.id":
+                $ref: "#/components/schemas/ODataId"
+        "Members@odata.count":
+          type: integer
+          minimum: 0
+          description: The number of members in this collection
+
+    # Service Root
+    ServiceRoot:
+      allOf:
+        - $ref: "#/components/schemas/Resource"
+        - type: object
+          properties:
+            RedfishVersion:
+              type: string
+              description: The version of the Redfish service
+            UUID:
+              type: string
+              format: uuid
+              description: Unique identifier for this service
+            Systems:
+              type: object
+              properties:
+                "@odata.id":
+                  $ref: "#/components/schemas/ODataId"
+            Chassis:
+              type: object
+              properties:
+                "@odata.id":
+                  $ref: "#/components/schemas/ODataId"
+            Managers:
+              type: object
+              properties:
+                "@odata.id":
+                  $ref: "#/components/schemas/ODataId"
+
+    # Computer System Collection
+    ComputerSystemCollection:
+      allOf:
+        - $ref: "#/components/schemas/Collection"
+
+    # Computer System
+    ComputerSystem:
+      allOf:
+        - $ref: "#/components/schemas/Resource"
+        - type: object
+          properties:
+            SystemType:
+              type: string
+              enum:
+                [
+                  "Physical",
+                  "Virtual",
+                  "OS",
+                  "PhysicallyPartitioned",
+                  "VirtuallyPartitioned",
+                ]
+              description: The type of computer system
+            Model:
+              type: string
+              description: The model number of this system
+            Manufacturer:
+              type: string
+              description: The manufacturer of this system
+            SerialNumber:
+              type: string
+              description: The serial number of this system
+            PowerState:
+              type: string
+              enum: ["On", "Off", "PoweringOn", "PoweringOff"]
+              description: The current power state of the system
+            Status:
+              $ref: "#/components/schemas/Status"
+
+    # Chassis Collection
+    ChassisCollection:
+      allOf:
+        - $ref: "#/components/schemas/Collection"
+
+    # Chassis
+    Chassis:
+      allOf:
+        - $ref: "#/components/schemas/Resource"
+        - type: object
+          properties:
+            ChassisType:
+              type: string
+              enum:
+                [
+                  "Rack",
+                  "Blade",
+                  "Enclosure",
+                  "StandAlone",
+                  "RackMount",
+                  "Card",
+                  "Cartridge",
+                  "Row",
+                  "Pod",
+                  "Expansion",
+                  "Sidecar",
+                  "Zone",
+                  "Sled",
+                  "Shelf",
+                  "Drawer",
+                  "Module",
+                  "Component",
+                  "IPBasedDrive",
+                  "RackGroup",
+                  "StorageEnclosure",
+                  "Other",
+                ]
+              description: The type of physical form factor of the chassis
+            Model:
+              type: string
+              description: The model number of the chassis
+            Manufacturer:
+              type: string
+              description: The manufacturer of this chassis
+            SerialNumber:
+              type: string
+              description: The serial number of the chassis
+            Status:
+              $ref: "#/components/schemas/Status"
+
+    # Manager Collection
+    ManagerCollection:
+      allOf:
+        - $ref: "#/components/schemas/Collection"
+
+    # Manager
+    Manager:
+      allOf:
+        - $ref: "#/components/schemas/Resource"
+        - type: object
+          properties:
+            ManagerType:
+              type: string
+              enum:
+                [
+                  "ManagementController",
+                  "EnclosureManager",
+                  "BMC",
+                  "RackManager",
+                  "AuxiliaryController",
+                  "Service",
+                ]
+              description: The type of manager
+            Model:
+              type: string
+              description: The model information of this manager
+            FirmwareVersion:
+              type: string
+              description: The firmware version of this manager
+            Status:
+              $ref: "#/components/schemas/Status"
+
+    # Status object used across resources
+    Status:
+      type: object
+      properties:
+        State:
+          type: string
+          enum:
+            [
+              "Enabled",
+              "Disabled",
+              "StandbyOffline",
+              "StandbySpare",
+              "InTest",
+              "Starting",
+              "Absent",
+              "UnavailableOffline",
+              "Deferring",
+              "Quiesced",
+              "Updating",
+            ]
+          description: The state of the resource
+        Health:
+          type: string
+          enum: ["OK", "Warning", "Critical"]
+          description: The health state of this resource
+
+    # Error Response Schema
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: A string that identifies the kind of error that occurred
+            message:
+              type: string
+              description: A human-readable error message
+            "@Message.ExtendedInfo":
+              type: array
+              items:
+                type: object
+                properties:
+                  MessageId:
+                    type: string
+                  Message:
+                    type: string
+                  Severity:
+                    type: string
+                  Resolution:
+                    type: string
+
+  responses:
+    NotFound:
+      description: The requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - BasicAuth: []
+  - BearerAuth: []

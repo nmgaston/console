@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/device-management-toolkit/console/config"
+	redfishv1 "github.com/device-management-toolkit/console/internal/controller/http/redfish/v1"
 	v1 "github.com/device-management-toolkit/console/internal/controller/http/v1"
 	v2 "github.com/device-management-toolkit/console/internal/controller/http/v2"
 	openapi "github.com/device-management-toolkit/console/internal/controller/openapi"
@@ -112,6 +113,9 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 	{
 		v2.NewAmtRoutes(h3, t.Devices, l)
 	}
+
+	// Protected Redfish endpoints at /redfish/v1 (requires JWT authentication)
+	redfishv1.SetupRedfishV1RoutesProtected(handler, login.JWTAuthMiddleware()) // JWT protected at /redfish/v1
 
 	// Catch-all route to serve index.html for any route not matched above to be handled by Angular
 	handler.NoRoute(func(c *gin.Context) {

@@ -115,7 +115,7 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 	}
 
 	// Protected Redfish endpoints at /redfish/v1 (requires JWT authentication)
-	redfishv1.SetupRedfishV1RoutesProtected(handler, login.JWTAuthMiddleware()) // JWT protected at /redfish/v1
+	redfishv1.SetupRedfishV1RoutesProtected(handler, nil) // No authentication at /redfish/v1
 
 	// Catch-all route to serve index.html for any route not matched above to be handled by Angular
 	handler.NoRoute(func(c *gin.Context) {

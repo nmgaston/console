@@ -90,7 +90,7 @@ MERGED_OPENAPI := doc/redfish-openapi.yaml
 GENERATED_SPEC := internal/controller/http/redfish/v1/redfishapi/spec.gen.go
 GENERATED_TYPES := internal/controller/http/redfish/v1/redfishapi/types.gen.go
 GENERATED_SERVER := internal/controller/http/redfish/v1/redfishapi/server.gen.go
-MERGE_SCRIPT := merge_openapi.py
+MERGE_SCRIPT := merge-redfish-openapi.py
 
 # Source YAML files in doc/redfish-api directory
 YAML_SOURCES := $(wildcard doc/redfish-api/*.yaml)

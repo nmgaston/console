@@ -1,8 +1,10 @@
+// Package presenters provides presenters for Redfish entities.
 package presenters
 
 import (
-	"github.com/device-management-toolkit/console/internal/entity/redfish/v1"
 	"github.com/gin-gonic/gin"
+
+	"github.com/device-management-toolkit/console/internal/entity/redfish/v1"
 )
 
 // ComputerSystemPresenter formats ComputerSystem data for HTTP responses.

@@ -8,6 +8,8 @@
 **/*.yml
 **/*.yaml
 !config/config.yml
+!doc/redfish-api/*.yaml
+!doc/redfish-openapi.yaml
 # Binaries for programs and plugins
 *.exe
 *.exe~

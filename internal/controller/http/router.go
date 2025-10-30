@@ -19,6 +19,7 @@ import (
 	v2 "github.com/device-management-toolkit/console/internal/controller/http/v2"
 	openapi "github.com/device-management-toolkit/console/internal/controller/openapi"
 	"github.com/device-management-toolkit/console/internal/usecase"
+	"github.com/device-management-toolkit/console/internal/usecase/devices"
 	"github.com/device-management-toolkit/console/pkg/logger"
 )
 
@@ -114,12 +115,19 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		v2.NewAmtRoutes(h3, t.Devices, l)
 	}
 
-	// Protected Redfish endpoints at /redfish/v1 (requires JWT authentication)
-	redfishv1.SetupRedfishV1RoutesProtected(handler, nil) // No authentication at /redfish/v1
+	// Create Redfish-specific JWT middleware that returns Redfish-compliant errors
+	redfishJWTMiddleware := redfishv1.RedfishJWTAuthMiddleware(cfg.JWTKey, login.Verifier)
+	redfishv1.SetupRedfishV1RoutesProtected(handler, redfishJWTMiddleware, t.Devices.(*devices.UseCase)) // JWT protected at /redfish/v1
 
-	// Catch-all route to serve index.html for any route not matched above to be handled by Angular
+	// Catch-all NoRoute handler
+	// - Redfish paths return proper Redfish-compliant 404 errors
+	// - All other paths serve Angular SPA (index.html)
 	handler.NoRoute(func(c *gin.Context) {
-		c.FileFromFS("./", http.FS(staticFiles)) // Serve static files from "/" route
+		if len(c.Request.URL.Path) >= 11 && c.Request.URL.Path[:11] == "/redfish/v1" {
+			redfishv1.NotFoundError(c, "Resource")
+			return
+		}
+		c.FileFromFS("./", http.FS(staticFiles))
 	})
 }
 

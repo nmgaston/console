@@ -71,6 +71,38 @@ paths:
       required: true
       schema:
         type: string
+  /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset:
+    post:
+      summary: Reset the computer system
+      operationId: ComputerSystem_Reset
+      parameters:
+        - name: ComputerSystemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ResetType:
+                  $ref: '#/components/schemas/Resource_ResetType'
+      responses:
+        '200':
+          description: Reset action accepted
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error condition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
   /redfish/v1/Chassis:
     get:
       responses:

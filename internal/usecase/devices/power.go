@@ -35,6 +35,9 @@ const (
 	OsToFullPower               = 500
 	OsToPowerSaving             = 501
 	CIMPMSPowerOn               = 2 // CIM > Power Management Service > Power On
+	PowerDown                   = 8
+	PowerCycle                  = 5
+	Reset                       = 10
 )
 
 var (

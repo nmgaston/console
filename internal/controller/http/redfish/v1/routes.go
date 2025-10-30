@@ -92,6 +92,7 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 // GetRedfishV1Metadata returns the OData metadata
 func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
 	metadata := ""
+
 	c.Header("Content-Type", "application/xml")
 	c.String(http.StatusOK, metadata)
 }
@@ -113,9 +114,12 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 }
 
 // GetRedfishV1SystemsComputerSystemId returns a specific computer system
-func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemId string) {
-	if computerSystemId != "System1" {
+//
+//revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
+func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
+	if computerSystemID != "System1" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "System not found"})
+
 		return
 	}
 
@@ -149,9 +153,12 @@ func (s *RedfishServer) GetRedfishV1Chassis(c *gin.Context) {
 }
 
 // GetRedfishV1ChassisChassisId returns a specific chassis
-func (s *RedfishServer) GetRedfishV1ChassisChassisId(c *gin.Context, chassisId string) {
-	if chassisId != "Chassis1" {
+//
+//revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
+func (s *RedfishServer) GetRedfishV1ChassisChassisId(c *gin.Context, chassisID string) {
+	if chassisID != "Chassis1" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Chassis not found"})
+
 		return
 	}
 
@@ -185,9 +192,12 @@ func (s *RedfishServer) GetRedfishV1Managers(c *gin.Context) {
 }
 
 // GetRedfishV1ManagersManagerId returns a specific manager
-func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerId string) {
-	if managerId != "Manager1" {
+//
+//revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
+func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID string) {
+	if managerID != "Manager1" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Manager not found"})
+
 		return
 	}
 

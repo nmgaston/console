@@ -21,7 +21,9 @@ type RedfishServer struct {
 	ComputerSystemUC *redfish.ComputerSystemUseCase
 }
 
-// SetupRedfishV1Routes sets up the Redfish v1 routes on the main router
+/*
+Comment: function not used/invoked
+SetupRedfishV1Routes sets up the Redfish v1 routes on the main router
 func SetupRedfishV1Routes(router *gin.Engine, devicesUC *devices.UseCase) {
 	// Enable HandleMethodNotAllowed to properly distinguish between 404 and 405 errors
 	router.HandleMethodNotAllowed = true
@@ -72,6 +74,7 @@ func SetupRedfishV1Routes(router *gin.Engine, devicesUC *devices.UseCase) {
 	})
 
 }
+*/
 
 // Ensure RedfishServer implements redfishapi.ServerInterface
 var _ redfishapi.ServerInterface = (*RedfishServer)(nil)
@@ -300,8 +303,8 @@ func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID str
 		// Check for service unavailability errors (503)
 		// This catches cases where the backend service (WSMAN/AMT) is unreachable
 		errMsg := err.Error()
-		if errMsg == "connection refused" || errMsg == "connection timeout" || 
-		   errMsg == "service unavailable" || errMsg == "device not responding" {
+		if errMsg == "connection refused" || errMsg == "connection timeout" ||
+			errMsg == "service unavailable" || errMsg == "device not responding" {
 			ServiceUnavailableError(c, 60)
 			return
 		}
@@ -344,9 +347,11 @@ func SetupRedfishV1RoutesProtected(router *gin.Engine, jwtMiddleware gin.Handler
 	redfishServer := &RedfishServer{ComputerSystemUC: computerSystemUC}
 
 	v1Group := router.Group("")
+	/* Ignore authentication for now until we implement http basic auth
 	if jwtMiddleware != nil {
 		v1Group.Use(jwtMiddleware)
 	}
+	*/
 
 	redfishapi.RegisterHandlersWithOptions(v1Group, redfishServer, redfishapi.GinServerOptions{
 		BaseURL: "",

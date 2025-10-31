@@ -48,6 +48,7 @@ func (r *WsmanComputerSystemRepo) GetByID(systemID string) (*redfish.ComputerSys
 
 	// Map the integer power state to Redfish PowerState
 	var redfishPowerState redfish.PowerState
+
 	switch powerState.PowerState {
 	case redfish.CIMPowerStateOn:
 		redfishPowerState = redfish.PowerStateOn

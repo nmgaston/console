@@ -7,9 +7,15 @@ import (
 	"time"
 
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
+	"github.com/labstack/gommon/log"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/device-management-toolkit/console/redfish/pkg/api"
+)
+
+// RedfishServer implements the generated ServerInterface from api package
+type RedfishServer struct{}
 	"github.com/device-management-toolkit/console/internal/controller/http/redfish/v1/redfishapi"
 	redfishv1 "github.com/device-management-toolkit/console/internal/entity/redfish/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/redfish"
@@ -21,7 +27,9 @@ type RedfishServer struct {
 	ComputerSystemUC *redfish.ComputerSystemUseCase
 }
 
-// SetupRedfishV1Routes sets up the Redfish v1 routes on the main router
+/*
+Comment: function not used/invoked
+SetupRedfishV1Routes sets up the Redfish v1 routes on the main router
 func SetupRedfishV1Routes(router *gin.Engine, devicesUC *devices.UseCase) {
 	// Enable HandleMethodNotAllowed to properly distinguish between 404 and 405 errors
 	router.HandleMethodNotAllowed = true
@@ -72,6 +80,7 @@ func SetupRedfishV1Routes(router *gin.Engine, devicesUC *devices.UseCase) {
 	})
 
 }
+*/
 
 // Ensure RedfishServer implements api.ServerInterface
 var _ api.ServerInterface = (*RedfishServer)(nil)
@@ -92,17 +101,17 @@ func Int64Ptr(i int64) *int64 {
 }
 
 // ChassisTypePtr creates a pointer to a ChassisChassisType value.
-func ChassisTypePtr(ct redfishapi.ChassisChassisType) *redfishapi.ChassisChassisType {
+func ChassisTypePtr(ct api.ChassisChassisType) *api.ChassisChassisType {
 	return &ct
 }
 
 // ManagerTypePtr creates a pointer to a ManagerManagerType value.
-func ManagerTypePtr(mt redfishapi.ManagerManagerType) *redfishapi.ManagerManagerType {
+func ManagerTypePtr(mt api.ManagerManagerType) *api.ManagerManagerType {
 	return &mt
 }
 
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
-func SystemTypePtr(st redfishapi.ComputerSystemSystemType) *redfishapi.ComputerSystemSystemType {
+func SystemTypePtr(st api.ComputerSystemSystemType) *api.ComputerSystemSystemType {
 	return &st
 }
 
@@ -252,6 +261,7 @@ func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID 
 // ComputerSystemReset handles the reset action for a computer system
 func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID string) {
 	var req redfishapi.ComputerSystemResetJSONRequestBody
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		MalformedJSONError(c)
 		return
@@ -261,6 +271,7 @@ func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID str
 		return
 	}
 
+	log.Infof("Received reset request for ComputerSystem %s with ResetType %s", computerSystemID, *req.ResetType)
 	// TODO: Add authorization check for 403 Forbidden
 	// Example implementation (requires JWT middleware to store user claims in context):
 	//
@@ -300,8 +311,8 @@ func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID str
 		// Check for service unavailability errors (503)
 		// This catches cases where the backend service (WSMAN/AMT) is unreachable
 		errMsg := err.Error()
-		if errMsg == "connection refused" || errMsg == "connection timeout" || 
-		   errMsg == "service unavailable" || errMsg == "device not responding" {
+		if errMsg == "connection refused" || errMsg == "connection timeout" ||
+			errMsg == "service unavailable" || errMsg == "device not responding" {
 			ServiceUnavailableError(c, 60)
 			return
 		}
@@ -344,11 +355,13 @@ func SetupRedfishV1RoutesProtected(router *gin.Engine, jwtMiddleware gin.Handler
 	redfishServer := &RedfishServer{ComputerSystemUC: computerSystemUC}
 
 	v1Group := router.Group("")
+	/* Ignore authentication for now until we implement http basic auth
 	if jwtMiddleware != nil {
 		v1Group.Use(jwtMiddleware)
 	}
+	*/
 
-	redfishapi.RegisterHandlersWithOptions(v1Group, redfishServer, redfishapi.GinServerOptions{
+	api.RegisterHandlersWithOptions(v1Group, redfishServer, api.GinServerOptions{
 		BaseURL: "",
 		ErrorHandler: func(c *gin.Context, err error, statusCode int) {
 			switch statusCode {
@@ -376,4 +389,5 @@ func SetupRedfishV1RoutesProtected(router *gin.Engine, jwtMiddleware gin.Handler
 	router.NoMethod(func(c *gin.Context) {
 		MethodNotAllowedError(c)
 	})
+	log.Info("Redfish v1 routes protected setup complete")
 }

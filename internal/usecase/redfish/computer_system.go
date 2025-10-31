@@ -30,7 +30,7 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(systemID string) (*redfish.Co
 func (uc *ComputerSystemUseCase) SetPowerState(id string, state redfish.PowerState) error {
 	// Validate state is in the allowed list
 	switch state {
-	case redfish.PowerStateOn, redfish.ResetTypeForceOff, redfish.ResetTypeForceRestart, redfish.ResetTypePowerCycle:
+	case redfish.PowerStateOn, redfish.PowerStateOff, redfish.ResetTypeForceOff, redfish.ResetTypeForceRestart, redfish.ResetTypePowerCycle:
 		// valid
 	default:
 		return ErrInvalidPowerState

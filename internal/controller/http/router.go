@@ -117,6 +117,7 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 
 	// Create Redfish-specific JWT middleware that returns Redfish-compliant errors
 	redfishJWTMiddleware := redfishv1.RedfishJWTAuthMiddleware(cfg.JWTKey, login.Verifier)
+	//nolint:errcheck // SetupRedfishV1RoutesProtected doesn't return an error; it panics on critical issues
 	redfishv1.SetupRedfishV1RoutesProtected(handler, redfishJWTMiddleware, t.Devices.(*devices.UseCase)) // JWT protected at /redfish/v1
 
 	// Catch-all NoRoute handler
@@ -125,8 +126,10 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 	handler.NoRoute(func(c *gin.Context) {
 		if len(c.Request.URL.Path) >= 11 && c.Request.URL.Path[:11] == "/redfish/v1" {
 			redfishv1.NotFoundError(c, "Resource")
+
 			return
 		}
+
 		c.FileFromFS("./", http.FS(staticFiles))
 	})
 }

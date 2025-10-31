@@ -9,16 +9,11 @@ import (
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
 	"github.com/labstack/gommon/log"
 
+	redfishv1 "github.com/device-management-toolkit/console/internal/entity/redfish/v1"
+	"github.com/device-management-toolkit/console/internal/usecase/redfish"
 	"github.com/gin-gonic/gin"
 
 	"github.com/device-management-toolkit/console/redfish/pkg/api"
-)
-
-// RedfishServer implements the generated ServerInterface from api package
-type RedfishServer struct{}
-	"github.com/device-management-toolkit/console/internal/controller/http/redfish/v1/redfishapi"
-	redfishv1 "github.com/device-management-toolkit/console/internal/entity/redfish/v1"
-	"github.com/device-management-toolkit/console/internal/usecase/redfish"
 )
 
 // RedfishServer implements the Redfish API handlers
@@ -260,7 +255,7 @@ func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID 
 
 // ComputerSystemReset handles the reset action for a computer system
 func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID string) {
-	var req redfishapi.ComputerSystemResetJSONRequestBody
+	var req api.ComputerSystemResetJSONRequestBody
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		MalformedJSONError(c)

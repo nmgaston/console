@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	redfishapi "github.com/device-management-toolkit/console/redfish/pkg/api"
 	"github.com/gin-gonic/gin"
-
-	"github.com/device-management-toolkit/console/internal/controller/http/redfish/v1/redfishapi"
 )
 
 // SetRedfishHeaders sets Redfish-compliant headers

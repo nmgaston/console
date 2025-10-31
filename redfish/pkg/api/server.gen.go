@@ -41,9 +41,9 @@ type ServerInterface interface {
 
 	// (GET /redfish/v1/Systems/{ComputerSystemId})
 	GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemId string)
-	// Reset the computer system
+
 	// (POST /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset)
-	ComputerSystemReset(c *gin.Context, computerSystemId string)
+	PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, computerSystemId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -192,8 +192,8 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SystemsComputerSystemId(c *gin.Co
 	siw.Handler.GetRedfishV1SystemsComputerSystemId(c, computerSystemId)
 }
 
-// ComputerSystemReset operation middleware
-func (siw *ServerInterfaceWrapper) ComputerSystemReset(c *gin.Context) {
+// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset operation middleware
+func (siw *ServerInterfaceWrapper) PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context) {
 
 	var err error
 
@@ -213,7 +213,7 @@ func (siw *ServerInterfaceWrapper) ComputerSystemReset(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.ComputerSystemReset(c, computerSystemId)
+	siw.Handler.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c, computerSystemId)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -251,7 +251,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/redfish/v1/Managers/:ManagerId", wrapper.GetRedfishV1ManagersManagerId)
 	router.GET(options.BaseURL+"/redfish/v1/Systems", wrapper.GetRedfishV1Systems)
 	router.GET(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId", wrapper.GetRedfishV1SystemsComputerSystemId)
-	router.POST(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId/Actions/ComputerSystem.Reset", wrapper.ComputerSystemReset)
+	router.POST(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId/Actions/ComputerSystem.Reset", wrapper.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset)
 }
 
 type GetRedfishV1RequestObject struct {
@@ -491,30 +491,30 @@ func (response GetRedfishV1SystemsComputerSystemIddefaultJSONResponse) VisitGetR
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
-type ComputerSystemResetRequestObject struct {
+type PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetRequestObject struct {
 	ComputerSystemId string `json:"ComputerSystemId"`
-	Body             *ComputerSystemResetJSONRequestBody
+	Body             *PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody
 }
 
-type ComputerSystemResetResponseObject interface {
-	VisitComputerSystemResetResponse(w http.ResponseWriter) error
+type PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponseObject interface {
+	VisitPostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponse(w http.ResponseWriter) error
 }
 
-type ComputerSystemReset200JSONResponse map[string]interface{}
+type PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset200JSONResponse RedfishError
 
-func (response ComputerSystemReset200JSONResponse) VisitComputerSystemResetResponse(w http.ResponseWriter) error {
+func (response PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset200JSONResponse) VisitPostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ComputerSystemResetdefaultJSONResponse struct {
+type PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetdefaultJSONResponse struct {
 	Body       RedfishError
 	StatusCode int
 }
 
-func (response ComputerSystemResetdefaultJSONResponse) VisitComputerSystemResetResponse(w http.ResponseWriter) error {
+func (response PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetdefaultJSONResponse) VisitPostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 
@@ -547,9 +547,9 @@ type StrictServerInterface interface {
 
 	// (GET /redfish/v1/Systems/{ComputerSystemId})
 	GetRedfishV1SystemsComputerSystemId(ctx context.Context, request GetRedfishV1SystemsComputerSystemIdRequestObject) (GetRedfishV1SystemsComputerSystemIdResponseObject, error)
-	// Reset the computer system
+
 	// (POST /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset)
-	ComputerSystemReset(ctx context.Context, request ComputerSystemResetRequestObject) (ComputerSystemResetResponseObject, error)
+	PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(ctx context.Context, request PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetRequestObject) (PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponseObject, error)
 }
 
 type StrictHandlerFunc = strictgin.StrictGinHandlerFunc
@@ -770,13 +770,13 @@ func (sh *strictHandler) GetRedfishV1SystemsComputerSystemId(ctx *gin.Context, c
 	}
 }
 
-// ComputerSystemReset operation middleware
-func (sh *strictHandler) ComputerSystemReset(ctx *gin.Context, computerSystemId string) {
-	var request ComputerSystemResetRequestObject
+// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset operation middleware
+func (sh *strictHandler) PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(ctx *gin.Context, computerSystemId string) {
+	var request PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetRequestObject
 
 	request.ComputerSystemId = computerSystemId
 
-	var body ComputerSystemResetJSONRequestBody
+	var body PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		ctx.Status(http.StatusBadRequest)
 		ctx.Error(err)
@@ -785,10 +785,10 @@ func (sh *strictHandler) ComputerSystemReset(ctx *gin.Context, computerSystemId 
 	request.Body = &body
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.ComputerSystemReset(ctx, request.(ComputerSystemResetRequestObject))
+		return sh.ssi.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(ctx, request.(PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "ComputerSystemReset")
+		handler = middleware(handler, "PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset")
 	}
 
 	response, err := handler(ctx, request)
@@ -796,8 +796,8 @@ func (sh *strictHandler) ComputerSystemReset(ctx *gin.Context, computerSystemId 
 	if err != nil {
 		ctx.Error(err)
 		ctx.Status(http.StatusInternalServerError)
-	} else if validResponse, ok := response.(ComputerSystemResetResponseObject); ok {
-		if err := validResponse.VisitComputerSystemResetResponse(ctx.Writer); err != nil {
+	} else if validResponse, ok := response.(PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponseObject); ok {
+		if err := validResponse.VisitPostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

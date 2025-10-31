@@ -253,9 +253,9 @@ func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID 
 	c.JSON(http.StatusOK, manager)
 }
 
-// ComputerSystemReset handles the reset action for a computer system
-func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID string) {
-	var req api.ComputerSystemResetJSONRequestBody
+// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset handles the reset action for a computer system
+func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, computerSystemID string) {
+	var req api.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		MalformedJSONError(c)

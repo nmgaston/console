@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
+	"github.com/labstack/gommon/log"
 
 	"github.com/gin-gonic/gin"
 
@@ -255,6 +256,7 @@ func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID 
 // ComputerSystemReset handles the reset action for a computer system
 func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID string) {
 	var req redfishapi.ComputerSystemResetJSONRequestBody
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		MalformedJSONError(c)
 		return
@@ -264,6 +266,7 @@ func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID str
 		return
 	}
 
+	log.Infof("Received reset request for ComputerSystem %s with ResetType %s", computerSystemID, *req.ResetType)
 	// TODO: Add authorization check for 403 Forbidden
 	// Example implementation (requires JWT middleware to store user claims in context):
 	//
@@ -381,4 +384,5 @@ func SetupRedfishV1RoutesProtected(router *gin.Engine, jwtMiddleware gin.Handler
 	router.NoMethod(func(c *gin.Context) {
 		MethodNotAllowedError(c)
 	})
+	log.Info("Redfish v1 routes protected setup complete")
 }

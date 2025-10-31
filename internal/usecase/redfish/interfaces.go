@@ -7,4 +7,5 @@ import "github.com/device-management-toolkit/console/internal/entity/redfish/v1"
 type ComputerSystemRepository interface {
 	GetByID(systemID string) (*redfish.ComputerSystem, error)
 	GetAll() ([]*redfish.ComputerSystem, error)
+	UpdatePowerState(systemID string, state redfish.PowerState) error
 }

@@ -32,7 +32,7 @@ const (
 	PowerStateOn PowerState = "On"
 	// PowerStateOff indicates that the system is powered off.
 	PowerStateOff PowerState = "Off"
-	// ResetTypeOn indicates a reset to the "On" state.
+	// ResetTypeOn indicates a power on reset.
 	ResetTypeOn PowerState = "On"
 	// ResetTypeForceOff indicates a forced power off.
 	ResetTypeForceOff PowerState = "ForceOff"

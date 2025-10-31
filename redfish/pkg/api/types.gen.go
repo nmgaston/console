@@ -73,14 +73,14 @@ const (
 
 // Defines values for ResolutionStepResolutionType.
 const (
-	CollectDiagnosticData ResolutionStepResolutionType = "CollectDiagnosticData"
-	ContactVendor         ResolutionStepResolutionType = "ContactVendor"
-	FirmwareUpdate        ResolutionStepResolutionType = "FirmwareUpdate"
-	OEM                   ResolutionStepResolutionType = "OEM"
-	PowerCycle            ResolutionStepResolutionType = "PowerCycle"
-	ReplaceComponent      ResolutionStepResolutionType = "ReplaceComponent"
-	Reset                 ResolutionStepResolutionType = "Reset"
-	ResetToDefaults       ResolutionStepResolutionType = "ResetToDefaults"
+	ResolutionStepResolutionTypeCollectDiagnosticData ResolutionStepResolutionType = "CollectDiagnosticData"
+	ResolutionStepResolutionTypeContactVendor         ResolutionStepResolutionType = "ContactVendor"
+	ResolutionStepResolutionTypeFirmwareUpdate        ResolutionStepResolutionType = "FirmwareUpdate"
+	ResolutionStepResolutionTypeOEM                   ResolutionStepResolutionType = "OEM"
+	ResolutionStepResolutionTypePowerCycle            ResolutionStepResolutionType = "PowerCycle"
+	ResolutionStepResolutionTypeReplaceComponent      ResolutionStepResolutionType = "ReplaceComponent"
+	ResolutionStepResolutionTypeReset                 ResolutionStepResolutionType = "Reset"
+	ResolutionStepResolutionTypeResetToDefaults       ResolutionStepResolutionType = "ResetToDefaults"
 )
 
 // Defines values for ResourceConditionType.
@@ -104,6 +104,23 @@ const (
 	Paused      ResourcePowerState = "Paused"
 	PoweringOff ResourcePowerState = "PoweringOff"
 	PoweringOn  ResourcePowerState = "PoweringOn"
+)
+
+// Defines values for ResourceResetType.
+const (
+	ResourceResetTypeForceOff         ResourceResetType = "ForceOff"
+	ResourceResetTypeForceOn          ResourceResetType = "ForceOn"
+	ResourceResetTypeForceRestart     ResourceResetType = "ForceRestart"
+	ResourceResetTypeFullPowerCycle   ResourceResetType = "FullPowerCycle"
+	ResourceResetTypeGracefulRestart  ResourceResetType = "GracefulRestart"
+	ResourceResetTypeGracefulShutdown ResourceResetType = "GracefulShutdown"
+	ResourceResetTypeNmi              ResourceResetType = "Nmi"
+	ResourceResetTypeOn               ResourceResetType = "On"
+	ResourceResetTypePause            ResourceResetType = "Pause"
+	ResourceResetTypePowerCycle       ResourceResetType = "PowerCycle"
+	ResourceResetTypePushPowerButton  ResourceResetType = "PushPowerButton"
+	ResourceResetTypeResume           ResourceResetType = "Resume"
+	ResourceResetTypeSuspend          ResourceResetType = "Suspend"
 )
 
 // Defines values for ResourceState.
@@ -343,6 +360,11 @@ type ComputerSystemComputerSystemPowerState1 = interface{}
 // ComputerSystemComputerSystem_PowerState The current power state of the system.
 type ComputerSystemComputerSystem_PowerState struct {
 	union json.RawMessage
+}
+
+// ComputerSystemResetRequestBody This action resets the system.
+type ComputerSystemResetRequestBody struct {
+	ResetType *ResourceResetType `json:"ResetType,omitempty"`
 }
 
 // ComputerSystemSystemType defines model for ComputerSystem_SystemType.
@@ -592,6 +614,9 @@ type ResourceOem map[string]interface{}
 // ResourcePowerState defines model for Resource_PowerState.
 type ResourcePowerState string
 
+// ResourceResetType defines model for Resource_ResetType.
+type ResourceResetType string
+
 // ResourceState defines model for Resource_State.
 type ResourceState string
 
@@ -710,6 +735,9 @@ type OdataV4NextLink = string
 
 // OdataV4Type The type of a resource.
 type OdataV4Type = string
+
+// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody defines body for PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset for application/json ContentType.
+type PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody = ComputerSystemResetRequestBody
 
 // AsActionInfoParameterTypes returns the union data inside the ActionInfoParameters_DataType as a ActionInfoParameterTypes
 func (t ActionInfoParameters_DataType) AsActionInfoParameterTypes() (ActionInfoParameterTypes, error) {

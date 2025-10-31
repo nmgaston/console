@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/device-management-toolkit/console/config"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/device-management-toolkit/console/config"
 )
 
 // RedfishJWTAuthMiddleware returns a Gin middleware that validates JWT tokens
@@ -20,6 +21,7 @@ func RedfishJWTAuthMiddleware(jwtKey string, verifier *oidc.IDTokenVerifier) gin
 		if tokenString == "" {
 			UnauthorizedError(c)
 			c.Abort()
+
 			return
 		}
 
@@ -29,6 +31,7 @@ func RedfishJWTAuthMiddleware(jwtKey string, verifier *oidc.IDTokenVerifier) gin
 			if err != nil {
 				UnauthorizedError(c)
 				c.Abort()
+
 				return
 			}
 		} else {
@@ -41,6 +44,7 @@ func RedfishJWTAuthMiddleware(jwtKey string, verifier *oidc.IDTokenVerifier) gin
 			if err != nil || !token.Valid {
 				UnauthorizedError(c)
 				c.Abort()
+
 				return
 			}
 		}

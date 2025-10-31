@@ -5,8 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	redfishapi "github.com/device-management-toolkit/console/redfish/pkg/api"
 	"github.com/gin-gonic/gin"
+
+	redfishapi "github.com/device-management-toolkit/console/redfish/pkg/api"
+)
+
+const (
+	// MessageIDInsufficientPrivilege is the Redfish message ID for insufficient privilege errors.
+	MessageIDInsufficientPrivilege = "Base.1.11.0.InsufficientPrivilege"
 )
 
 // SetRedfishHeaders sets Redfish-compliant headers
@@ -115,7 +121,7 @@ func UnauthorizedError(c *gin.Context) {
 	SetRedfishHeaders(c)
 
 	messageStr := "The request was denied due to insufficient privilege."
-	messageID := "Base.1.11.0.InsufficientPrivilege"
+	messageID := MessageIDInsufficientPrivilege
 	resolution := "Ensure the request includes valid authentication credentials."
 	severity := string(redfishapi.Critical)
 	errorMessage := "Unauthorized access"
@@ -173,7 +179,7 @@ func ForbiddenError(c *gin.Context) {
 	SetRedfishHeaders(c)
 
 	messageStr := "The account or credentials associated with the current session do not have sufficient privileges for the operation."
-	messageID := "Base.1.11.0.InsufficientPrivilege"
+	messageID := MessageIDInsufficientPrivilege
 	resolution := "Either abandon the operation or change the associated access rights and resubmit the request."
 	severity := string(redfishapi.Critical)
 	errorMessage := "Insufficient privileges to perform operation"

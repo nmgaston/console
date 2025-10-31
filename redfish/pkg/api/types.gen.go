@@ -362,6 +362,11 @@ type ComputerSystemComputerSystem_PowerState struct {
 	union json.RawMessage
 }
 
+// ComputerSystemResetRequestBody This action resets the system.
+type ComputerSystemResetRequestBody struct {
+	ResetType *ResourceResetType `json:"ResetType,omitempty"`
+}
+
 // ComputerSystemSystemType defines model for ComputerSystem_SystemType.
 type ComputerSystemSystemType string
 
@@ -731,13 +736,8 @@ type OdataV4NextLink = string
 // OdataV4Type The type of a resource.
 type OdataV4Type = string
 
-// ComputerSystemResetJSONBody defines parameters for ComputerSystemReset.
-type ComputerSystemResetJSONBody struct {
-	ResetType *ResourceResetType `json:"ResetType,omitempty"`
-}
-
-// ComputerSystemResetJSONRequestBody defines body for ComputerSystemReset for application/json ContentType.
-type ComputerSystemResetJSONRequestBody ComputerSystemResetJSONBody
+// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody defines body for PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset for application/json ContentType.
+type PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody = ComputerSystemResetRequestBody
 
 // AsActionInfoParameterTypes returns the union data inside the ActionInfoParameters_DataType as a ActionInfoParameterTypes
 func (t ActionInfoParameters_DataType) AsActionInfoParameterTypes() (ActionInfoParameterTypes, error) {

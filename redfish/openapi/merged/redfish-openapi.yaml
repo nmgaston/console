@@ -72,37 +72,33 @@ paths:
       schema:
         type: string
   /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset:
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
     post:
-      summary: Reset the computer system
-      operationId: ComputerSystem_Reset
-      parameters:
-        - name: ComputerSystemId
-          in: path
-          required: true
-          schema:
-            type: string
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                ResetType:
-                  $ref: '#/components/schemas/Resource_ResetType'
+              $ref: '#/components/schemas/ComputerSystem_ResetRequestBody'
+        required: true
       responses:
         '200':
-          description: Reset action accepted
-          content:
-            application/json:
-              schema:
-                type: object
-        default:
-          description: Error condition
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RedfishError'
+          description: The response contains the results of the Reset action
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
   /redfish/v1/Chassis:
     get:
       responses:
@@ -1324,6 +1320,27 @@ components:
       type: object
       x-longDescription: This resource shall represent a computing system in the Redfish
         Specification.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_ResetRequestBody:
+      additionalProperties: false
+      description: This action resets the system.
+      properties:
+        ResetType:
+          $ref: '#/components/schemas/Resource_ResetType'
+          description: The type of reset.
+          x-longDescription: This parameter shall contain the type of reset.  The
+            service can accept a request without the parameter and perform an implementation-specific
+            default reset.  Services should include the `@Redfish.AllowableValues`
+            annotation for this parameter to ensure compatibility with clients, even
+            when `ActionInfo` has been implemented.
+      type: object
+      x-longDescription: This action shall reset the system represented by the resource.  For
+        systems that implement ACPI Power Button functionality, the `PushPowerButton`
+        value shall perform or emulate an ACPI Power Button Push, and the `ForceOff`
+        value shall perform an ACPI Power Button Override, commonly known as a four-second
+        hold of the power button.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.

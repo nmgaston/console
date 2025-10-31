@@ -2,17 +2,17 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/device-management-toolkit/console/internal/usecase/devices"
+	"github.com/gin-gonic/gin"
 	"github.com/labstack/gommon/log"
 
 	redfishv1 "github.com/device-management-toolkit/console/internal/entity/redfish/v1"
+	"github.com/device-management-toolkit/console/internal/usecase/devices"
 	"github.com/device-management-toolkit/console/internal/usecase/redfish"
-	"github.com/gin-gonic/gin"
-
 	"github.com/device-management-toolkit/console/redfish/pkg/api"
 )
 
@@ -162,6 +162,7 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
 	if computerSystemID != "System1" {
 		NotFoundError(c, "System")
+
 		return
 	}
 
@@ -200,6 +201,7 @@ func (s *RedfishServer) GetRedfishV1Chassis(c *gin.Context) {
 func (s *RedfishServer) GetRedfishV1ChassisChassisId(c *gin.Context, chassisID string) {
 	if chassisID != "Chassis1" {
 		NotFoundError(c, "Chassis")
+
 		return
 	}
 
@@ -238,6 +240,7 @@ func (s *RedfishServer) GetRedfishV1Managers(c *gin.Context) {
 func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID string) {
 	if managerID != "Manager1" {
 		NotFoundError(c, "Manager")
+
 		return
 	}
 
@@ -253,20 +256,27 @@ func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID 
 	c.JSON(http.StatusOK, manager)
 }
 
-// ComputerSystemReset handles the reset action for a computer system
-func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID string) {
-	var req api.ComputerSystemResetJSONRequestBody
+// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset handles the reset action for a computer system
+//
+//nolint:revive // Method name is generated from OpenAPI spec and cannot be changed
+func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, computerSystemID string) {
+	var req api.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		MalformedJSONError(c)
+
 		return
 	}
+
 	if req.ResetType == nil || *req.ResetType == "" {
 		PropertyMissingError(c, "ResetType")
+
 		return
 	}
 
 	log.Infof("Received reset request for ComputerSystem %s with ResetType %s", computerSystemID, *req.ResetType)
+
+	//nolint:godox // TODO comment is intentional - provides implementation guidance
 	// TODO: Add authorization check for 403 Forbidden
 	// Example implementation (requires JWT middleware to store user claims in context):
 	//
@@ -290,17 +300,21 @@ func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID str
 
 	err := s.ComputerSystemUC.SetPowerState(computerSystemID, redfishv1.PowerState(*req.ResetType))
 	if err != nil {
-		if err == redfish.ErrInvalidPowerState {
+		if errors.Is(err, redfish.ErrInvalidPowerState) {
 			PropertyValueNotInListError(c, "ResetType")
+
 			return
 		}
-		if err == redfish.ErrPowerStateConflict {
+
+		if errors.Is(err, redfish.ErrPowerStateConflict) {
 			PowerStateConflictError(c, string(*req.ResetType))
+
 			return
 		}
 		// Robust backend not found error
 		if err.Error() == "system not found" {
 			NotFoundError(c, "System")
+
 			return
 		}
 		// Check for service unavailability errors (503)
@@ -308,10 +322,13 @@ func (s *RedfishServer) ComputerSystemReset(c *gin.Context, computerSystemID str
 		errMsg := err.Error()
 		if errMsg == "connection refused" || errMsg == "connection timeout" ||
 			errMsg == "service unavailable" || errMsg == "device not responding" {
-			ServiceUnavailableError(c, 60)
+			ServiceUnavailableError(c, redfishv1.ServiceUnavailableRetryAfterSeconds)
+
 			return
 		}
+
 		InternalServerError(c, err)
+
 		return
 	}
 
@@ -350,11 +367,12 @@ func SetupRedfishV1RoutesProtected(router *gin.Engine, jwtMiddleware gin.Handler
 	redfishServer := &RedfishServer{ComputerSystemUC: computerSystemUC}
 
 	v1Group := router.Group("")
-	/* Ignore authentication for now until we implement http basic auth
+
+	// Apply JWT middleware if provided.
+	// Should be able to disable JWT by setting config.yml -> auth: disabled -> true.
 	if jwtMiddleware != nil {
 		v1Group.Use(jwtMiddleware)
 	}
-	*/
 
 	api.RegisterHandlersWithOptions(v1Group, redfishServer, api.GinServerOptions{
 		BaseURL: "",
@@ -373,7 +391,7 @@ func SetupRedfishV1RoutesProtected(router *gin.Engine, jwtMiddleware gin.Handler
 			case http.StatusConflict:
 				ConflictError(c, "Resource", err.Error())
 			case http.StatusServiceUnavailable:
-				ServiceUnavailableError(c, 60)
+				ServiceUnavailableError(c, redfishv1.ServiceUnavailableRetryAfterSeconds)
 			default:
 				InternalServerError(c, err)
 			}

@@ -14,6 +14,7 @@ import (
 	ipsPower "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/ips/power"
 
 	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
+	redfish "github.com/device-management-toolkit/console/internal/entity/redfish/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/devices/wsman"
 	"github.com/device-management-toolkit/console/pkg/consoleerrors"
 )
@@ -34,10 +35,13 @@ const (
 	BootActionResetToIDERFloppy = 200
 	OsToFullPower               = 500
 	OsToPowerSaving             = 501
-	CIMPMSPowerOn               = 2 // CIM > Power Management Service > Power On
-	PowerDown                   = 8
-	PowerCycle                  = 5
-	Reset                       = 10
+
+	// CIM Power Management Service power actions.
+	// Use redfish package CIM constants for better code organization and reuse.
+	CIMPMSPowerOn = redfish.CIMPowerActionOn      // Power On (2)
+	PowerDown     = redfish.CIMPowerActionOffSoft // Soft Power Off (8)
+	PowerCycle    = redfish.CIMPowerActionCycle   // Power Cycle (5)
+	Reset         = redfish.CIMPowerActionReset   // Master Bus Reset (10)
 )
 
 var (

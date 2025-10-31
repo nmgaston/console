@@ -11,6 +11,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/device-management-toolkit/console/redfish/pkg/api"
+)
+
+// RedfishServer implements the generated ServerInterface from api package
+type RedfishServer struct{}
 	"github.com/device-management-toolkit/console/internal/controller/http/redfish/v1/redfishapi"
 	redfishv1 "github.com/device-management-toolkit/console/internal/entity/redfish/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/redfish"
@@ -77,8 +82,8 @@ func SetupRedfishV1Routes(router *gin.Engine, devicesUC *devices.UseCase) {
 }
 */
 
-// Ensure RedfishServer implements redfishapi.ServerInterface
-var _ redfishapi.ServerInterface = (*RedfishServer)(nil)
+// Ensure RedfishServer implements api.ServerInterface
+var _ api.ServerInterface = (*RedfishServer)(nil)
 
 // StringPtr creates a pointer to a string value.
 func StringPtr(s string) *string {
@@ -96,36 +101,36 @@ func Int64Ptr(i int64) *int64 {
 }
 
 // ChassisTypePtr creates a pointer to a ChassisChassisType value.
-func ChassisTypePtr(ct redfishapi.ChassisChassisType) *redfishapi.ChassisChassisType {
+func ChassisTypePtr(ct api.ChassisChassisType) *api.ChassisChassisType {
 	return &ct
 }
 
 // ManagerTypePtr creates a pointer to a ManagerManagerType value.
-func ManagerTypePtr(mt redfishapi.ManagerManagerType) *redfishapi.ManagerManagerType {
+func ManagerTypePtr(mt api.ManagerManagerType) *api.ManagerManagerType {
 	return &mt
 }
 
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
-func SystemTypePtr(st redfishapi.ComputerSystemSystemType) *redfishapi.ComputerSystemSystemType {
+func SystemTypePtr(st api.ComputerSystemSystemType) *api.ComputerSystemSystemType {
 	return &st
 }
 
 // GetRedfishV1 returns the service root
 func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
-	serviceRoot := redfishapi.ServiceRootServiceRoot{
+	serviceRoot := api.ServiceRootServiceRoot{
 		OdataContext:   StringPtr("/redfish/v1/$metadata#ServiceRoot.ServiceRoot"),
 		OdataId:        StringPtr("/redfish/v1"),
 		OdataType:      StringPtr("#ServiceRoot.v1_19_0.ServiceRoot"),
 		Id:             "RootService",
 		Name:           "Root Service",
 		RedfishVersion: StringPtr("1.19.0"),
-		Systems: &redfishapi.OdataV4IdRef{
+		Systems: &api.OdataV4IdRef{
 			OdataId: StringPtr("/redfish/v1/Systems"),
 		},
-		Chassis: &redfishapi.OdataV4IdRef{
+		Chassis: &api.OdataV4IdRef{
 			OdataId: StringPtr("/redfish/v1/Chassis"),
 		},
-		Managers: &redfishapi.OdataV4IdRef{
+		Managers: &api.OdataV4IdRef{
 			OdataId: StringPtr("/redfish/v1/Managers"),
 		},
 	}
@@ -142,14 +147,14 @@ func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
 
 // GetRedfishV1Systems returns the computer systems collection
 func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
-	collection := redfishapi.ComputerSystemCollectionComputerSystemCollection{
+	collection := api.ComputerSystemCollectionComputerSystemCollection{
 		OdataContext:      StringPtr("/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"),
 		OdataId:           StringPtr("/redfish/v1/Systems"),
 		OdataType:         StringPtr("#ComputerSystemCollection.ComputerSystemCollection"),
 		Name:              "Computer System Collection",
 		Description:       nil,
 		MembersOdataCount: Int64Ptr(1),
-		Members: &[]redfishapi.OdataV4IdRef{
+		Members: &[]api.OdataV4IdRef{
 			{OdataId: StringPtr("/redfish/v1/Systems/System1")},
 		},
 	}
@@ -165,7 +170,7 @@ func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, comp
 		return
 	}
 
-	system := redfishapi.ComputerSystemComputerSystem{
+	system := api.ComputerSystemComputerSystem{
 		OdataContext: StringPtr("/redfish/v1/$metadata#ComputerSystem.ComputerSystem"),
 		OdataId:      StringPtr("/redfish/v1/Systems/System1"),
 		OdataType:    StringPtr("#ComputerSystem.v1_26_0.ComputerSystem"),
@@ -174,20 +179,20 @@ func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, comp
 		SerialNumber: StringPtr("SN123456789"),
 		Manufacturer: StringPtr("Intel Corporation"),
 		Model:        StringPtr("Example System"),
-		SystemType:   SystemTypePtr(redfishapi.Physical),
+		SystemType:   SystemTypePtr(api.Physical),
 	}
 	c.JSON(http.StatusOK, system)
 }
 
 // GetRedfishV1Chassis returns the chassis collection
 func (s *RedfishServer) GetRedfishV1Chassis(c *gin.Context) {
-	collection := redfishapi.ChassisCollectionChassisCollection{
+	collection := api.ChassisCollectionChassisCollection{
 		OdataContext:      StringPtr("/redfish/v1/$metadata#ChassisCollection.ChassisCollection"),
 		OdataId:           StringPtr("/redfish/v1/Chassis"),
 		OdataType:         StringPtr("#ChassisCollection.ChassisCollection"),
 		Name:              "Chassis Collection",
 		MembersOdataCount: Int64Ptr(1),
-		Members: &[]redfishapi.OdataV4IdRef{
+		Members: &[]api.OdataV4IdRef{
 			{OdataId: StringPtr("/redfish/v1/Chassis/Chassis1")},
 		},
 	}
@@ -203,7 +208,7 @@ func (s *RedfishServer) GetRedfishV1ChassisChassisId(c *gin.Context, chassisID s
 		return
 	}
 
-	chassis := redfishapi.ChassisChassis{
+	chassis := api.ChassisChassis{
 		OdataContext: StringPtr("/redfish/v1/$metadata#Chassis.Chassis"),
 		OdataId:      StringPtr("/redfish/v1/Chassis/Chassis1"),
 		OdataType:    StringPtr("#Chassis.v1_28_0.Chassis"),
@@ -212,20 +217,20 @@ func (s *RedfishServer) GetRedfishV1ChassisChassisId(c *gin.Context, chassisID s
 		SerialNumber: StringPtr("CH123456789"),
 		Manufacturer: StringPtr("Intel Corporation"),
 		Model:        StringPtr("Example Chassis"),
-		ChassisType:  redfishapi.RackMount,
+		ChassisType:  api.RackMount,
 	}
 	c.JSON(http.StatusOK, chassis)
 }
 
 // GetRedfishV1Managers returns the managers collection
 func (s *RedfishServer) GetRedfishV1Managers(c *gin.Context) {
-	collection := redfishapi.ManagerCollectionManagerCollection{
+	collection := api.ManagerCollectionManagerCollection{
 		OdataContext:      StringPtr("/redfish/v1/$metadata#ManagerCollection.ManagerCollection"),
 		OdataId:           StringPtr("/redfish/v1/Managers"),
 		OdataType:         StringPtr("#ManagerCollection.ManagerCollection"),
 		Name:              "Manager Collection",
 		MembersOdataCount: Int64Ptr(1),
-		Members: &[]redfishapi.OdataV4IdRef{
+		Members: &[]api.OdataV4IdRef{
 			{OdataId: StringPtr("/redfish/v1/Managers/Manager1")},
 		},
 	}
@@ -241,14 +246,14 @@ func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID 
 		return
 	}
 
-	manager := redfishapi.ManagerManager{
+	manager := api.ManagerManager{
 		OdataContext: StringPtr("/redfish/v1/$metadata#Manager.Manager"),
 		OdataId:      StringPtr("/redfish/v1/Managers/Manager1"),
 		OdataType:    StringPtr("#Manager.v1_21_0.Manager"),
 		Id:           "Manager1",
 		Name:         "System Manager",
 		Model:        StringPtr("Example Manager"),
-		ManagerType:  ManagerTypePtr(redfishapi.BMC),
+		ManagerType:  ManagerTypePtr(api.BMC),
 	}
 	c.JSON(http.StatusOK, manager)
 }
@@ -356,7 +361,7 @@ func SetupRedfishV1RoutesProtected(router *gin.Engine, jwtMiddleware gin.Handler
 	}
 	*/
 
-	redfishapi.RegisterHandlersWithOptions(v1Group, redfishServer, redfishapi.GinServerOptions{
+	api.RegisterHandlersWithOptions(v1Group, redfishServer, api.GinServerOptions{
 		BaseURL: "",
 		ErrorHandler: func(c *gin.Context, err error, statusCode int) {
 			switch statusCode {

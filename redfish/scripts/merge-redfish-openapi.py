@@ -41,7 +41,7 @@ def convert_file_refs_to_internal(obj):
 
 def merge_openapi_files():
     # Load the main OpenAPI file
-    main_openapi_path = 'doc/redfish-api/openapi.yaml'
+    main_openapi_path = 'openapi/dmtf/openapi.yaml'
 
     if not os.path.exists(main_openapi_path):
         # If main openapi.yaml doesn't exist, create a basic structure
@@ -68,8 +68,8 @@ def merge_openapi_files():
     if 'schemas' not in main_spec['components']:
         main_spec['components']['schemas'] = {}
 
-    # Find all YAML schema files in the doc/redfish-api directory
-    yaml_files = glob.glob('doc/redfish-api/*.yaml')
+    # Find all YAML schema files in the openapi/dmtf directory
+    yaml_files = glob.glob('openapi/dmtf/*.yaml')
     yaml_files = [f for f in yaml_files if f != main_openapi_path]
 
     print(f"Found {len(yaml_files)} schema files to merge:")
@@ -131,10 +131,10 @@ def merge_openapi_files():
             del main_spec['paths']['/redfish/v1/']
 
     # Create output directory if it doesn't exist
-    os.makedirs('doc', exist_ok=True)
+    os.makedirs('openapi/merged', exist_ok=True)
 
     # Write the merged file
-    output_path = 'doc/redfish-openapi.yaml'
+    output_path = 'openapi/merged/redfish-openapi.yaml'
     with open(output_path, 'w') as f:
         yaml.dump(main_spec, f, default_flow_style=False, sort_keys=False)
 

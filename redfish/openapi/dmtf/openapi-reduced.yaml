@@ -115,6 +115,34 @@ paths:
       required: true
       schema:
         type: string
+  /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset:
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: ComputerSystem.v1_26_0.yaml#/components/schemas/ComputerSystem_v1_26_0_ResetRequestBody
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: The response contains the results of the Reset action
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
   /redfish/v1/Chassis:
     get:
       responses:

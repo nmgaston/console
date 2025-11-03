@@ -402,5 +402,9 @@ func SetupRedfishV1RoutesProtected(router *gin.Engine, jwtMiddleware gin.Handler
 	router.NoMethod(func(c *gin.Context) {
 		MethodNotAllowedError(c)
 	})
-	log.Info("Redfish v1 routes protected setup complete")
+	if jwtMiddleware != nil {
+		log.Info("Redfish v1 routes protected setup complete")
+	} else {
+		log.Info("Redfish v1 routes setup complete without authentication")
+	}
 }

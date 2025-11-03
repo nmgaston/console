@@ -115,8 +115,11 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		v2.NewAmtRoutes(h3, t.Devices, l)
 	}
 
-	// Create Redfish-specific JWT middleware that returns Redfish-compliant errors
-	redfishJWTMiddleware := redfishv1.RedfishJWTAuthMiddleware(cfg.JWTKey, login.Verifier)
+	var redfishJWTMiddleware gin.HandlerFunc = nil
+	if cfg.Auth.Disabled == false {
+		// Create Redfish-specific JWT middleware that returns Redfish-compliant errors
+		redfishJWTMiddleware = redfishv1.RedfishJWTAuthMiddleware(cfg.JWTKey, login.Verifier)
+	}
 	//nolint:errcheck // SetupRedfishV1RoutesProtected doesn't return an error; it panics on critical issues
 	redfishv1.SetupRedfishV1RoutesProtected(handler, redfishJWTMiddleware, t.Devices.(*devices.UseCase)) // JWT protected at /redfish/v1
 

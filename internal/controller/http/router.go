@@ -115,8 +115,8 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		v2.NewAmtRoutes(h3, t.Devices, l)
 	}
 
-	var redfishJWTMiddleware gin.HandlerFunc = nil
-	if cfg.Auth.Disabled == false {
+	var redfishJWTMiddleware gin.HandlerFunc
+	if !cfg.Auth.Disabled {
 		// Create Redfish-specific JWT middleware that returns Redfish-compliant errors
 		redfishJWTMiddleware = redfishv1.RedfishJWTAuthMiddleware(cfg.JWTKey, login.Verifier)
 	}

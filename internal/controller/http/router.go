@@ -18,17 +18,41 @@ import (
 	v2 "github.com/device-management-toolkit/console/internal/controller/http/v2"
 	openapi "github.com/device-management-toolkit/console/internal/controller/openapi"
 	"github.com/device-management-toolkit/console/internal/usecase"
+	"github.com/device-management-toolkit/console/pkg/db"
 	"github.com/device-management-toolkit/console/pkg/logger"
+	"github.com/device-management-toolkit/console/pkg/plugin"
+	redfish "github.com/device-management-toolkit/console/redfish/pkg"
 )
 
 //go:embed all:ui
 var content embed.FS
 
-// NewRouter -.
-func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg *config.Config) { //nolint:funlen // This function is responsible for setting up the router, so it's expected to be long
+const (
+	protocolHTTP  = "http://"
+	protocolHTTPS = "https://"
+)
+
+// NewRouter sets up the HTTP router with plugin support.
+func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg *config.Config, database *db.SQL) { //nolint:funlen // This function is responsible for setting up the router, so it's expected to be long
 	// Options
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
+
+	// Create plugin manager with shared infrastructure
+	pluginManager := plugin.NewManager(cfg, l, database, &t, handler)
+
+	// Register plugins
+	pluginManager.Register(redfish.NewPlugin())
+
+	// Initialize plugins
+	if err := pluginManager.Initialize(); err != nil {
+		l.Fatal("Failed to initialize plugins: " + err.Error())
+	}
+
+	// Register plugin middleware
+	if err := pluginManager.RegisterMiddleware(); err != nil {
+		l.Fatal("Failed to register plugin middleware: " + err.Error())
+	}
 
 	// Initialize Fuego adapter
 	fuegoAdapter := openapi.NewFuegoAdapter(t, l)
@@ -92,6 +116,9 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		protected = handler.Group("/api", login.JWTAuthMiddleware())
 	}
 
+	// Unprotected routes group for plugins that handle their own auth
+	unprotected := handler.Group("")
+
 	// Routers
 	h2 := protected.Group("/v1")
 	{
@@ -113,9 +140,14 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		v2.NewAmtRoutes(h3, t.Devices, l)
 	}
 
-	// Catch-all route to serve index.html for any route not matched above to be handled by Angular
+	// Register plugin routes
+	if err := pluginManager.RegisterRoutes(protected, unprotected); err != nil {
+		l.Fatal("Failed to register plugin routes: " + err.Error())
+	}
+
+	// Setup default NoRoute handler for SPA
 	handler.NoRoute(func(c *gin.Context) {
-		c.FileFromFS("./", http.FS(staticFiles)) // Serve static files from "/" route
+		c.FileFromFS("./", http.FS(staticFiles))
 	})
 }
 
@@ -127,16 +159,16 @@ func injectConfigToMainJS(l logger.Interface, cfg *config.Config) string {
 		return ""
 	}
 
-	protocol := "http://"
+	protocol := protocolHTTP
 
 	requireHTTPSReplacement := ",requireHttps:!1"
 	if cfg.UI.RequireHTTPS {
 		requireHTTPSReplacement = ",requireHttps:!0"
-		protocol = "https://"
+		protocol = protocolHTTPS
 	}
 
 	if cfg.TLS.Enabled {
-		protocol = "https://"
+		protocol = protocolHTTPS
 	}
 
 	// if there is a clientID, we assume oauth will be configured, so inject UI config values from YAML

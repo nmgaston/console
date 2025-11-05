@@ -37,7 +37,7 @@ var (
 )
 
 // Initialize initializes the Redfish module with DMT infrastructure.
-func Initialize(router *gin.Engine, log logger.Interface, database *db.SQL, usecases *dmtusecase.Usecases, cfg *dmtconfig.Config) error {
+func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtusecase.Usecases, _ *dmtconfig.Config) error {
 	// Initialize configuration with defaults
 	moduleConfig = &Config{
 		Enabled:      true,
@@ -68,6 +68,7 @@ func Initialize(router *gin.Engine, log logger.Interface, database *db.SQL, usec
 func RegisterRoutes(router *gin.Engine, log logger.Interface) error {
 	if !moduleConfig.Enabled {
 		log.Info("Redfish module is disabled, skipping route registration")
+
 		return nil
 	}
 

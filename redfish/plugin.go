@@ -128,7 +128,7 @@ func (p *Plugin) createErrorHandler() func(*gin.Context, error, int) {
 		case statusMethodNotAllowed:
 			redfishhandler.MethodNotAllowedError(c)
 		case statusBadRequest:
-			redfishhandler.BadRequestError(c, err.Error(), "Base.1.11.GeneralError", "Check your request body and parameters.", "Critical")
+			redfishhandler.BadRequestError(c, err.Error())
 		default:
 			redfishhandler.InternalServerError(c, err)
 		}

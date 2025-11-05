@@ -1,4 +1,4 @@
-// Package redfish implements the Redfish plugin for DMT using the plugin architecture.
+// Package redfish implements the Redfish module for DMT.
 package redfish
 
 import (
@@ -6,116 +6,85 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	dmtconfig "github.com/device-management-toolkit/console/config"
+	dmtusecase "github.com/device-management-toolkit/console/internal/usecase"
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
-	"github.com/device-management-toolkit/console/pkg/plugin"
+	"github.com/device-management-toolkit/console/pkg/db"
+	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishgenerated "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	redfishhandler "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
-	"github.com/device-management-toolkit/console/redfish/internal/usecase"
+	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
 // ErrDevicesCastFailed is returned when the devices use case cannot be cast to the expected type.
 var ErrDevicesCastFailed = errors.New("failed to cast devices use case")
 
-// Plugin represents the Redfish plugin for DMT.
-type Plugin struct {
-	server *redfishhandler.RedfishServer
-	config *PluginConfig
-}
-
-// PluginConfig holds plugin-specific configuration.
-type PluginConfig struct {
+// Config holds redfish-specific configuration.
+type Config struct {
 	Enabled      bool   `yaml:"enabled" env:"REDFISH_ENABLED"`
 	AuthRequired bool   `yaml:"auth_required" env:"REDFISH_AUTH_REQUIRED"`
 	BaseURL      string `yaml:"base_url" env:"REDFISH_BASE_URL"`
-	Version      string
 }
 
 const (
-	PluginName    = "redfish"
-	PluginVersion = "1.0.0"
+	ModuleName    = "redfish"
+	ModuleVersion = "1.0.0"
 )
 
-// NewPlugin creates a new Redfish plugin instance.
-func NewPlugin() *Plugin {
-	return &Plugin{
-		config: &PluginConfig{
-			Enabled:      true,
-			AuthRequired: false,
-			BaseURL:      "/redfish/v1",
-			Version:      PluginVersion,
-		},
+var (
+	server       *redfishhandler.RedfishServer
+	moduleConfig *Config
+)
+
+// Initialize initializes the Redfish module with DMT infrastructure.
+func Initialize(router *gin.Engine, log logger.Interface, database *db.SQL, usecases *dmtusecase.Usecases, cfg *dmtconfig.Config) error {
+	// Initialize configuration with defaults
+	moduleConfig = &Config{
+		Enabled:      true,
+		AuthRequired: false,
+		BaseURL:      "/redfish/v1",
 	}
-}
 
-// Name returns the plugin name.
-func (p *Plugin) Name() string {
-	return PluginName
-}
-
-// Version returns the plugin version.
-func (p *Plugin) Version() string {
-	return PluginVersion
-}
-
-// Initialize initializes the Redfish plugin with DMT infrastructure.
-func (p *Plugin) Initialize(ctx *plugin.Context) error {
 	// Create Redfish-specific repository and use case using DMT's device management
-	devicesUC, ok := ctx.Usecases.Devices.(*devices.UseCase)
+	devicesUC, ok := usecases.Devices.(*devices.UseCase)
 	if !ok {
 		return ErrDevicesCastFailed
 	}
 
-	repo := usecase.NewWsmanComputerSystemRepo(devicesUC)
-	computerSystemUC := &usecase.ComputerSystemUseCase{Repo: repo}
+	repo := redfishusecase.NewWsmanComputerSystemRepo(devicesUC)
+	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
 	// Initialize the Redfish server with shared infrastructure
-	p.server = &redfishhandler.RedfishServer{
+	server = &redfishhandler.RedfishServer{
 		ComputerSystemUC: computerSystemUC,
 	}
 
-	ctx.Logger.Info("Redfish plugin initialized successfully")
+	log.Info("Redfish module initialized successfully")
 
-	return nil
-}
-
-// RegisterMiddleware registers Redfish-specific middleware.
-func (p *Plugin) RegisterMiddleware(ctx *plugin.Context) error {
-	ctx.Logger.Info("Registering Redfish middleware")
-
-	// Redfish plugin doesn't need global middleware
-	// Authentication middleware is handled per-route in RegisterRoutes
 	return nil
 }
 
 // RegisterRoutes registers Redfish API routes.
-func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) error {
-	if !p.config.Enabled {
-		ctx.Logger.Info("Redfish plugin is disabled, skipping route registration")
-
+func RegisterRoutes(router *gin.Engine, log logger.Interface) error {
+	if !moduleConfig.Enabled {
+		log.Info("Redfish module is disabled, skipping route registration")
 		return nil
 	}
 
 	// Register the Redfish handlers directly on the main router engine
 	// This ensures routes are /redfish/v1/* and not /api/redfish/v1/*
-	redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
+	redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 		BaseURL:      "",
-		ErrorHandler: p.createErrorHandler(),
+		ErrorHandler: createErrorHandler(),
 	})
 
-	ctx.Logger.Info("Redfish API routes registered successfully")
+	log.Info("Redfish API routes registered successfully")
 
-	return nil
-}
-
-// Shutdown performs cleanup for the Redfish plugin.
-func (p *Plugin) Shutdown(ctx *plugin.Context) error {
-	ctx.Logger.Info("Shutting down Redfish plugin")
-	// No specific cleanup needed for Redfish plugin
 	return nil
 }
 
 // createErrorHandler creates an error handler for OpenAPI-generated routes.
-func (p *Plugin) createErrorHandler() func(*gin.Context, error, int) {
+func createErrorHandler() func(*gin.Context, error, int) {
 	const (
 		httpStatusUnauthorized     = 401
 		httpStatusForbidden        = 403

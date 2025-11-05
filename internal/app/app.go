@@ -55,7 +55,7 @@ func Run(cfg *config.Config) {
 	defaultConfig.AllowHeaders = cfg.AllowedHeaders
 
 	handler.Use(cors.New(defaultConfig))
-	consolehttp.NewRouter(handler, log, *usecases, cfg)
+	consolehttp.NewRouter(handler, log, *usecases, cfg, database)
 
 	// Optionally enable pprof endpoints (e.g., for staging) via env ENABLE_PPROF=true
 	if os.Getenv("ENABLE_PPROF") == "true" {

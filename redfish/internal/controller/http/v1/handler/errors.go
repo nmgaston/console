@@ -11,21 +11,19 @@ import (
 )
 
 const (
-	// Registry message IDs.
-	msgIDResourceInUse         = "Base.1.22.0.ResourceInUse"
-	msgIDInsufficientPrivilege = "Base.1.22.0.InsufficientPrivilege"
-	msgIDGeneralError          = "Base.1.22.0.GeneralError"
-	msgIDInternalError         = "Base.1.22.0.InternalError"
+	// HTTP header constants for Redfish responses
+	headerODataVersion = "OData-Version"
+	headerContentType  = "Content-Type"
+	headerLocation     = "Location"
+	headerRetryAfter   = "Retry-After"
 
-	// Common messages.
-	msgInsufficientPrivileges     = "There are insufficient privileges for the account or credentials associated with the current session to perform the requested operation."
-	msgUnauthorizedAccess         = "Unauthorized access"
-	msgInsufficientPrivsOperation = "Insufficient privileges to perform operation"
-	msgInternalServerError        = "An internal server error occurred."
+	// Header values
+	contentTypeJSON = "application/json; charset=utf-8"
+	contentTypeXML  = "application/xml"
+	odataVersion    = "4.0"
 
-	// Common resolutions.
-	resolutionRemoveCondition    = "Remove the condition and resubmit the request if the operation failed."
-	resolutionChangeAccessRights = "Either abandon the operation or change the associated access rights and resubmit the request if the operation failed."
+	// Common error messages
+	msgInternalServerError = "An internal server error occurred."
 )
 
 // registryMgr is the global registry manager instance
@@ -48,8 +46,8 @@ func mapSeverityToResourceHealth(severity string) string {
 
 // SetRedfishHeaders sets Redfish-compliant headers
 func SetRedfishHeaders(c *gin.Context) {
-	c.Header("Content-Type", "application/json; charset=utf-8")
-	c.Header("OData-Version", "4.0")
+	c.Header(headerContentType, contentTypeJSON)
+	c.Header(headerODataVersion, odataVersion)
 }
 
 // createErrorResponse creates a Redfish error response using registry lookup.
@@ -91,13 +89,13 @@ func createErrorResponse(registryName, messageKey string, args ...interface{}) (
 }
 
 // ConflictError returns a Redfish-compliant 409 error
-func ConflictError(c *gin.Context, resource, message string) {
+func ConflictError(c *gin.Context, _, message string) {
 	SetRedfishHeaders(c)
 
 	errorResponse, err := createErrorResponse("Base", "ResourceInUse")
 	if err != nil {
-		// Fallback to hardcoded error if registry lookup fails
-		fallbackConflictError(c, resource, message)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
 	}
@@ -110,75 +108,16 @@ func ConflictError(c *gin.Context, resource, message string) {
 	c.JSON(http.StatusConflict, errorResponse)
 }
 
-// fallbackConflictError is the fallback when registry lookup fails
-func fallbackConflictError(c *gin.Context, resource, message string) {
-	messageStr := resource + " is in a conflicting state."
-	messageID := msgIDResourceInUse
-	resolution := resolutionRemoveCondition
-	severity := string(generated.Warning)
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &message,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
-	}
-
-	c.JSON(http.StatusConflict, errorResponse)
-}
-
 // PowerStateConflictError returns a Redfish-compliant 409 error for power state conflicts
 func PowerStateConflictError(c *gin.Context, _ string) {
 	SetRedfishHeaders(c)
 
 	errorResponse, err := createErrorResponse("Base", "ResourceInUse")
 	if err != nil {
-		// Fallback to hardcoded error if registry lookup fails
-		fallbackPowerStateConflictError(c)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
-	}
-
-	c.JSON(http.StatusConflict, errorResponse)
-}
-
-// fallbackPowerStateConflictError is the fallback when registry lookup fails
-func fallbackPowerStateConflictError(c *gin.Context) {
-	messageStr := "The change to the requested resource failed because the resource is in use or in transition."
-	messageID := msgIDResourceInUse
-	resolution := resolutionRemoveCondition
-	severity := string(generated.Warning)
-	errorMessage := "Power state transition not allowed"
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
 	}
 
 	c.JSON(http.StatusConflict, errorResponse)
@@ -190,40 +129,10 @@ func MethodNotAllowedError(c *gin.Context) {
 
 	errorResponse, err := createErrorResponse("Base", "MethodNotAllowed")
 	if err != nil {
-		// Fallback to hardcoded error
-		fallbackMethodNotAllowedError(c)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
-	}
-
-	c.JSON(http.StatusMethodNotAllowed, errorResponse)
-}
-
-// fallbackMethodNotAllowedError is the fallback when registry lookup fails
-func fallbackMethodNotAllowedError(c *gin.Context) {
-	messageStr := "The HTTP method is not allowed on this resource."
-	messageID := "Base.1.22.0.MethodNotAllowed"
-	resolution := "None"
-	severity := string(generated.Critical)
-	errorMessage := "The HTTP method is not allowed for the requested resource."
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
 	}
 
 	c.JSON(http.StatusMethodNotAllowed, errorResponse)
@@ -235,70 +144,35 @@ func UnauthorizedError(c *gin.Context) {
 
 	errorResponse, err := createErrorResponse("Base", "InsufficientPrivilege")
 	if err != nil {
-		// Fallback to hardcoded error
-		fallbackUnauthorizedError(c)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
 	}
 
 	// Override with unauthorized-specific message
-	errorMessage := msgUnauthorizedAccess
+	errorMessage := "Unauthorized access"
 	errorResponse.Error.Message = &errorMessage
 
 	c.JSON(http.StatusUnauthorized, errorResponse)
 }
 
-// fallbackUnauthorizedError is the fallback when registry lookup fails
-func fallbackUnauthorizedError(c *gin.Context) {
-	messageStr := msgInsufficientPrivileges
-	messageID := msgIDInsufficientPrivilege
-	resolution := resolutionChangeAccessRights
-	severity := string(generated.Critical)
-	errorMessage := msgUnauthorizedAccess
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
-	}
-
-	c.JSON(http.StatusUnauthorized, errorResponse)
-}
-
 // BadRequestError returns a Redfish-compliant 400 error
-func BadRequestError(c *gin.Context, message, messageID, resolution, severity string) {
+func BadRequestError(c *gin.Context, customMessage string) {
 	SetRedfishHeaders(c)
 
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.11.GeneralError"}[0],
-			Message: &message,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &message,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
+	errorResponse, err := createErrorResponse("Base", "GeneralError")
+	if err != nil {
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
+
+		return
+	}
+
+	// Override with custom message if provided
+	if customMessage != "" {
+		errorResponse.Error.Message = &customMessage
+		(*errorResponse.Error.MessageExtendedInfo)[0].Message = &customMessage
 	}
 
 	c.JSON(http.StatusBadRequest, errorResponse)
@@ -310,45 +184,15 @@ func ForbiddenError(c *gin.Context) {
 
 	errorResponse, err := createErrorResponse("Base", "InsufficientPrivilege")
 	if err != nil {
-		// Fallback to hardcoded error
-		fallbackForbiddenError(c)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
 	}
 
 	// Override with forbidden-specific message
-	errorMessage := msgInsufficientPrivsOperation
+	errorMessage := "Insufficient privileges to perform operation"
 	errorResponse.Error.Message = &errorMessage
-
-	c.JSON(http.StatusForbidden, errorResponse)
-}
-
-// fallbackForbiddenError is the fallback when registry lookup fails
-func fallbackForbiddenError(c *gin.Context) {
-	messageStr := msgInsufficientPrivileges
-	messageID := msgIDInsufficientPrivilege
-	resolution := resolutionChangeAccessRights
-	severity := string(generated.Critical)
-	errorMessage := msgInsufficientPrivsOperation
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
-	}
 
 	c.JSON(http.StatusForbidden, errorResponse)
 }
@@ -358,45 +202,15 @@ func ServiceUnavailableError(c *gin.Context, retryAfterSeconds int) {
 	SetRedfishHeaders(c)
 
 	if retryAfterSeconds > 0 {
-		c.Header("Retry-After", fmt.Sprintf("%d", retryAfterSeconds))
+		c.Header(headerRetryAfter, fmt.Sprintf("%d", retryAfterSeconds))
 	}
 
 	errorResponse, err := createErrorResponse("Base", "ServiceTemporarilyUnavailable", fmt.Sprintf("%d", retryAfterSeconds))
 	if err != nil {
-		// Fallback to hardcoded error
-		fallbackServiceUnavailableError(c, retryAfterSeconds)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
-	}
-
-	c.JSON(http.StatusServiceUnavailable, errorResponse)
-}
-
-// fallbackServiceUnavailableError is the fallback when registry lookup fails
-func fallbackServiceUnavailableError(c *gin.Context, retryAfterSeconds int) {
-	messageStr := fmt.Sprintf("The service is temporarily unavailable.  Retry in %d seconds.", retryAfterSeconds)
-	messageID := "Base.1.22.0.ServiceTemporarilyUnavailable"
-	resolution := "Wait for the indicated retry duration and retry the operation."
-	severity := string(generated.Critical)
-	errorMessage := "Service temporarily unavailable"
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
 	}
 
 	c.JSON(http.StatusServiceUnavailable, errorResponse)
@@ -408,8 +222,8 @@ func NotFoundError(c *gin.Context, resource string) {
 
 	errorResponse, err := createErrorResponse("Base", "ResourceMissing", resource, resource)
 	if err != nil {
-		// Fallback to hardcoded error
-		fallbackNotFoundError(c, resource)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
 	}
@@ -421,44 +235,32 @@ func NotFoundError(c *gin.Context, resource string) {
 	c.JSON(http.StatusNotFound, errorResponse)
 }
 
-// fallbackNotFoundError is the fallback when registry lookup fails
-func fallbackNotFoundError(c *gin.Context, resource string) {
-	messageStr := "The requested resource does not exist."
-	messageID := "Base.1.22.0.ResourceMissing"
-	resolution := "Provide a valid resource identifier and resubmit the request."
-	severity := string(generated.Critical)
-	errorMessage := resource + " not found"
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
-	}
-
-	c.JSON(http.StatusNotFound, errorResponse)
-}
-
 // InternalServerError returns a Redfish-compliant 500 error
 func InternalServerError(c *gin.Context, err error) {
 	SetRedfishHeaders(c)
 
 	errorResponse, regErr := createErrorResponse("Base", "InternalError")
 	if regErr != nil {
-		// Fallback to hardcoded error
-		fallbackInternalServerError(c, err)
+		// Ultimate fallback - if even the registry lookup fails, return a minimal error
+		errorMessage := msgInternalServerError
+		errMsg := err.Error()
+		c.JSON(http.StatusInternalServerError, generated.RedfishError{
+			Error: struct {
+				MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
+				Code                *string                     `json:"code,omitempty"`
+				Message             *string                     `json:"message,omitempty"`
+			}{
+				Code:    &[]string{"Base.1.22.0.InternalError"}[0],
+				Message: &errorMessage,
+				MessageExtendedInfo: &[]generated.MessageMessage{
+					{
+						MessageId: &[]string{"Base.1.22.0.InternalError"}[0],
+						Message:   &errMsg,
+						Severity:  &[]string{string(generated.Critical)}[0],
+					},
+				},
+			},
+		})
 
 		return
 	}
@@ -472,76 +274,16 @@ func InternalServerError(c *gin.Context, err error) {
 	c.JSON(http.StatusInternalServerError, errorResponse)
 }
 
-// fallbackInternalServerError is the fallback when registry lookup fails
-func fallbackInternalServerError(c *gin.Context, err error) {
-	errMsg := err.Error()
-	messageID := msgIDInternalError
-	resolution := "Resubmit the request.  If the problem persists, consider resetting the service."
-	severity := string(generated.Critical)
-	errorMessage := msgInternalServerError
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &errMsg,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
-	}
-
-	c.JSON(http.StatusInternalServerError, errorResponse)
-}
-
 // MalformedJSONError returns a Redfish-compliant 400 error for malformed JSON
 func MalformedJSONError(c *gin.Context) {
 	SetRedfishHeaders(c)
 
 	errorResponse, err := createErrorResponse("Base", "MalformedJSON")
 	if err != nil {
-		// Fallback to hardcoded error
-		fallbackMalformedJSONError(c)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
-	}
-
-	c.JSON(http.StatusBadRequest, errorResponse)
-}
-
-// fallbackMalformedJSONError is the fallback when registry lookup fails
-func fallbackMalformedJSONError(c *gin.Context) {
-	messageStr := "The request body submitted was malformed JSON and could not be parsed by the receiving service."
-	messageID := "Base.1.22.0.MalformedJSON"
-	resolution := "Ensure that the request body is valid JSON and resubmit the request."
-	severity := string(generated.Critical)
-	errorMessage := "Malformed JSON in request body"
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
 	}
 
 	c.JSON(http.StatusBadRequest, errorResponse)
@@ -553,8 +295,8 @@ func PropertyMissingError(c *gin.Context, propertyName string) {
 
 	errorResponse, err := createErrorResponse("Base", "PropertyMissing", propertyName)
 	if err != nil {
-		// Fallback to hardcoded error
-		fallbackPropertyMissingError(c, propertyName)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
 	}
@@ -562,36 +304,6 @@ func PropertyMissingError(c *gin.Context, propertyName string) {
 	// Override with custom message
 	errorMessage := "Missing or empty " + propertyName
 	errorResponse.Error.Message = &errorMessage
-
-	c.JSON(http.StatusBadRequest, errorResponse)
-}
-
-// fallbackPropertyMissingError is the fallback when registry lookup fails
-func fallbackPropertyMissingError(c *gin.Context, propertyName string) {
-	messageStr := "The property " + propertyName + " is a required property and must be included in the request."
-	messageID := "Base.1.22.0.PropertyMissing"
-	resolution := "Ensure that the property is in the request body and has a valid value and resubmit the request if the operation failed."
-	severity := string(generated.Warning)
-	errorMessage := "Missing or empty " + propertyName
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
-	}
 
 	c.JSON(http.StatusBadRequest, errorResponse)
 }
@@ -602,8 +314,8 @@ func PropertyValueNotInListError(c *gin.Context, propertyName string) {
 
 	errorResponse, err := createErrorResponse("Base", "PropertyValueNotInList", "invalid", propertyName)
 	if err != nil {
-		// Fallback to hardcoded error
-		fallbackPropertyValueNotInListError(c, propertyName)
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
 
 		return
 	}
@@ -611,36 +323,6 @@ func PropertyValueNotInListError(c *gin.Context, propertyName string) {
 	// Override with custom message
 	errorMessage := "Invalid " + propertyName
 	errorResponse.Error.Message = &errorMessage
-
-	c.JSON(http.StatusBadRequest, errorResponse)
-}
-
-// fallbackPropertyValueNotInListError is the fallback when registry lookup fails
-func fallbackPropertyValueNotInListError(c *gin.Context, propertyName string) {
-	messageStr := "The value provided for " + propertyName + " is not in the list of acceptable values."
-	messageID := "Base.1.22.0.PropertyValueNotInList"
-	resolution := "Choose a value from the enumeration list that the implementation can support and resubmit the request if the operation failed."
-	severity := string(generated.Warning)
-	errorMessage := "Invalid " + propertyName
-
-	errorResponse := generated.RedfishError{
-		Error: struct {
-			MessageExtendedInfo *[]generated.MessageMessage `json:"@Message.ExtendedInfo,omitempty"`
-			Code                *string                     `json:"code,omitempty"`
-			Message             *string                     `json:"message,omitempty"`
-		}{
-			Code:    &[]string{"Base.1.22.0.GeneralError"}[0],
-			Message: &errorMessage,
-			MessageExtendedInfo: &[]generated.MessageMessage{
-				{
-					MessageId:  &messageID,
-					Message:    &messageStr,
-					Severity:   &severity,
-					Resolution: &resolution,
-				},
-			},
-		},
-	}
 
 	c.JSON(http.StatusBadRequest, errorResponse)
 }

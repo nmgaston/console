@@ -219,7 +219,7 @@ func (s *RedfishServer) GetRedfishV1ManagersManagerId(c *gin.Context, managerID 
 
 // handlePowerStateError handles errors from power state operations
 func handlePowerStateError(c *gin.Context, err error, resetType string) {
-	if errors.Is(err, usecase.ErrInvalidPowerState) {
+	if errors.Is(err, usecase.ErrInvalidPowerState) || errors.Is(err, usecase.ErrInvalidResetType) {
 		PropertyValueNotInListError(c, "ResetType")
 
 		return

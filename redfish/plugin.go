@@ -98,11 +98,22 @@ func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) erro
 		return nil
 	}
 
+	// Enable HandleMethodNotAllowed to return 405 for wrong HTTP methods
+	ctx.Router.HandleMethodNotAllowed = true
+
 	// Register the Redfish handlers directly on the main router engine
 	// This ensures routes are /redfish/v1/* and not /api/redfish/v1/*
 	redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
 		BaseURL:      "",
 		ErrorHandler: p.createErrorHandler(),
+	})
+
+	// Add NoMethod handler for Redfish routes to return 405 with proper error
+	ctx.Router.NoMethod(func(c *gin.Context) {
+		// Only handle Redfish routes
+		if len(c.Request.URL.Path) >= 10 && c.Request.URL.Path[:10] == "/redfish/v" {
+			redfishhandler.MethodNotAllowedError(c)
+		}
 	})
 
 	ctx.Logger.Info("Redfish API routes registered successfully")

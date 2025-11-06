@@ -26,11 +26,7 @@ jobs:
       - name: Copy environment file
         run: cp .env.example .env
       - name: Build Console Application
-        run: |
-          echo "Building console application..."
-          go build -o ./console-server cmd/app/main.go
-          echo "✓ Build complete"
-          ls -lh ./console-server
+        run: go build -o ./console-server cmd/app/main.go
       - name: Start Console Service (Docker Compose for MPS/RPS tests)
         run: docker compose up -d --build
       - name: Let Docker Spin up
@@ -44,9 +40,7 @@ jobs:
       - name: Stop Docker Compose
         run: |
           docker compose down
-          docker ps -a
           sleep 5
-          echo "✓ Docker Compose stopped, waited 5 seconds for port to free"
       - name: Start Console Service (Native Go for Redfish tests)
         run: |
           mkdir -p /home/runner/work/console/console/integration-test/results
@@ -60,17 +54,13 @@ jobs:
           sleep 3
       - name: Health Check
         run: |
-          echo "Checking service health..."
           for i in {1..10}; do
             if curl -s -k https://localhost:8181/redfish/v1/ | grep -q "@odata.id"; then
-              echo "✅ Service is healthy"
               exit 0
             fi
-            echo "Waiting for service... ($i/10)"
             sleep 2
           done
-          echo "❌ Health check failed"
-          echo "=== Console Service Logs ==="
+          echo "Health check failed after 20 seconds"
           cat /tmp/console.log
           exit 1
       - name: Run Redfish API Tests
@@ -80,8 +70,7 @@ jobs:
       - name: Check Redfish Test Results
         if: always()
         run: |
-          echo "Redfish tests completed. Note: 3 assertions are expected to fail (Reset Action backend not implemented)."
-          echo "Check uploaded artifacts for detailed test results."
+          echo "Note: Some Reset Action tests may fail (backend not fully implemented)"
       - name: Stop Console Service
         if: always()
         run: |
@@ -95,9 +84,8 @@ jobs:
       - name: Dump Console Service logs on failure
         if: failure()
         run: |
-          echo "=== Console Service Logs ==="
           cat /tmp/console.log || echo "No console.log found"
-          cp /tmp/console.log /home/runner/work/console/console/integration-test/results/console.log || echo "No console.log found"
+          cp /tmp/console.log /home/runner/work/console/console/integration-test/results/console.log || true
       - name: Upload Postman Results
         if: always()
         uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0

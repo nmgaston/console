@@ -1,0 +1,315 @@
+{
+	"info": {
+		"name": "Console Redfish APIs",
+		"description": "Integration tests for Redfish v1 API endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Redfish Service Root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has Redfish headers\", function () {",
+							"    pm.response.to.have.header(\"OData-Version\", \"4.0\");",
+							"    pm.response.to.have.header(\"Content-Type\", \"application/json; charset=utf-8\");",
+							"});",
+							"",
+							"pm.test(\"Service root contains required properties\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"@odata.context\");",
+							"    pm.expect(jsonData).to.have.property(\"@odata.id\", \"/redfish/v1\");",
+							"    pm.expect(jsonData).to.have.property(\"@odata.type\");",
+							"    pm.expect(jsonData).to.have.property(\"RedfishVersion\");",
+							"    pm.expect(jsonData).to.have.property(\"Systems\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/redfish/v1",
+					"host": ["{{base_url}}"],
+					"path": ["redfish", "v1"]
+				}
+			}
+		},
+		{
+			"name": "Get Systems Collection",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Systems collection has members\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"Members@odata.count\");",
+							"    pm.expect(jsonData).to.have.property(\"Members\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/redfish/v1/Systems",
+					"host": ["{{base_url}}"],
+					"path": ["redfish", "v1", "Systems"]
+				}
+			}
+		},
+		{
+			"name": "Get ComputerSystem",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"ComputerSystem has required properties\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"@odata.id\");",
+							"    pm.expect(jsonData).to.have.property(\"@odata.type\");",
+							"    pm.expect(jsonData).to.have.property(\"Id\");",
+							"    pm.expect(jsonData).to.have.property(\"Name\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/redfish/v1/Systems/System1",
+					"host": ["{{base_url}}"],
+					"path": ["redfish", "v1", "Systems", "System1"]
+				}
+			}
+		},
+		{
+			"name": "Reset Action - PowerOn",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 202 Accepted\", function () {",
+							"    pm.response.to.have.status(202);",
+							"});",
+							"",
+							"pm.test(\"Response has Location header\", function () {",
+							"    pm.response.to.have.header(\"Location\");",
+							"});",
+							"",
+							"pm.test(\"Task response is valid\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"@odata.id\");",
+							"    pm.expect(jsonData).to.have.property(\"TaskState\");",
+							"    pm.expect(jsonData).to.have.property(\"TaskStatus\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"ResetType\": \"On\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/redfish/v1/Systems/System1/Actions/ComputerSystem.Reset",
+					"host": ["{{base_url}}"],
+					"path": ["redfish", "v1", "Systems", "System1", "Actions", "ComputerSystem.Reset"]
+				}
+			}
+		},
+		{
+			"name": "Reset Action - Invalid ResetType (400)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error response is Redfish compliant\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"error\");",
+							"    pm.expect(jsonData.error).to.have.property(\"@Message.ExtendedInfo\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"ResetType\": \"InvalidType\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/redfish/v1/Systems/System1/Actions/ComputerSystem.Reset",
+					"host": ["{{base_url}}"],
+					"path": ["redfish", "v1", "Systems", "System1", "Actions", "ComputerSystem.Reset"]
+				}
+			}
+		},
+		{
+			"name": "Reset Action - Missing ResetType (400)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error indicates missing property\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error[\"@Message.ExtendedInfo\"][0].MessageId).to.include(\"PropertyMissing\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				},
+				"url": {
+					"raw": "{{base_url}}/redfish/v1/Systems/System1/Actions/ComputerSystem.Reset",
+					"host": ["{{base_url}}"],
+					"path": ["redfish", "v1", "Systems", "System1", "Actions", "ComputerSystem.Reset"]
+				}
+			}
+		},
+		{
+			"name": "Reset Action - System Not Found (404)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 404\", function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"",
+							"pm.test(\"Error response is Redfish compliant\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"error\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"ResetType\": \"On\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/redfish/v1/Systems/NonExistentSystem/Actions/ComputerSystem.Reset",
+					"host": ["{{base_url}}"],
+					"path": ["redfish", "v1", "Systems", "NonExistentSystem", "Actions", "ComputerSystem.Reset"]
+				}
+			}
+		},
+		{
+			"name": "Reset Action - Method Not Allowed (405)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 405\", function () {",
+							"    pm.response.to.have.status(405);",
+							"});",
+							"",
+							"pm.test(\"Error response is Redfish compliant\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"error\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/redfish/v1/Systems/System1/Actions/ComputerSystem.Reset",
+					"host": ["{{base_url}}"],
+					"path": ["redfish", "v1", "Systems", "System1", "Actions", "ComputerSystem.Reset"]
+				}
+			}
+		}
+	]
+}

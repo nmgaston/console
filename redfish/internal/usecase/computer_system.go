@@ -15,7 +15,7 @@ var (
 	// ErrPowerStateConflict is returned when a power state transition is not allowed.
 	ErrPowerStateConflict = errors.New("power state transition not allowed")
 
-	// ErrInvalidResetType is returned when an invalid reset type is requested.
+	// ErrInvalidResetType is returned when an invalid reset type is provided.
 	ErrInvalidResetType = errors.New("invalid reset type")
 )
 
@@ -41,15 +41,15 @@ func (uc *ComputerSystemUseCase) SetPowerState(id string, resetType generated.Re
 	switch resetType {
 	case generated.ResourceResetTypeOn,
 		generated.ResourceResetTypeForceOff,
-		generated.ResourceResetTypeForceRestart,
-		generated.ResourceResetTypePowerCycle,
 		generated.ResourceResetTypeForceOn,
-		generated.ResourceResetTypeFullPowerCycle,
-		generated.ResourceResetTypeGracefulRestart,
+		generated.ResourceResetTypeForceRestart,
 		generated.ResourceResetTypeGracefulShutdown,
+		generated.ResourceResetTypeGracefulRestart,
+		generated.ResourceResetTypePowerCycle,
+		generated.ResourceResetTypeFullPowerCycle,
 		generated.ResourceResetTypeNmi,
-		generated.ResourceResetTypePause,
 		generated.ResourceResetTypePushPowerButton,
+		generated.ResourceResetTypePause,
 		generated.ResourceResetTypeResume,
 		generated.ResourceResetTypeSuspend:
 		// Valid reset types
@@ -86,16 +86,18 @@ func convertToEntityPowerState(resetType generated.ResourceResetType) redfishv1.
 		generated.ResourceResetTypeGracefulShutdown:
 		return redfishv1.PowerStateOff
 	case generated.ResourceResetTypeForceRestart,
-		generated.ResourceResetTypePowerCycle,
-		generated.ResourceResetTypeFullPowerCycle,
 		generated.ResourceResetTypeGracefulRestart,
-		generated.ResourceResetTypeNmi,
-		generated.ResourceResetTypePause,
-		generated.ResourceResetTypePushPowerButton,
-		generated.ResourceResetTypeResume,
+		generated.ResourceResetTypePowerCycle,
+		generated.ResourceResetTypeFullPowerCycle:
+		return redfishv1.PowerStateOff // Will cycle to On
+	case generated.ResourceResetTypeNmi,
+		generated.ResourceResetTypePushPowerButton:
+		return redfishv1.PowerStateOn
+	case generated.ResourceResetTypePause,
 		generated.ResourceResetTypeSuspend:
-		// For all other reset types, return Off as default
 		return redfishv1.PowerStateOff
+	case generated.ResourceResetTypeResume:
+		return redfishv1.PowerStateOn
 	default:
 		return redfishv1.PowerStateOff
 	}

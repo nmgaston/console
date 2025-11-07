@@ -2,8 +2,6 @@
 package redfish
 
 import (
-	"errors"
-
 	"github.com/gin-gonic/gin"
 
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
@@ -12,9 +10,6 @@ import (
 	redfishhandler "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
-
-// ErrDevicesCastFailed is returned when the devices use case cannot be cast to the expected type.
-var ErrDevicesCastFailed = errors.New("failed to cast devices use case")
 
 // Plugin represents the Redfish plugin for DMT.
 type Plugin struct {
@@ -33,6 +28,12 @@ type PluginConfig struct {
 const (
 	PluginName    = "redfish"
 	PluginVersion = "1.0.0"
+
+	// HTTP status codes.
+	statusUnauthorized     = 401
+	statusForbidden        = 403
+	statusBadRequest       = 400
+	statusMethodNotAllowed = 405
 )
 
 // NewPlugin creates a new Redfish plugin instance.
@@ -62,7 +63,9 @@ func (p *Plugin) Initialize(ctx *plugin.Context) error {
 	// Create Redfish-specific repository and use case using DMT's device management
 	devicesUC, ok := ctx.Usecases.Devices.(*devices.UseCase)
 	if !ok {
-		return ErrDevicesCastFailed
+		ctx.Logger.Error("Failed to cast Devices usecase to *devices.UseCase")
+
+		return nil // Return nil to not block other plugins
 	}
 
 	repo := usecase.NewWsmanComputerSystemRepo(devicesUC)
@@ -95,11 +98,22 @@ func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) erro
 		return nil
 	}
 
+	// Enable HandleMethodNotAllowed to return 405 for wrong HTTP methods
+	ctx.Router.HandleMethodNotAllowed = true
+
 	// Register the Redfish handlers directly on the main router engine
 	// This ensures routes are /redfish/v1/* and not /api/redfish/v1/*
 	redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
 		BaseURL:      "",
 		ErrorHandler: p.createErrorHandler(),
+	})
+
+	// Add NoMethod handler for Redfish routes to return 405 with proper error
+	ctx.Router.NoMethod(func(c *gin.Context) {
+		// Only handle Redfish routes
+		if len(c.Request.URL.Path) >= 10 && c.Request.URL.Path[:10] == "/redfish/v" {
+			redfishhandler.MethodNotAllowedError(c)
+		}
 	})
 
 	ctx.Logger.Info("Redfish API routes registered successfully")
@@ -116,23 +130,16 @@ func (p *Plugin) Shutdown(ctx *plugin.Context) error {
 
 // createErrorHandler creates an error handler for OpenAPI-generated routes.
 func (p *Plugin) createErrorHandler() func(*gin.Context, error, int) {
-	const (
-		httpStatusUnauthorized     = 401
-		httpStatusForbidden        = 403
-		httpStatusMethodNotAllowed = 405
-		httpStatusBadRequest       = 400
-	)
-
 	return func(c *gin.Context, err error, statusCode int) {
 		switch statusCode {
-		case httpStatusUnauthorized:
+		case statusUnauthorized:
 			redfishhandler.UnauthorizedError(c)
-		case httpStatusForbidden:
+		case statusForbidden:
 			redfishhandler.ForbiddenError(c)
-		case httpStatusMethodNotAllowed:
+		case statusMethodNotAllowed:
 			redfishhandler.MethodNotAllowedError(c)
-		case httpStatusBadRequest:
-			redfishhandler.BadRequestError(c, err.Error(), "Base.1.11.GeneralError", "Check your request body and parameters.", "Critical")
+		case statusBadRequest:
+			redfishhandler.BadRequestError(c, err.Error())
 		default:
 			redfishhandler.InternalServerError(c, err)
 		}

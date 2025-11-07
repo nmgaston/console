@@ -19,6 +19,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
   /redfish/v1/$metadata:
     get:
       responses:
@@ -32,6 +34,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
   /redfish/v1/Systems:
     get:
       responses:
@@ -48,6 +52,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/Systems/{ComputerSystemId}:
     get:
       responses:
@@ -64,6 +70,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     parameters:
     - description: The value of the Id property of the ComputerSystem resource
       in: path
@@ -99,6 +107,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/Chassis:
     get:
       responses:
@@ -115,6 +125,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/Chassis/{ChassisId}:
     get:
       responses:
@@ -130,6 +142,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     parameters:
     - description: The value of the Id property of the Chassis resource
       in: path
@@ -153,6 +167,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/Managers/{ManagerId}:
     get:
       responses:
@@ -168,6 +184,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     parameters:
     - description: The value of the Id property of the Manager resource
       in: path
@@ -2807,3 +2825,15 @@ components:
       type: object
       x-longDescription: The Redfish Specification-described type shall contain an
         error payload from a Redfish service.
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic Authentication for Redfish API
+security:
+- BasicAuth: []
+- {}
+x-basic-auth:
+  default-auth: BasicAuth
+  redfish-compliant: true
+  service-root-public: true

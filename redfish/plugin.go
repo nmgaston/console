@@ -3,6 +3,7 @@ package redfish
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -40,7 +41,7 @@ func NewPlugin() *Plugin {
 	return &Plugin{
 		config: &PluginConfig{
 			Enabled:      true,
-			AuthRequired: false,
+			AuthRequired: true,
 			BaseURL:      "/redfish/v1",
 			Version:      PluginVersion,
 		},
@@ -59,6 +60,12 @@ func (p *Plugin) Version() string {
 
 // Initialize initializes the Redfish plugin with DMT infrastructure.
 func (p *Plugin) Initialize(ctx *plugin.Context) error {
+	// Override plugin config from environment variables if set
+	// This allows runtime configuration without code changes
+	if ctx.Config.Disabled {
+		p.config.AuthRequired = false // If auth is globally disabled, disable it for Redfish too
+	}
+
 	// Create Redfish-specific repository and use case using DMT's device management
 	devicesUC, ok := ctx.Usecases.Devices.(*devices.UseCase)
 	if !ok {
@@ -87,22 +94,57 @@ func (p *Plugin) RegisterMiddleware(ctx *plugin.Context) error {
 	return nil
 }
 
-// RegisterRoutes registers Redfish API routes.
-func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) error {
+// RegisterRoutes registers Redfish API routes with OpenAPI-spec-driven authentication.
+func (p *Plugin) RegisterRoutes(ctx *plugin.Context, protected, unprotected *gin.RouterGroup) error {
 	if !p.config.Enabled {
 		ctx.Logger.Info("Redfish plugin is disabled, skipping route registration")
 
 		return nil
 	}
 
-	// Register the Redfish handlers directly on the main router engine
-	// This ensures routes are /redfish/v1/* and not /api/redfish/v1/*
-	redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
-		BaseURL:      "",
-		ErrorHandler: p.createErrorHandler(),
-	})
+	if p.config.AuthRequired {
+		// Apply Basic Auth middleware to OpenAPI-defined protected endpoints
+		adminUsername := ctx.Config.AdminUsername
+		adminPassword := ctx.Config.AdminPassword
+		basicAuthMiddleware := redfishhandler.BasicAuthValidator(adminUsername, adminPassword)
 
-	ctx.Logger.Info("Redfish API routes registered successfully")
+		// Register handlers with OpenAPI-spec-compliant middleware
+		redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
+			BaseURL:      "",
+			ErrorHandler: p.createErrorHandler(),
+			Middlewares: []redfishgenerated.MiddlewareFunc{
+				// OpenAPI-spec-driven selective authentication
+				func(c *gin.Context) {
+					path := c.Request.URL.Path
+
+					// Public endpoints as defined in OpenAPI spec (security: [{}])
+					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
+						c.Next()
+						return
+					}
+
+					// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
+					if strings.HasPrefix(path, "/redfish/v1/") {
+						basicAuthMiddleware(c)
+						return
+					}
+
+					// Default: no authentication
+					c.Next()
+				},
+			},
+		})
+
+		ctx.Logger.Info("Redfish API routes registered with OpenAPI-spec-driven Basic Auth")
+	} else {
+		// Register without authentication (all endpoints public)
+		redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
+			BaseURL:      "",
+			ErrorHandler: p.createErrorHandler(),
+		})
+
+		ctx.Logger.Info("Redfish API routes registered without authentication")
+	}
 
 	return nil
 }

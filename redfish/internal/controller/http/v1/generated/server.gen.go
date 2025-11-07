@@ -84,6 +84,8 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1Metadata(c *gin.Context) {
 // GetRedfishV1Chassis operation middleware
 func (siw *ServerInterfaceWrapper) GetRedfishV1Chassis(c *gin.Context) {
 
+	c.Set(BasicAuthScopes, []string{})
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -108,6 +110,8 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1ChassisChassisId(c *gin.Context) 
 		return
 	}
 
+	c.Set(BasicAuthScopes, []string{})
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -120,6 +124,8 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1ChassisChassisId(c *gin.Context) 
 
 // GetRedfishV1Managers operation middleware
 func (siw *ServerInterfaceWrapper) GetRedfishV1Managers(c *gin.Context) {
+
+	c.Set(BasicAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -145,6 +151,8 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1ManagersManagerId(c *gin.Context)
 		return
 	}
 
+	c.Set(BasicAuthScopes, []string{})
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -157,6 +165,8 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1ManagersManagerId(c *gin.Context)
 
 // GetRedfishV1Systems operation middleware
 func (siw *ServerInterfaceWrapper) GetRedfishV1Systems(c *gin.Context) {
+
+	c.Set(BasicAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -182,6 +192,8 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SystemsComputerSystemId(c *gin.Co
 		return
 	}
 
+	c.Set(BasicAuthScopes, []string{})
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -205,6 +217,8 @@ func (siw *ServerInterfaceWrapper) PostRedfishV1SystemsComputerSystemIdActionsCo
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter ComputerSystemId: %w", err), http.StatusBadRequest)
 		return
 	}
+
+	c.Set(BasicAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)

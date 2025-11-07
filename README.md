@@ -118,8 +118,20 @@ go run ./cmd/app/main.go
 > ```
 
 > **Database Location**: SQLite database is automatically created at:
+>
 > - Linux/macOS: `~/.config/device-management-toolkit/console.db`
 > - Windows: `%APPDATA%\device-management-toolkit\console.db`
+
+> **Environment Variables**: Key environment variables for configuration:
+>
+> - `AUTH_DISABLED`: Set to `true` to disable authentication (useful for testing)
+> - `HTTP_PORT`: Override the HTTP server port (default: 8181)
+> - `APP_ENCRYPTION_KEY`: Provide an encryption key to skip the interactive prompt
+>
+>   ```sh
+>   export APP_ENCRYPTION_KEY=$(openssl rand -hex 32)
+>   go run ./cmd/app/main.go
+>   ```
 
 #### Option B: PostgreSQL
 

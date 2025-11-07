@@ -13,6 +13,8 @@ import (
 	"github.com/device-management-toolkit/console/config"
 )
 
+const expectedCredentialParts = 2
+
 // RedfishJWTAuthMiddleware returns a Gin middleware that validates JWT tokens
 // and returns Redfish-compliant error responses for authentication failures.
 func RedfishJWTAuthMiddleware(jwtKey string, verifier *oidc.IDTokenVerifier) gin.HandlerFunc {
@@ -63,23 +65,27 @@ func BasicAuthValidator(expectedUsername, expectedPassword string) gin.HandlerFu
 		if !strings.HasPrefix(authHeader, "Basic ") {
 			UnauthorizedError(c)
 			c.Abort()
+
 			return
 		}
 
 		// Extract and decode credentials
 		credentials := strings.TrimPrefix(authHeader, "Basic ")
+
 		decoded, err := base64.StdEncoding.DecodeString(credentials)
 		if err != nil {
 			UnauthorizedError(c)
 			c.Abort()
+
 			return
 		}
 
 		// Split username:password
-		parts := strings.SplitN(string(decoded), ":", 2)
-		if len(parts) != 2 {
+		parts := strings.SplitN(string(decoded), ":", expectedCredentialParts)
+		if len(parts) != expectedCredentialParts {
 			UnauthorizedError(c)
 			c.Abort()
+
 			return
 		}
 

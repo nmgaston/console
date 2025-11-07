@@ -4,6 +4,7 @@ package redfish
 import (
 	"errors"
 	"strings"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
@@ -12,6 +13,9 @@ import (
 	redfishhandler "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
+
+// ErrDevicesCastFailed is returned when the devices use case cannot be cast to the expected type.
+var ErrDevicesCastFailed = errors.New("failed to cast devices use case")
 
 // Plugin represents the Redfish plugin for DMT.
 type Plugin struct {
@@ -99,7 +103,7 @@ func (p *Plugin) RegisterMiddleware(ctx *plugin.Context) error {
 }
 
 // RegisterRoutes registers Redfish API routes with OpenAPI-spec-driven authentication.
-func (p *Plugin) RegisterRoutes(ctx *plugin.Context, protected, unprotected *gin.RouterGroup) error {
+func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _ *gin.RouterGroup, unprotected *gin.RouterGroup) error {
 	if !p.config.Enabled {
 		ctx.Logger.Info("Redfish plugin is disabled, skipping route registration")
 

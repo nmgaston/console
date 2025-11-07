@@ -103,7 +103,7 @@ func (p *Plugin) RegisterMiddleware(ctx *plugin.Context) error {
 }
 
 // RegisterRoutes registers Redfish API routes with OpenAPI-spec-driven authentication.
-func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _ *gin.RouterGroup, unprotected *gin.RouterGroup) error {
+func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) error {
 	if !p.config.Enabled {
 		ctx.Logger.Info("Redfish plugin is disabled, skipping route registration")
 
@@ -128,12 +128,14 @@ func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _ *gin.RouterGroup, unprote
 					// Public endpoints as defined in OpenAPI spec (security: [{}])
 					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
 						c.Next()
+
 						return
 					}
 
 					// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
 					if strings.HasPrefix(path, "/redfish/v1/") {
 						basicAuthMiddleware(c)
+
 						return
 					}
 
@@ -153,6 +155,7 @@ func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _ *gin.RouterGroup, unprote
 
 		ctx.Logger.Info("Redfish API routes registered without authentication")
 	}
+
 	// Enable HandleMethodNotAllowed to return 405 for wrong HTTP methods
 	ctx.Router.HandleMethodNotAllowed = true
 

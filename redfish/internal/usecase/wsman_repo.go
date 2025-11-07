@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
 )
@@ -18,6 +19,9 @@ const (
 	powerActionPowerCycle = 5  // Power Cycle (off then on)
 	powerActionPowerDown  = 8  // Power Down (soft off)
 	powerActionReset      = 10 // Reset (reboot)
+
+	// maxSystemsList is the maximum number of systems to retrieve in a single request.
+	maxSystemsList = 100
 )
 
 var (
@@ -49,13 +53,11 @@ func (r *WsmanComputerSystemRepo) GetByID(systemID string) (*redfishv1.ComputerS
 		if err.Error() == ErrMsgDeviceNotFound {
 			return nil, ErrSystemNotFound
 		}
-
 		return nil, err
 	}
 
 	// Map the integer power state to Redfish PowerState
 	var redfishPowerState redfishv1.PowerState
-
 	switch powerState.PowerState {
 	case redfishv1.CIMPowerStateOn:
 		redfishPowerState = redfishv1.PowerStateOn
@@ -66,19 +68,46 @@ func (r *WsmanComputerSystemRepo) GetByID(systemID string) (*redfishv1.ComputerS
 	default:
 		redfishPowerState = redfishv1.PowerStateOff // Default to Off for unknown states
 	}
-
-	// Return a minimal ComputerSystem with power state
-	return &redfishv1.ComputerSystem{
+	// Build comprehensive ComputerSystem
+	system := &redfishv1.ComputerSystem{
 		ID:         systemID,
 		PowerState: redfishPowerState,
-	}, nil
+		ODataID:    "/redfish/v1/Systems/" + systemID,
+		ODataType:  "#ComputerSystem.v1_22_0.ComputerSystem",
+	}
+
+	return system, nil
 }
 
 // GetAll retrieves all computer systems from the WSMAN backend.
 func (r *WsmanComputerSystemRepo) GetAll() ([]*redfishv1.ComputerSystem, error) {
-	//nolint:godox // TODO comment is intentional - feature not yet implemented
-	// TODO: Implement WSMAN query for all ComputerSystems
-	return nil, ErrGetAllNotImplemented
+	// Get devices from the devices use case
+	items, err := r.usecase.Get(context.Background(), maxSystemsList, 0, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert devices to ComputerSystem entities
+	systems := make([]*redfishv1.ComputerSystem, 0, len(items))
+	for i := range items { // avoid value copy
+		device := &items[i]
+		if device.GUID == "" {
+			continue // Skip devices without GUID
+		}
+
+		// Create basic system info from device
+		system := &redfishv1.ComputerSystem{
+			ID:         device.GUID,
+			Name:       device.Hostname,
+			SystemType: redfishv1.SystemTypePhysical, // Assume physical systems
+			ODataID:    "/redfish/v1/Systems/" + device.GUID,
+			ODataType:  "#ComputerSystem.v1_22_0.ComputerSystem",
+		}
+
+		systems = append(systems, system)
+	}
+
+	return systems, nil
 }
 
 // UpdatePowerState sends a power action command to the specified system via WSMAN.
@@ -117,4 +146,51 @@ func (r *WsmanComputerSystemRepo) UpdatePowerState(systemID string, state redfis
 	}
 
 	return err
+}
+
+// extractSystemInfo extracts manufacturer, model, and serial number from hardware info.
+func (r *WsmanComputerSystemRepo) extractSystemInfo(hardwareInfo dto.HardwareInfo) (manufacturer, model, serialNumber string) {
+	// Extract from CIMComputerSystemPackage
+	if len(hardwareInfo.CIMComputerSystemPackage.Responses) > 0 {
+		if responseMap, ok := hardwareInfo.CIMComputerSystemPackage.Responses[0].(map[string]interface{}); ok {
+			if mfg, exists := responseMap["Manufacturer"]; exists {
+				if mfgStr, ok := mfg.(string); ok {
+					manufacturer = mfgStr
+				}
+			}
+			if mod, exists := responseMap["Model"]; exists {
+				if modStr, ok := mod.(string); ok {
+					model = modStr
+				}
+			}
+			if serial, exists := responseMap["SerialNumber"]; exists {
+				if serialStr, ok := serial.(string); ok {
+					serialNumber = serialStr
+				}
+			}
+		}
+	}
+
+	// Try CIMChassis if ComputerSystemPackage didn't have info
+	if manufacturer == "" && len(hardwareInfo.CIMChassis.Responses) > 0 {
+		if responseMap, ok := hardwareInfo.CIMChassis.Responses[0].(map[string]interface{}); ok {
+			if mfg, exists := responseMap["Manufacturer"]; exists {
+				if mfgStr, ok := mfg.(string); ok {
+					manufacturer = mfgStr
+				}
+			}
+			if mod, exists := responseMap["Model"]; exists {
+				if modStr, ok := mod.(string); ok {
+					model = modStr
+				}
+			}
+			if serial, exists := responseMap["SerialNumber"]; exists {
+				if serialStr, ok := serial.(string); ok {
+					serialNumber = serialStr
+				}
+			}
+		}
+	}
+
+	return manufacturer, model, serialNumber
 }

@@ -103,16 +103,31 @@ func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
 
 // GetRedfishV1Systems returns the computer systems collection
 func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
+	// Get all systems from the repository
+	systems, err := s.ComputerSystemUC.GetAll()
+	if err != nil {
+		InternalServerError(c, err)
+		return
+	}
+
+	// Convert systems to members array
+	members := make([]generated.OdataV4IdRef, 0, len(systems))
+	for _, system := range systems {
+		if system.ID != "" {
+			members = append(members, generated.OdataV4IdRef{
+				OdataId: StringPtr("/redfish/v1/Systems/" + system.ID),
+			})
+		}
+	}
+
 	collection := generated.ComputerSystemCollectionComputerSystemCollection{
 		OdataContext:      StringPtr("/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"),
 		OdataId:           StringPtr("/redfish/v1/Systems"),
 		OdataType:         StringPtr("#ComputerSystemCollection.ComputerSystemCollection"),
 		Name:              "Computer System Collection",
 		Description:       nil,
-		MembersOdataCount: Int64Ptr(1),
-		Members: &[]generated.OdataV4IdRef{
-			{OdataId: StringPtr("/redfish/v1/Systems/System1")},
-		},
+		MembersOdataCount: Int64Ptr(int64(len(members))),
+		Members:           &members,
 	}
 	c.JSON(http.StatusOK, collection)
 }
@@ -121,23 +136,17 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 //
 //revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
 func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
-	if computerSystemID != "System1" {
-		NotFoundError(c, "System")
-
+	// Get the computer system from the use case
+	system, err := s.ComputerSystemUC.GetComputerSystem(computerSystemID)
+	if err != nil {
+		if errors.Is(err, usecase.ErrSystemNotFound) {
+			NotFoundError(c, "System")
+			return
+		}
+		InternalServerError(c, err)
 		return
 	}
 
-	system := generated.ComputerSystemComputerSystem{
-		OdataContext: StringPtr("/redfish/v1/$metadata#ComputerSystem.ComputerSystem"),
-		OdataId:      StringPtr("/redfish/v1/Systems/System1"),
-		OdataType:    StringPtr("#ComputerSystem.v1_26_0.ComputerSystem"),
-		Id:           "System1",
-		Name:         "Computer System",
-		SerialNumber: StringPtr("SN123456789"),
-		Manufacturer: StringPtr("Intel Corporation"),
-		Model:        StringPtr("Example System"),
-		SystemType:   SystemTypePtr(generated.Physical),
-	}
 	c.JSON(http.StatusOK, system)
 }
 

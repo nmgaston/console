@@ -68,7 +68,7 @@ func (p *Plugin) Initialize(ctx *plugin.Context) error {
 		return nil // Return nil to not block other plugins
 	}
 
-	repo := usecase.NewWsmanComputerSystemRepo(devicesUC)
+	repo := usecase.NewWsmanComputerSystemRepo(devicesUC, ctx.Logger)
 	computerSystemUC := &usecase.ComputerSystemUseCase{Repo: repo}
 
 	// Initialize the Redfish server with shared infrastructure

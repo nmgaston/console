@@ -2,6 +2,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -25,30 +26,57 @@ type ComputerSystemUseCase struct {
 	Repo ComputerSystemRepository
 }
 
+// GetAll retrieves all ComputerSystem IDs from the repository.
+func (uc *ComputerSystemUseCase) GetAll(ctx context.Context) ([]string, error) {
+	return uc.Repo.GetAll(ctx)
+}
+
 // GetComputerSystem retrieves a ComputerSystem by its systemID and converts it to the generated API type.
-func (uc *ComputerSystemUseCase) GetComputerSystem(systemID string) (*generated.ComputerSystemComputerSystem, error) {
+func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID string) (*generated.ComputerSystemComputerSystem, error) {
 	// Get device information from repository - this gives us basic device data
-	system, err := uc.Repo.GetByID(systemID)
+	system, err := uc.Repo.GetByID(ctx, systemID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build the generated type directly with available information
 	// Create power state
+
 	var powerState *generated.ComputerSystemComputerSystem_PowerState
+
 	if system.PowerState != "" {
 		var redfishPowerState generated.ResourcePowerState
+
 		switch system.PowerState {
 		case redfishv1.PowerStateOn:
 			redfishPowerState = generated.On
 		case redfishv1.PowerStateOff:
 			redfishPowerState = generated.Off
+		case redfishv1.ResetTypeForceOff, redfishv1.ResetTypeForceRestart, redfishv1.ResetTypePowerCycle:
+			redfishPowerState = generated.Off // These reset types default to Off state
 		default:
 			redfishPowerState = generated.Off // Default to Off for unknown states
 		}
 
 		powerState = &generated.ComputerSystemComputerSystem_PowerState{}
-		powerState.FromResourcePowerState(redfishPowerState)
+		if err := powerState.FromResourcePowerState(redfishPowerState); err != nil {
+			// Log error but continue with nil power state
+			powerState = nil
+		}
+	}
+
+	// Convert to string pointers for optional fields
+	var manufacturer, model, serialNumber *string
+	if system.Manufacturer != "" {
+		manufacturer = &system.Manufacturer
+	}
+
+	if system.Model != "" {
+		model = &system.Model
+	}
+
+	if system.SerialNumber != "" {
+		serialNumber = &system.SerialNumber
 	}
 
 	// Create system type
@@ -57,13 +85,17 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(systemID string) (*generated.
 	// Create OData fields following the reference pattern
 	odataContext := generated.OdataV4Context("/redfish/v1/$metadata#ComputerSystem.ComputerSystem")
 	odataType := generated.OdataV4Type("#ComputerSystem.v1_22_0.ComputerSystem")
-	odataId := generated.OdataV4Id(fmt.Sprintf("/redfish/v1/Systems/%s", systemID))
+	odataID := fmt.Sprintf("/redfish/v1/Systems/%s", systemID)
 
 	result := generated.ComputerSystemComputerSystem{
 		OdataContext: &odataContext,
-		OdataId:      &odataId,
+		OdataId:      &odataID,
 		OdataType:    &odataType,
-		Id:           generated.ResourceId(systemID),
+		Id:           systemID,
+		Name:         system.Name,
+		Manufacturer: manufacturer,
+		Model:        model,
+		SerialNumber: serialNumber,
 		PowerState:   powerState,
 		SystemType:   &systemType,
 	}
@@ -71,13 +103,8 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(systemID string) (*generated.
 	return &result, nil
 }
 
-// GetAll retrieves all ComputerSystems from the repository.
-func (uc *ComputerSystemUseCase) GetAll() ([]*redfishv1.ComputerSystem, error) {
-	return uc.Repo.GetAll()
-}
-
 // SetPowerState validates and sets the power state for a ComputerSystem.
-func (uc *ComputerSystemUseCase) SetPowerState(id string, resetType generated.ResourceResetType) error {
+func (uc *ComputerSystemUseCase) SetPowerState(ctx context.Context, id string, resetType generated.ResourceResetType) error {
 	// Validate the reset type
 	switch resetType {
 	case generated.ResourceResetTypeOn,
@@ -102,65 +129,7 @@ func (uc *ComputerSystemUseCase) SetPowerState(id string, resetType generated.Re
 	powerState := convertToEntityPowerState(resetType)
 
 	// Set the power state
-	return uc.Repo.UpdatePowerState(id, powerState)
-}
-
-// convertToGeneratedType converts from entity type to generated API type.
-func convertToGeneratedType(cs *redfishv1.ComputerSystem) generated.ComputerSystemComputerSystem {
-	// Convert power state
-	var powerState *generated.ComputerSystemComputerSystem_PowerState
-	if cs.PowerState != "" {
-		// Map our power state to Redfish power state using entity constants
-		var redfishPowerState generated.ResourcePowerState
-		switch cs.PowerState {
-		case redfishv1.PowerStateOn:
-			redfishPowerState = generated.On
-		case redfishv1.PowerStateOff:
-			redfishPowerState = generated.Off
-		default:
-			redfishPowerState = generated.Off // Default to Off for unknown states
-		}
-
-		powerState = &generated.ComputerSystemComputerSystem_PowerState{}
-		powerState.FromResourcePowerState(redfishPowerState)
-	}
-
-	// Convert to string pointers for optional fields
-	var manufacturer, model, serialNumber *string
-	if cs.Manufacturer != "" {
-		manufacturer = &cs.Manufacturer
-	}
-	if cs.Model != "" {
-		model = &cs.Model
-	}
-	if cs.SerialNumber != "" {
-		serialNumber = &cs.SerialNumber
-	}
-
-	// Create system type
-	systemType := generated.ComputerSystemSystemType("Physical")
-
-	// Create OData context
-	odataContext := generated.OdataV4Context("/redfish/v1/$metadata#ComputerSystem.ComputerSystem")
-
-	// Create OData type
-	odataType := generated.OdataV4Type("#ComputerSystem.v1_22_0.ComputerSystem")
-
-	// Create OData ID
-	odataId := generated.OdataV4Id(fmt.Sprintf("/redfish/v1/Systems/%s", cs.ID))
-
-	return generated.ComputerSystemComputerSystem{
-		OdataContext: &odataContext,
-		OdataId:      &odataId,
-		OdataType:    &odataType,
-		Id:           generated.ResourceId(cs.ID),
-		Name:         generated.ResourceName(cs.Name),
-		Manufacturer: manufacturer,
-		Model:        model,
-		SerialNumber: serialNumber,
-		PowerState:   powerState,
-		SystemType:   &systemType,
-	}
+	return uc.Repo.UpdatePowerState(ctx, id, powerState)
 }
 
 // StringPtr creates a pointer to a string value.

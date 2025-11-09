@@ -103,19 +103,20 @@ func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
 
 // GetRedfishV1Systems returns the computer systems collection
 func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
-	// Get all systems from the repository
-	systems, err := s.ComputerSystemUC.GetAll()
+	// Get all system IDs from the repository
+	systemIDs, err := s.ComputerSystemUC.GetAll(c.Request.Context())
 	if err != nil {
 		InternalServerError(c, err)
+
 		return
 	}
 
-	// Convert systems to members array
-	members := make([]generated.OdataV4IdRef, 0, len(systems))
-	for _, system := range systems {
-		if system.ID != "" {
+	// Convert system IDs to members array
+	members := make([]generated.OdataV4IdRef, 0, len(systemIDs))
+	for _, systemID := range systemIDs {
+		if systemID != "" {
 			members = append(members, generated.OdataV4IdRef{
-				OdataId: StringPtr("/redfish/v1/Systems/" + system.ID),
+				OdataId: StringPtr("/redfish/v1/Systems/" + systemID),
 			})
 		}
 	}
@@ -137,13 +138,16 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 //revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
 func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
 	// Get the computer system from the use case
-	system, err := s.ComputerSystemUC.GetComputerSystem(computerSystemID)
+	system, err := s.ComputerSystemUC.GetComputerSystem(c.Request.Context(), computerSystemID)
 	if err != nil {
 		if errors.Is(err, usecase.ErrSystemNotFound) {
 			NotFoundError(c, "System")
+
 			return
 		}
+
 		InternalServerError(c, err)
+
 		return
 	}
 
@@ -340,7 +344,7 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 	//     return
 	// }
 
-	err := s.ComputerSystemUC.SetPowerState(computerSystemID, *req.ResetType)
+	err := s.ComputerSystemUC.SetPowerState(c.Request.Context(), computerSystemID, *req.ResetType)
 	if err != nil {
 		handlePowerStateError(c, err, string(*req.ResetType))
 

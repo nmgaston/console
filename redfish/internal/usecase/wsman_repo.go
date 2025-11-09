@@ -5,9 +5,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
+	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
+	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
 )
 
 const (
@@ -38,26 +39,68 @@ var (
 // WsmanComputerSystemRepo implements ComputerSystemRepository using WSMAN backend.
 type WsmanComputerSystemRepo struct {
 	usecase *devices.UseCase
+	log     logger.Interface
 }
 
 // NewWsmanComputerSystemRepo creates a new WSMAN-backed computer system repository.
-func NewWsmanComputerSystemRepo(uc *devices.UseCase) *WsmanComputerSystemRepo {
-	return &WsmanComputerSystemRepo{usecase: uc}
+func NewWsmanComputerSystemRepo(uc *devices.UseCase, log logger.Interface) *WsmanComputerSystemRepo {
+	return &WsmanComputerSystemRepo{
+		usecase: uc,
+		log:     log,
+	}
+}
+
+// GetAll retrieves all computer system IDs from the WSMAN backend.
+func (r *WsmanComputerSystemRepo) GetAll(ctx context.Context) ([]string, error) {
+	// Get devices from the device use case
+	items, err := r.usecase.Get(ctx, maxSystemsList, 0, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract just the GUIDs from devices
+	systemIDs := make([]string, 0, len(items))
+	for i := range items { // avoid value copy
+		device := &items[i]
+		if device.GUID == "" {
+			continue // Skip devices without GUID
+		}
+
+		systemIDs = append(systemIDs, device.GUID)
+	}
+
+	return systemIDs, nil
 }
 
 // GetByID retrieves a computer system by its ID from the WSMAN backend.
-func (r *WsmanComputerSystemRepo) GetByID(systemID string) (*redfishv1.ComputerSystem, error) {
-	// Get power state from devices use case
-	powerState, err := r.usecase.GetPowerState(context.Background(), systemID)
+func (r *WsmanComputerSystemRepo) GetByID(ctx context.Context, systemID string) (*redfishv1.ComputerSystem, error) {
+	// Get device information from repository
+	device, err := r.usecase.GetByID(ctx, systemID, "", false)
 	if err != nil {
 		if err.Error() == ErrMsgDeviceNotFound {
 			return nil, ErrSystemNotFound
 		}
+
+		return nil, err
+	}
+
+	if device == nil {
+		return nil, ErrSystemNotFound
+	}
+
+	// Get power state from devices use case
+	powerState, err := r.usecase.GetPowerState(ctx, systemID)
+	if err != nil {
+		if err.Error() == ErrMsgDeviceNotFound {
+			return nil, ErrSystemNotFound
+		}
+
 		return nil, err
 	}
 
 	// Map the integer power state to Redfish PowerState
 	var redfishPowerState redfishv1.PowerState
+
 	switch powerState.PowerState {
 	case redfishv1.CIMPowerStateOn:
 		redfishPowerState = redfishv1.PowerStateOn
@@ -68,52 +111,43 @@ func (r *WsmanComputerSystemRepo) GetByID(systemID string) (*redfishv1.ComputerS
 	default:
 		redfishPowerState = redfishv1.PowerStateOff // Default to Off for unknown states
 	}
+
+	// Try to get hardware info for manufacturer, model, serial number
+	var manufacturer, model, serialNumber string
+
+	// Get hardware info from devices use case
+	hwInfo, err := r.usecase.GetHardwareInfo(ctx, systemID)
+	if err == nil && hwInfo.CIMChassis.Response != nil {
+		if chassisResponse, ok := hwInfo.CIMChassis.Response.(chassis.PackageResponse); ok {
+			manufacturer, model, serialNumber = chassisResponse.Manufacturer, chassisResponse.Model, chassisResponse.SerialNumber
+		}
+	}
+
 	// Build comprehensive ComputerSystem
 	system := &redfishv1.ComputerSystem{
-		ID:         systemID,
-		PowerState: redfishPowerState,
-		ODataID:    "/redfish/v1/Systems/" + systemID,
-		ODataType:  "#ComputerSystem.v1_22_0.ComputerSystem",
+		ID:           systemID,
+		Name:         device.Hostname,
+		PowerState:   redfishPowerState,
+		Manufacturer: manufacturer,
+		Model:        model,
+		SerialNumber: serialNumber,
+		SystemType:   redfishv1.SystemTypePhysical,
+		ODataID:      "/redfish/v1/Systems/" + systemID,
+		ODataType:    "#ComputerSystem.v1_22_0.ComputerSystem",
+	}
+
+	// Use friendly name if available
+	if device.FriendlyName != "" {
+		system.Name = device.FriendlyName
 	}
 
 	return system, nil
 }
 
-// GetAll retrieves all computer systems from the WSMAN backend.
-func (r *WsmanComputerSystemRepo) GetAll() ([]*redfishv1.ComputerSystem, error) {
-	// Get devices from the devices use case
-	items, err := r.usecase.Get(context.Background(), maxSystemsList, 0, "")
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert devices to ComputerSystem entities
-	systems := make([]*redfishv1.ComputerSystem, 0, len(items))
-	for i := range items { // avoid value copy
-		device := &items[i]
-		if device.GUID == "" {
-			continue // Skip devices without GUID
-		}
-
-		// Create basic system info from device
-		system := &redfishv1.ComputerSystem{
-			ID:         device.GUID,
-			Name:       device.Hostname,
-			SystemType: redfishv1.SystemTypePhysical, // Assume physical systems
-			ODataID:    "/redfish/v1/Systems/" + device.GUID,
-			ODataType:  "#ComputerSystem.v1_22_0.ComputerSystem",
-		}
-
-		systems = append(systems, system)
-	}
-
-	return systems, nil
-}
-
 // UpdatePowerState sends a power action command to the specified system via WSMAN.
-func (r *WsmanComputerSystemRepo) UpdatePowerState(systemID string, state redfishv1.PowerState) error {
+func (r *WsmanComputerSystemRepo) UpdatePowerState(ctx context.Context, systemID string, state redfishv1.PowerState) error {
 	// First, get the current power state
-	currentSystem, err := r.GetByID(systemID)
+	currentSystem, err := r.GetByID(ctx, systemID)
 	if err != nil {
 		return err
 	}
@@ -140,57 +174,10 @@ func (r *WsmanComputerSystemRepo) UpdatePowerState(systemID string, state redfis
 		return ErrUnsupportedPowerState
 	}
 
-	_, err = r.usecase.SendPowerAction(context.Background(), systemID, action)
+	_, err = r.usecase.SendPowerAction(ctx, systemID, action)
 	if err != nil && err.Error() == ErrMsgDeviceNotFound {
 		return ErrSystemNotFound
 	}
 
 	return err
-}
-
-// extractSystemInfo extracts manufacturer, model, and serial number from hardware info.
-func (r *WsmanComputerSystemRepo) extractSystemInfo(hardwareInfo dto.HardwareInfo) (manufacturer, model, serialNumber string) {
-	// Extract from CIMComputerSystemPackage
-	if len(hardwareInfo.CIMComputerSystemPackage.Responses) > 0 {
-		if responseMap, ok := hardwareInfo.CIMComputerSystemPackage.Responses[0].(map[string]interface{}); ok {
-			if mfg, exists := responseMap["Manufacturer"]; exists {
-				if mfgStr, ok := mfg.(string); ok {
-					manufacturer = mfgStr
-				}
-			}
-			if mod, exists := responseMap["Model"]; exists {
-				if modStr, ok := mod.(string); ok {
-					model = modStr
-				}
-			}
-			if serial, exists := responseMap["SerialNumber"]; exists {
-				if serialStr, ok := serial.(string); ok {
-					serialNumber = serialStr
-				}
-			}
-		}
-	}
-
-	// Try CIMChassis if ComputerSystemPackage didn't have info
-	if manufacturer == "" && len(hardwareInfo.CIMChassis.Responses) > 0 {
-		if responseMap, ok := hardwareInfo.CIMChassis.Responses[0].(map[string]interface{}); ok {
-			if mfg, exists := responseMap["Manufacturer"]; exists {
-				if mfgStr, ok := mfg.(string); ok {
-					manufacturer = mfgStr
-				}
-			}
-			if mod, exists := responseMap["Model"]; exists {
-				if modStr, ok := mod.(string); ok {
-					model = modStr
-				}
-			}
-			if serial, exists := responseMap["SerialNumber"]; exists {
-				if serialStr, ok := serial.(string); ok {
-					serialNumber = serialStr
-				}
-			}
-		}
-	}
-
-	return manufacturer, model, serialNumber
 }

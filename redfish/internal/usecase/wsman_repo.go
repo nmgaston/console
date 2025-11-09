@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 
+	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
+
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
 	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
 )
 
 const (
@@ -75,6 +76,7 @@ func (r *WsmanComputerSystemRepo) extractHardwareInfo(ctx context.Context, syste
 			return chassisResponse.Manufacturer, chassisResponse.Model, chassisResponse.SerialNumber
 		}
 	}
+
 	return "", "", ""
 }
 
@@ -125,9 +127,11 @@ func (r *WsmanComputerSystemRepo) GetByID(ctx context.Context, systemID string) 
 	if r.isDeviceNotFoundError(err) {
 		return nil, ErrSystemNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	if device == nil {
 		return nil, ErrSystemNotFound
 	}
@@ -137,6 +141,7 @@ func (r *WsmanComputerSystemRepo) GetByID(ctx context.Context, systemID string) 
 	if r.isDeviceNotFoundError(err) {
 		return nil, ErrSystemNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}

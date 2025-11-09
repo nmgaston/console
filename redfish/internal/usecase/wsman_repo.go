@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 
+	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
+
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
 	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
 )
 
 const (
@@ -50,6 +51,53 @@ func NewWsmanComputerSystemRepo(uc *devices.UseCase, log logger.Interface) *Wsma
 	}
 }
 
+// isDeviceNotFoundError checks if the error indicates a device was not found.
+func (r *WsmanComputerSystemRepo) isDeviceNotFoundError(err error) bool {
+	return err != nil && err.Error() == ErrMsgDeviceNotFound
+}
+
+// mapCIMPowerStateToRedfish converts CIM power state to Redfish PowerState.
+func (r *WsmanComputerSystemRepo) mapCIMPowerStateToRedfish(cimState int) redfishv1.PowerState {
+	switch cimState {
+	case redfishv1.CIMPowerStateOn:
+		return redfishv1.PowerStateOn
+	case redfishv1.CIMPowerStateOffSoft, redfishv1.CIMPowerStateOffHard:
+		return redfishv1.PowerStateOff
+	default:
+		return redfishv1.PowerStateOff // Default to Off for unknown states
+	}
+}
+
+// extractHardwareInfo extracts manufacturer, model, and serial number from hardware info.
+func (r *WsmanComputerSystemRepo) extractHardwareInfo(ctx context.Context, systemID string) (manufacturer, model, serialNumber string) {
+	hwInfo, err := r.usecase.GetHardwareInfo(ctx, systemID)
+	if err == nil && hwInfo.CIMChassis.Response != nil {
+		if chassisResponse, ok := hwInfo.CIMChassis.Response.(chassis.PackageResponse); ok {
+			return chassisResponse.Manufacturer, chassisResponse.Model, chassisResponse.SerialNumber
+		}
+	}
+
+	return "", "", ""
+}
+
+// mapRedfishPowerStateToAction converts Redfish PowerState to WSMAN power action.
+func (r *WsmanComputerSystemRepo) mapRedfishPowerStateToAction(state redfishv1.PowerState) (int, error) {
+	switch state {
+	case redfishv1.PowerStateOn:
+		return devices.CIMPMSPowerOn, nil // Power On = 2
+	case redfishv1.PowerStateOff:
+		return powerActionPowerDown, nil
+	case redfishv1.ResetTypeForceOff:
+		return powerActionPowerDown, nil
+	case redfishv1.ResetTypeForceRestart:
+		return powerActionReset, nil
+	case redfishv1.ResetTypePowerCycle:
+		return powerActionPowerCycle, nil
+	default:
+		return 0, ErrUnsupportedPowerState
+	}
+}
+
 // GetAll retrieves all computer system IDs from the WSMAN backend.
 func (r *WsmanComputerSystemRepo) GetAll(ctx context.Context) ([]string, error) {
 	// Get devices from the device use case
@@ -76,11 +124,11 @@ func (r *WsmanComputerSystemRepo) GetAll(ctx context.Context) ([]string, error) 
 func (r *WsmanComputerSystemRepo) GetByID(ctx context.Context, systemID string) (*redfishv1.ComputerSystem, error) {
 	// Get device information from repository
 	device, err := r.usecase.GetByID(ctx, systemID, "", false)
-	if err != nil {
-		if err.Error() == ErrMsgDeviceNotFound {
-			return nil, ErrSystemNotFound
-		}
+	if r.isDeviceNotFoundError(err) {
+		return nil, ErrSystemNotFound
+	}
 
+	if err != nil {
 		return nil, err
 	}
 
@@ -90,38 +138,19 @@ func (r *WsmanComputerSystemRepo) GetByID(ctx context.Context, systemID string) 
 
 	// Get power state from devices use case
 	powerState, err := r.usecase.GetPowerState(ctx, systemID)
-	if err != nil {
-		if err.Error() == ErrMsgDeviceNotFound {
-			return nil, ErrSystemNotFound
-		}
+	if r.isDeviceNotFoundError(err) {
+		return nil, ErrSystemNotFound
+	}
 
+	if err != nil {
 		return nil, err
 	}
 
 	// Map the integer power state to Redfish PowerState
-	var redfishPowerState redfishv1.PowerState
+	redfishPowerState := r.mapCIMPowerStateToRedfish(powerState.PowerState)
 
-	switch powerState.PowerState {
-	case redfishv1.CIMPowerStateOn:
-		redfishPowerState = redfishv1.PowerStateOn
-	case redfishv1.CIMPowerStateOffSoft:
-		redfishPowerState = redfishv1.PowerStateOff
-	case redfishv1.CIMPowerStateOffHard:
-		redfishPowerState = redfishv1.PowerStateOff
-	default:
-		redfishPowerState = redfishv1.PowerStateOff // Default to Off for unknown states
-	}
-
-	// Try to get hardware info for manufacturer, model, serial number
-	var manufacturer, model, serialNumber string
-
-	// Get hardware info from devices use case
-	hwInfo, err := r.usecase.GetHardwareInfo(ctx, systemID)
-	if err == nil && hwInfo.CIMChassis.Response != nil {
-		if chassisResponse, ok := hwInfo.CIMChassis.Response.(chassis.PackageResponse); ok {
-			manufacturer, model, serialNumber = chassisResponse.Manufacturer, chassisResponse.Model, chassisResponse.SerialNumber
-		}
-	}
+	// Extract hardware info for manufacturer, model, serial number
+	manufacturer, model, serialNumber := r.extractHardwareInfo(ctx, systemID)
 
 	// Build comprehensive ComputerSystem
 	system := &redfishv1.ComputerSystem{
@@ -157,25 +186,15 @@ func (r *WsmanComputerSystemRepo) UpdatePowerState(ctx context.Context, systemID
 		return ErrPowerStateConflict
 	}
 
-	var action int
-
-	switch state {
-	case redfishv1.PowerStateOn:
-		action = devices.CIMPMSPowerOn // Power On = 2
-	case redfishv1.PowerStateOff:
-		action = powerActionPowerDown
-	case redfishv1.ResetTypeForceOff:
-		action = powerActionPowerDown
-	case redfishv1.ResetTypeForceRestart:
-		action = powerActionReset
-	case redfishv1.ResetTypePowerCycle:
-		action = powerActionPowerCycle
-	default:
-		return ErrUnsupportedPowerState
+	// Map Redfish power state to WSMAN action
+	action, err := r.mapRedfishPowerStateToAction(state)
+	if err != nil {
+		return err
 	}
 
+	// Send power action command
 	_, err = r.usecase.SendPowerAction(ctx, systemID, action)
-	if err != nil && err.Error() == ErrMsgDeviceNotFound {
+	if r.isDeviceNotFoundError(err) {
 		return ErrSystemNotFound
 	}
 

@@ -10,12 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	gin.SetMode(gin.TestMode)
-}
-
-// TestBasicAuthValidator tests the BasicAuthValidator middleware
+// TestBasicAuthValidator tests the BasicAuthValidator middleware.
 func TestBasicAuthValidator(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
 	expectedUsername := "testuser"
 	expectedPassword := "testpass"
 
@@ -57,13 +57,16 @@ func TestBasicAuthValidator(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			router := gin.New()
 			router.GET("/test", BasicAuthValidator(expectedUsername, expectedPassword), func(c *gin.Context) {
 				c.Status(http.StatusOK)
 			})
 
-			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 			if tt.authHeader != "" {
 				req.Header.Set("Authorization", tt.authHeader)
 			}
@@ -76,8 +79,12 @@ func TestBasicAuthValidator(t *testing.T) {
 	}
 }
 
-// TestRedfishAuthMiddleware tests the RedfishAuthMiddleware function
-func TestRedfishAuthMiddleware(t *testing.T) {
+// TestAuthMiddleware tests the AuthMiddleware function.
+func TestAuthMiddleware(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
 	publicEndpoints := map[string]bool{
 		"/redfish/v1/":          true,
 		"/redfish/v1/$metadata": true,
@@ -111,9 +118,12 @@ func TestRedfishAuthMiddleware(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			router := gin.New()
-			router.Use(RedfishAuthMiddleware(mockBasicAuth, publicEndpoints))
+			router.Use(AuthMiddleware(mockBasicAuth, publicEndpoints))
 			router.GET(tt.path, func(c *gin.Context) {
 				c.Status(http.StatusOK)
 			})
@@ -121,7 +131,7 @@ func TestRedfishAuthMiddleware(t *testing.T) {
 				c.Status(http.StatusOK)
 			})
 
-			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			req := httptest.NewRequest(http.MethodGet, tt.path, http.NoBody)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 

@@ -105,7 +105,10 @@ func (p *Plugin) RegisterMiddleware(ctx *plugin.Context) error {
 }
 
 // BasicAuthValidator validates HTTP Basic Authentication for Redfish endpoints.
+// It performs constant-time comparison to prevent timing attacks.
 func BasicAuthValidator(expectedUsername, expectedPassword string) gin.HandlerFunc {
+	const expectedCredentialParts = 2
+
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 
@@ -128,8 +131,8 @@ func BasicAuthValidator(expectedUsername, expectedPassword string) gin.HandlerFu
 		}
 
 		// Split username:password
-		parts := strings.SplitN(string(decoded), ":", 2)
-		if len(parts) != 2 {
+		parts := strings.SplitN(string(decoded), ":", expectedCredentialParts)
+		if len(parts) != expectedCredentialParts {
 			redfishhandler.UnauthorizedError(c)
 			c.Abort()
 
@@ -151,15 +154,16 @@ func BasicAuthValidator(expectedUsername, expectedPassword string) gin.HandlerFu
 	}
 }
 
-// RedfishAuthMiddleware enforces Redfish-specific authentication.
+// AuthMiddleware enforces Redfish-specific authentication.
 // Allows unauthenticated access to public endpoints; applies basicAuth to protected /redfish/v1/* paths.
-func RedfishAuthMiddleware(basicAuth gin.HandlerFunc, publicEndpoints map[string]bool) gin.HandlerFunc {
+func AuthMiddleware(basicAuth gin.HandlerFunc, publicEndpoints map[string]bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 
 		// Check if endpoint is public as defined in OpenAPI spec (security: [{}])
 		if publicEndpoints[path] {
 			c.Next()
+
 			return
 		}
 
@@ -167,6 +171,7 @@ func RedfishAuthMiddleware(basicAuth gin.HandlerFunc, publicEndpoints map[string
 		// as defined in OpenAPI spec
 		if strings.HasPrefix(path, "/redfish/v1/") {
 			basicAuth(c)
+
 			return
 		}
 
@@ -201,7 +206,7 @@ func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) erro
 			ErrorHandler: p.createErrorHandler(),
 			Middlewares: []redfishgenerated.MiddlewareFunc{
 				func(c *gin.Context) {
-					RedfishAuthMiddleware(basicAuthMiddleware, publicEndpoints)(c)
+					AuthMiddleware(basicAuthMiddleware, publicEndpoints)(c)
 				},
 			},
 		})

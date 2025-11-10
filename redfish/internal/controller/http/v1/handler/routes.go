@@ -111,12 +111,6 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 		Systems: &generated.OdataV4IdRef{
 			OdataId: StringPtr("/redfish/v1/Systems"),
 		},
-		Chassis: &generated.OdataV4IdRef{
-			OdataId: StringPtr("/redfish/v1/Chassis"),
-		},
-		Managers: &generated.OdataV4IdRef{
-			OdataId: StringPtr("/redfish/v1/Managers"),
-		},
 	}
 	c.JSON(http.StatusOK, serviceRoot)
 }

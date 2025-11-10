@@ -2,7 +2,9 @@
 package usecase
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
@@ -15,7 +17,7 @@ var (
 	// ErrPowerStateConflict is returned when a power state transition is not allowed.
 	ErrPowerStateConflict = errors.New("power state transition not allowed")
 
-	// ErrInvalidResetType is returned when an invalid reset type is requested.
+	// ErrInvalidResetType is returned when an invalid reset type is provided.
 	ErrInvalidResetType = errors.New("invalid reset type")
 )
 
@@ -24,32 +26,98 @@ type ComputerSystemUseCase struct {
 	Repo ComputerSystemRepository
 }
 
+// GetAll retrieves all ComputerSystem IDs from the repository.
+func (uc *ComputerSystemUseCase) GetAll(ctx context.Context) ([]string, error) {
+	return uc.Repo.GetAll(ctx)
+}
+
 // GetComputerSystem retrieves a ComputerSystem by its systemID and converts it to the generated API type.
-func (uc *ComputerSystemUseCase) GetComputerSystem(systemID string) (*generated.ComputerSystemComputerSystem, error) {
-	system, err := uc.Repo.GetByID(systemID)
+func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID string) (*generated.ComputerSystemComputerSystem, error) {
+	// Get device information from repository - this gives us basic device data
+	system, err := uc.Repo.GetByID(ctx, systemID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert from entity type to generated API type
-	return convertToGeneratedType(system), nil
+	// Build the generated type directly with available information
+	// Create power state
+
+	var powerState *generated.ComputerSystemComputerSystem_PowerState
+
+	if system.PowerState != "" {
+		var redfishPowerState generated.ResourcePowerState
+
+		switch system.PowerState {
+		case redfishv1.PowerStateOn:
+			redfishPowerState = generated.On
+		case redfishv1.PowerStateOff:
+			redfishPowerState = generated.Off
+		case redfishv1.ResetTypeForceOff, redfishv1.ResetTypeForceRestart, redfishv1.ResetTypePowerCycle:
+			redfishPowerState = generated.Off // These reset types default to Off state
+		default:
+			redfishPowerState = generated.Off // Default to Off for unknown states
+		}
+
+		powerState = &generated.ComputerSystemComputerSystem_PowerState{}
+		if err := powerState.FromResourcePowerState(redfishPowerState); err != nil {
+			// Log error but continue with nil power state
+			powerState = nil
+		}
+	}
+
+	// Convert to string pointers for optional fields
+	var manufacturer, model, serialNumber *string
+	if system.Manufacturer != "" {
+		manufacturer = &system.Manufacturer
+	}
+
+	if system.Model != "" {
+		model = &system.Model
+	}
+
+	if system.SerialNumber != "" {
+		serialNumber = &system.SerialNumber
+	}
+
+	// Create system type
+	systemType := generated.ComputerSystemSystemType("Physical")
+
+	// Create OData fields following the reference pattern
+	odataContext := generated.OdataV4Context("/redfish/v1/$metadata#ComputerSystem.ComputerSystem")
+	odataType := generated.OdataV4Type("#ComputerSystem.v1_22_0.ComputerSystem")
+	odataID := fmt.Sprintf("/redfish/v1/Systems/%s", systemID)
+
+	result := generated.ComputerSystemComputerSystem{
+		OdataContext: &odataContext,
+		OdataId:      &odataID,
+		OdataType:    &odataType,
+		Id:           systemID,
+		Name:         system.Name,
+		Manufacturer: manufacturer,
+		Model:        model,
+		SerialNumber: serialNumber,
+		PowerState:   powerState,
+		SystemType:   &systemType,
+	}
+
+	return &result, nil
 }
 
 // SetPowerState validates and sets the power state for a ComputerSystem.
-func (uc *ComputerSystemUseCase) SetPowerState(id string, resetType generated.ResourceResetType) error {
+func (uc *ComputerSystemUseCase) SetPowerState(ctx context.Context, id string, resetType generated.ResourceResetType) error {
 	// Validate the reset type
 	switch resetType {
 	case generated.ResourceResetTypeOn,
 		generated.ResourceResetTypeForceOff,
-		generated.ResourceResetTypeForceRestart,
-		generated.ResourceResetTypePowerCycle,
 		generated.ResourceResetTypeForceOn,
-		generated.ResourceResetTypeFullPowerCycle,
-		generated.ResourceResetTypeGracefulRestart,
+		generated.ResourceResetTypeForceRestart,
 		generated.ResourceResetTypeGracefulShutdown,
+		generated.ResourceResetTypeGracefulRestart,
+		generated.ResourceResetTypePowerCycle,
+		generated.ResourceResetTypeFullPowerCycle,
 		generated.ResourceResetTypeNmi,
-		generated.ResourceResetTypePause,
 		generated.ResourceResetTypePushPowerButton,
+		generated.ResourceResetTypePause,
 		generated.ResourceResetTypeResume,
 		generated.ResourceResetTypeSuspend:
 		// Valid reset types
@@ -61,17 +129,17 @@ func (uc *ComputerSystemUseCase) SetPowerState(id string, resetType generated.Re
 	powerState := convertToEntityPowerState(resetType)
 
 	// Set the power state
-	return uc.Repo.UpdatePowerState(id, powerState)
+	return uc.Repo.UpdatePowerState(ctx, id, powerState)
 }
 
-// convertToGeneratedType converts from entity type to generated API type.
-func convertToGeneratedType(system *redfishv1.ComputerSystem) *generated.ComputerSystemComputerSystem {
-	// This is a simplified conversion - in a real implementation,
-	// you would map all the fields properly
-	return &generated.ComputerSystemComputerSystem{
-		Id:   system.ID,
-		Name: system.Name,
-	}
+// StringPtr creates a pointer to a string value.
+func StringPtr(s string) *string {
+	return &s
+}
+
+// SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
+func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
+	return &st
 }
 
 // convertToEntityPowerState converts from generated reset type to entity power state.
@@ -86,16 +154,18 @@ func convertToEntityPowerState(resetType generated.ResourceResetType) redfishv1.
 		generated.ResourceResetTypeGracefulShutdown:
 		return redfishv1.PowerStateOff
 	case generated.ResourceResetTypeForceRestart,
-		generated.ResourceResetTypePowerCycle,
-		generated.ResourceResetTypeFullPowerCycle,
 		generated.ResourceResetTypeGracefulRestart,
-		generated.ResourceResetTypeNmi,
-		generated.ResourceResetTypePause,
-		generated.ResourceResetTypePushPowerButton,
-		generated.ResourceResetTypeResume,
+		generated.ResourceResetTypePowerCycle,
+		generated.ResourceResetTypeFullPowerCycle:
+		return redfishv1.PowerStateOff // Will cycle to On
+	case generated.ResourceResetTypeNmi,
+		generated.ResourceResetTypePushPowerButton:
+		return redfishv1.PowerStateOn
+	case generated.ResourceResetTypePause,
 		generated.ResourceResetTypeSuspend:
-		// For all other reset types, return Off as default
 		return redfishv1.PowerStateOff
+	case generated.ResourceResetTypeResume:
+		return redfishv1.PowerStateOn
 	default:
 		return redfishv1.PowerStateOff
 	}

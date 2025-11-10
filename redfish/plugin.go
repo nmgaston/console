@@ -20,12 +20,6 @@ import (
 // ErrDevicesCastFailed is returned when the devices use case cannot be cast to the expected type.
 var ErrDevicesCastFailed = errors.New("failed to cast devices use case")
 
-// Plugin represents the Redfish plugin for DMT.
-type Plugin struct {
-	server *v1.RedfishServer
-	config *PluginConfig
-}
-
 // PluginConfig holds plugin-specific configuration.
 type PluginConfig struct {
 	Enabled      bool   `yaml:"enabled" env:"REDFISH_ENABLED"`
@@ -50,11 +44,12 @@ var (
 )
 
 // Initialize initializes the Redfish module with DMT infrastructure.
-func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtusecase.Usecases, _ *dmtconfig.Config) error {
+func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtusecase.Usecases, config *dmtconfig.Config) error {
 	// Initialize configuration with defaults
+	auth := config.Auth
 	moduleConfig = &PluginConfig{
 		Enabled:      true,
-		AuthRequired: true,
+		AuthRequired: !auth.Disabled,
 		BaseURL:      "/redfish/v1",
 	}
 
@@ -72,6 +67,8 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 	// Initialize the Redfish server with shared infrastructure
 	server = &v1.RedfishServer{
 		ComputerSystemUC: computerSystemUC,
+		Config:           config,
+		Logger:           log,
 	}
 
 	log.Info("Redfish module initialized successfully")
@@ -80,23 +77,25 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 }
 
 // RegisterRoutes registers Redfish API routes.
-func RegisterRoutes(router *gin.Engine, log logger.Interface) error {
+func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 	if !moduleConfig.Enabled {
-		log.Info("Redfish module is disabled, skipping route registration")
+		server.Logger.Info("Redfish module is disabled, skipping route registration")
 
 		return nil
 	}
 
-	if p.config.AuthRequired {
+	if moduleConfig.AuthRequired {
 		// Apply Basic Auth middleware to OpenAPI-defined protected endpoints
-		adminUsername := ctx.Config.AdminUsername
-		adminPassword := ctx.Config.AdminPassword
-		basicAuthMiddleware := redfishhandler.BasicAuthValidator(adminUsername, adminPassword)
+		// Use actual admin credentials from the DMT configuration
+		auth := server.Config.Auth
+		adminUsername := auth.AdminUsername
+		adminPassword := auth.AdminPassword
+		basicAuthMiddleware := v1.BasicAuthValidator(adminUsername, adminPassword)
 
 		// Register handlers with OpenAPI-spec-compliant middleware
-		redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
+		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
-			ErrorHandler: p.createErrorHandler(),
+			ErrorHandler: createErrorHandler(),
 			Middlewares: []redfishgenerated.MiddlewareFunc{
 				// OpenAPI-spec-driven selective authentication
 				func(c *gin.Context) {
@@ -122,15 +121,15 @@ func RegisterRoutes(router *gin.Engine, log logger.Interface) error {
 			},
 		})
 
-		ctx.Logger.Info("Redfish API routes registered with OpenAPI-spec-driven Basic Auth")
+		server.Logger.Info("Redfish API routes registered with OpenAPI-spec-driven Basic Auth")
 	} else {
 		// Register without authentication (all endpoints public)
-		redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
+		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
-			ErrorHandler: p.createErrorHandler(),
+			ErrorHandler: createErrorHandler(),
 		})
 
-		ctx.Logger.Info("Redfish API routes registered without authentication")
+		server.Logger.Info("Redfish API routes registered without authentication")
 	}
 
 	// Enable HandleMethodNotAllowed to return 405 for wrong HTTP methods
@@ -144,13 +143,13 @@ func RegisterRoutes(router *gin.Engine, log logger.Interface) error {
 		}
 	})
 
-	log.Info("Redfish API routes registered successfully")
+	server.Logger.Info("Redfish API routes registered successfully")
 
 	return nil
 }
 
 // createErrorHandler creates an error handler for OpenAPI-generated routes.
-func (p *Plugin) createErrorHandler() func(*gin.Context, error, int) {
+func createErrorHandler() func(*gin.Context, error, int) {
 	return func(c *gin.Context, err error, statusCode int) {
 		switch statusCode {
 		case statusUnauthorized:

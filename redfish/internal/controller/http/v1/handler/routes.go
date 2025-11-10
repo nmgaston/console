@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/gommon/log"
 
+	dmtconfig "github.com/device-management-toolkit/console/config"
+	"github.com/device-management-toolkit/console/pkg/logger"
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
@@ -27,6 +29,8 @@ const (
 // Add dependencies here if needed (e.g., usecase, presenter, etc.)
 type RedfishServer struct {
 	ComputerSystemUC *usecase.ComputerSystemUseCase
+	Config           *dmtconfig.Config
+	Logger           logger.Interface
 }
 
 // Ensure RedfishServer implements generated.ServerInterface

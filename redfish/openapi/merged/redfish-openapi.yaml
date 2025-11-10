@@ -107,6 +107,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
 components:
   schemas:
     ComputerSystem_ComputerSystem:
@@ -2723,3 +2725,15 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic Authentication for Redfish API
+security:
+- BasicAuth: []
+- {}
+x-basic-auth:
+  default-auth: BasicAuth
+  redfish-compliant: true
+  service-root-public: true

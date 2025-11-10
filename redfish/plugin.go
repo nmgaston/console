@@ -2,6 +2,8 @@
 package redfish
 
 import (
+	"crypto/subtle"
+	"encoding/base64"
 	"errors"
 	"strings"
 
@@ -102,6 +104,77 @@ func (p *Plugin) RegisterMiddleware(ctx *plugin.Context) error {
 	return nil
 }
 
+// BasicAuthValidator validates HTTP Basic Authentication for Redfish endpoints.
+func BasicAuthValidator(expectedUsername, expectedPassword string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+
+		if !strings.HasPrefix(authHeader, "Basic ") {
+			redfishhandler.UnauthorizedError(c)
+			c.Abort()
+
+			return
+		}
+
+		// Extract and decode credentials
+		credentials := strings.TrimPrefix(authHeader, "Basic ")
+
+		decoded, err := base64.StdEncoding.DecodeString(credentials)
+		if err != nil {
+			redfishhandler.UnauthorizedError(c)
+			c.Abort()
+
+			return
+		}
+
+		// Split username:password
+		parts := strings.SplitN(string(decoded), ":", 2)
+		if len(parts) != 2 {
+			redfishhandler.UnauthorizedError(c)
+			c.Abort()
+
+			return
+		}
+
+		username, password := parts[0], parts[1]
+
+		// Constant-time comparison to prevent timing attacks
+		usernameMatch := subtle.ConstantTimeCompare([]byte(username), []byte(expectedUsername)) == 1
+		passwordMatch := subtle.ConstantTimeCompare([]byte(password), []byte(expectedPassword)) == 1
+
+		if usernameMatch && passwordMatch {
+			c.Next()
+		} else {
+			redfishhandler.UnauthorizedError(c)
+			c.Abort()
+		}
+	}
+}
+
+// RedfishAuthMiddleware enforces Redfish-specific authentication.
+// Allows unauthenticated access to public endpoints; applies basicAuth to protected /redfish/v1/* paths.
+func RedfishAuthMiddleware(basicAuth gin.HandlerFunc, publicEndpoints map[string]bool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		// Check if endpoint is public as defined in OpenAPI spec (security: [{}])
+		if publicEndpoints[path] {
+			c.Next()
+			return
+		}
+
+		// Protect all /redfish/v1/* endpoints except explicitly public ones
+		// as defined in OpenAPI spec
+		if strings.HasPrefix(path, "/redfish/v1/") {
+			basicAuth(c)
+			return
+		}
+
+		// Default: no authentication
+		c.Next()
+	}
+}
+
 // RegisterRoutes registers Redfish API routes with OpenAPI-spec-driven authentication.
 func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) error {
 	if !p.config.Enabled {
@@ -114,33 +187,21 @@ func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) erro
 		// Apply Basic Auth middleware to OpenAPI-defined protected endpoints
 		adminUsername := ctx.Config.AdminUsername
 		adminPassword := ctx.Config.AdminPassword
-		basicAuthMiddleware := redfishhandler.BasicAuthValidator(adminUsername, adminPassword)
+		basicAuthMiddleware := BasicAuthValidator(adminUsername, adminPassword)
+
+		// Define public endpoints as per OpenAPI spec (security: [{}])
+		publicEndpoints := map[string]bool{
+			"/redfish/v1/":          true,
+			"/redfish/v1/$metadata": true,
+		}
 
 		// Register handlers with OpenAPI-spec-compliant middleware
 		redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
 			ErrorHandler: p.createErrorHandler(),
 			Middlewares: []redfishgenerated.MiddlewareFunc{
-				// OpenAPI-spec-driven selective authentication
 				func(c *gin.Context) {
-					path := c.Request.URL.Path
-
-					// Public endpoints as defined in OpenAPI spec (security: [{}])
-					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
-						c.Next()
-
-						return
-					}
-
-					// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
-					if strings.HasPrefix(path, "/redfish/v1/") {
-						basicAuthMiddleware(c)
-
-						return
-					}
-
-					// Default: no authentication
-					c.Next()
+					RedfishAuthMiddleware(basicAuthMiddleware, publicEndpoints)(c)
 				},
 			},
 		})

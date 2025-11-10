@@ -2,6 +2,9 @@
 package redfish
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 
 	dmtconfig "github.com/device-management-toolkit/console/config"
@@ -13,6 +16,9 @@ import (
 	v1 "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
+
+// ErrDevicesCastFailed is returned when the devices use case cannot be cast to the expected type.
+var ErrDevicesCastFailed = errors.New("failed to cast devices use case")
 
 // Plugin represents the Redfish plugin for DMT.
 type Plugin struct {
@@ -48,7 +54,7 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 	// Initialize configuration with defaults
 	moduleConfig = &PluginConfig{
 		Enabled:      true,
-		AuthRequired: false,
+		AuthRequired: true,
 		BaseURL:      "/redfish/v1",
 	}
 
@@ -81,21 +87,54 @@ func RegisterRoutes(router *gin.Engine, log logger.Interface) error {
 		return nil
 	}
 
-	// Create a plugin instance to access the error handler
-	plugin := &Plugin{
-		server: server,
-		config: moduleConfig,
+	if p.config.AuthRequired {
+		// Apply Basic Auth middleware to OpenAPI-defined protected endpoints
+		adminUsername := ctx.Config.AdminUsername
+		adminPassword := ctx.Config.AdminPassword
+		basicAuthMiddleware := redfishhandler.BasicAuthValidator(adminUsername, adminPassword)
+
+		// Register handlers with OpenAPI-spec-compliant middleware
+		redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
+			BaseURL:      "",
+			ErrorHandler: p.createErrorHandler(),
+			Middlewares: []redfishgenerated.MiddlewareFunc{
+				// OpenAPI-spec-driven selective authentication
+				func(c *gin.Context) {
+					path := c.Request.URL.Path
+
+					// Public endpoints as defined in OpenAPI spec (security: [{}])
+					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
+						c.Next()
+
+						return
+					}
+
+					// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
+					if strings.HasPrefix(path, "/redfish/v1/") {
+						basicAuthMiddleware(c)
+
+						return
+					}
+
+					// Default: no authentication
+					c.Next()
+				},
+			},
+		})
+
+		ctx.Logger.Info("Redfish API routes registered with OpenAPI-spec-driven Basic Auth")
+	} else {
+		// Register without authentication (all endpoints public)
+		redfishgenerated.RegisterHandlersWithOptions(ctx.Router, p.server, redfishgenerated.GinServerOptions{
+			BaseURL:      "",
+			ErrorHandler: p.createErrorHandler(),
+		})
+
+		ctx.Logger.Info("Redfish API routes registered without authentication")
 	}
 
 	// Enable HandleMethodNotAllowed to return 405 for wrong HTTP methods
 	router.HandleMethodNotAllowed = true
-
-	// Register the Redfish handlers directly on the main router engine
-	// This ensures routes are /redfish/v1/* and not /api/redfish/v1/*
-	redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
-		BaseURL:      "",
-		ErrorHandler: plugin.createErrorHandler(),
-	})
 
 	// Add NoMethod handler for Redfish routes to return 405 with proper error
 	router.NoMethod(func(c *gin.Context) {

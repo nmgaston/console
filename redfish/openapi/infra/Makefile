@@ -218,6 +218,12 @@ rf-clean: ### Clean generated files
 	@echo "✅ Cleaned generated files"
 .PHONY: rf-clean
 
-rf-all: rf-merge rf-generate rf-validate ### Run all Redfish API generation steps
+rf-auth: ### Add Basic Auth to OpenAPI spec and regenerate Go code
+	@echo "🔐 Adding Basic Authentication to Redfish OpenAPI spec..."
+	python3 add-basic-auth.py
+	@echo "✅ Basic Authentication added"
+.PHONY: rf-auth
+
+rf-all: rf-merge rf-generate rf-validate rf-auth ### Run all Redfish API generation steps
 	@echo "✅ All Redfish API generation steps completed"
 .PHONY: rf-all

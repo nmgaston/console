@@ -19,6 +19,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
   /redfish/v1/$metadata:
     get:
       responses:
@@ -32,6 +34,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
   /redfish/v1/Systems:
     get:
       responses:
@@ -48,6 +52,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/Systems/{ComputerSystemId}:
     get:
       responses:
@@ -64,6 +70,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     parameters:
     - description: The value of the Id property of the ComputerSystem resource
       in: path

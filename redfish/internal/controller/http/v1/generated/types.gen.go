@@ -10,6 +10,10 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+const (
+	BasicAuthScopes = "BasicAuth.Scopes"
+)
+
 // Defines values for ActionInfoParameterTypes.
 const (
 	Boolean     ActionInfoParameterTypes = "Boolean"

@@ -11,21 +11,12 @@ import (
 	"github.com/labstack/gommon/log"
 
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
-	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
 const (
 	// Task state constants from Redfish Task.v1_8_0 specification
 	taskStateCompleted = "Completed"
-
-	// Error message constants for power state error handling
-	errMsgSystemNotFound      = "system not found"
-	errMsgNotSupported        = "Not Supported -  - : "
-	errMsgConnectionRefused   = "connection refused"
-	errMsgConnectionTimeout   = "connection timeout"
-	errMsgServiceUnavailable  = "service unavailable"
-	errMsgDeviceNotResponding = "device not responding"
 
 	// Registry message IDs
 	msgIDBaseSuccess      = "Base.1.22.0.Success"
@@ -182,7 +173,18 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 
 	err := s.ComputerSystemUC.SetPowerState(c.Request.Context(), computerSystemID, *req.ResetType)
 	if err != nil {
-		handlePowerStateError(c, err, string(*req.ResetType))
+		switch {
+		case errors.Is(err, usecase.ErrSystemNotFound):
+			NotFoundError(c, computerSystemID)
+		case errors.Is(err, usecase.ErrInvalidResetType):
+			BadRequestError(c, fmt.Sprintf("Invalid reset type: %s", string(*req.ResetType)))
+		case errors.Is(err, usecase.ErrPowerStateConflict):
+			PowerStateConflictError(c, string(*req.ResetType))
+		case errors.Is(err, usecase.ErrUnsupportedPowerState):
+			BadRequestError(c, fmt.Sprintf("Unsupported power state: %s", string(*req.ResetType)))
+		default:
+			InternalServerError(c, err)
+		}
 
 		return
 	}

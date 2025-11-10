@@ -15,66 +15,28 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
+const (
+	// Task state constants from Redfish Task.v1_8_0 specification
+	taskStateCompleted = "Completed"
+
+	// Error message constants for power state error handling
+	errMsgSystemNotFound      = "system not found"
+	errMsgNotSupported        = "Not Supported -  - : "
+	errMsgConnectionRefused   = "connection refused"
+	errMsgConnectionTimeout   = "connection timeout"
+	errMsgServiceUnavailable  = "service unavailable"
+	errMsgDeviceNotResponding = "device not responding"
+
+	// Registry message IDs
+	msgIDBaseSuccess      = "Base.1.22.0.Success"
+	msgIDBaseGeneralError = "Base.1.22.0.GeneralError"
+)
+
 // RedfishServer implements the Redfish API handlers
 // Add dependencies here if needed (e.g., usecase, presenter, etc.)
 type RedfishServer struct {
 	ComputerSystemUC *usecase.ComputerSystemUseCase
 }
-
-/*
-Comment: function not used/invoked
-SetupRedfishV1Routes sets up the Redfish v1 routes on the main router
-func SetupRedfishV1Routes(router *gin.Engine, devicesUC *devices.UseCase) {
-	// Enable HandleMethodNotAllowed to properly distinguish between 404 and 405 errors
-	router.HandleMethodNotAllowed = true
-
-	repo := usecase.NewWsmanComputerSystemRepo(devicesUC)
-	computerSystemUC := &usecase.ComputerSystemUseCase{Repo: repo}
-	redfishServer := &RedfishServer{ComputerSystemUC: computerSystemUC}
-
-	v1Group := router.Group("/redfish/v1")
-
-	// Register the handlers with options
-	redfishgenerated.RegisterHandlersWithOptions(v1Group, redfishServer, redfishgenerated.GinServerOptions{
-		BaseURL: "",
-		ErrorHandler: func(c *gin.Context, err error, statusCode int) {
-			switch statusCode {
-			case http.StatusUnauthorized:
-				UnauthorizedError(c)
-			case http.StatusForbidden:
-				ForbiddenError(c)
-			case http.StatusMethodNotAllowed:
-				MethodNotAllowedError(c)
-			case http.StatusBadRequest:
-				BadRequestError(c, err.Error(), "Base.1.11.GeneralError", "Check your request body and parameters.", "Critical")
-			case http.StatusNotFound:
-				NotFoundError(c, "Resource")
-			case http.StatusConflict:
-				ConflictError(c, "Resource", err.Error())
-			case http.StatusServiceUnavailable:
-				ServiceUnavailableError(c, 60)
-			default:
-				InternalServerError(c, err)
-			}
-		},
-	})
-
-	// Add Redfish-compliant handler for 405 Method Not Allowed
-	router.NoMethod(func(c *gin.Context) {
-		MethodNotAllowedError(c)
-	})
-
-	// Add Redfish-compliant NoRoute handler for /redfish/v1
-	router.NoRoute(func(c *gin.Context) {
-		if len(c.Request.URL.Path) >= 11 && c.Request.URL.Path[:11] == "/redfish/v1" {
-			NotFoundError(c, "Resource")
-		} else {
-			c.Next() // fallback to Gin's default
-		}
-	})
-
-}
-*/
 
 // Ensure RedfishServer implements generated.ServerInterface
 var _ generated.ServerInterface = (*RedfishServer)(nil)
@@ -119,22 +81,38 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
 	metadata := ""
 
-	c.Header("Content-Type", "application/xml")
+	c.Header(headerContentType, contentTypeXML)
 	c.String(http.StatusOK, metadata)
 }
 
 // GetRedfishV1Systems returns the computer systems collection
 func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
+	// Get all system IDs from the repository
+	systemIDs, err := s.ComputerSystemUC.GetAll(c.Request.Context())
+	if err != nil {
+		InternalServerError(c, err)
+
+		return
+	}
+
+	// Convert system IDs to members array
+	members := make([]generated.OdataV4IdRef, 0, len(systemIDs))
+	for _, systemID := range systemIDs {
+		if systemID != "" {
+			members = append(members, generated.OdataV4IdRef{
+				OdataId: StringPtr("/redfish/v1/Systems/" + systemID),
+			})
+		}
+	}
+
 	collection := generated.ComputerSystemCollectionComputerSystemCollection{
 		OdataContext:      StringPtr("/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"),
 		OdataId:           StringPtr("/redfish/v1/Systems"),
 		OdataType:         StringPtr("#ComputerSystemCollection.ComputerSystemCollection"),
 		Name:              "Computer System Collection",
 		Description:       nil,
-		MembersOdataCount: Int64Ptr(1),
-		Members: &[]generated.OdataV4IdRef{
-			{OdataId: StringPtr("/redfish/v1/Systems/System1")},
-		},
+		MembersOdataCount: Int64Ptr(int64(len(members))),
+		Members:           &members,
 	}
 	c.JSON(http.StatusOK, collection)
 }
@@ -143,23 +121,20 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 //
 //revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
 func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
-	if computerSystemID != "System1" {
-		NotFoundError(c, "System")
+	// Get the computer system from the use case
+	system, err := s.ComputerSystemUC.GetComputerSystem(c.Request.Context(), computerSystemID)
+	if err != nil {
+		if errors.Is(err, usecase.ErrSystemNotFound) {
+			NotFoundError(c, "System")
+
+			return
+		}
+
+		InternalServerError(c, err)
 
 		return
 	}
 
-	system := generated.ComputerSystemComputerSystem{
-		OdataContext: StringPtr("/redfish/v1/$metadata#ComputerSystem.ComputerSystem"),
-		OdataId:      StringPtr("/redfish/v1/Systems/System1"),
-		OdataType:    StringPtr("#ComputerSystem.v1_26_0.ComputerSystem"),
-		Id:           "System1",
-		Name:         "Computer System",
-		SerialNumber: StringPtr("SN123456789"),
-		Manufacturer: StringPtr("Intel Corporation"),
-		Model:        StringPtr("Example System"),
-		SystemType:   SystemTypePtr(generated.Physical),
-	}
 	c.JSON(http.StatusOK, system)
 }
 
@@ -205,36 +180,9 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 	//     return
 	// }
 
-	err := s.ComputerSystemUC.SetPowerState(computerSystemID, *req.ResetType)
+	err := s.ComputerSystemUC.SetPowerState(c.Request.Context(), computerSystemID, *req.ResetType)
 	if err != nil {
-		if errors.Is(err, usecase.ErrInvalidPowerState) {
-			PropertyValueNotInListError(c, "ResetType")
-
-			return
-		}
-
-		if errors.Is(err, usecase.ErrPowerStateConflict) {
-			PowerStateConflictError(c, string(*req.ResetType))
-
-			return
-		}
-		// Robust backend not found error
-		if err.Error() == "system not found" {
-			NotFoundError(c, "System")
-
-			return
-		}
-		// Check for service unavailability errors (503)
-		// This catches cases where the backend service (WSMAN/AMT) is unreachable
-		errMsg := err.Error()
-		if errMsg == "connection refused" || errMsg == "connection timeout" ||
-			errMsg == "service unavailable" || errMsg == "device not responding" {
-			ServiceUnavailableError(c, redfishv1.ServiceUnavailableRetryAfterSeconds)
-
-			return
-		}
-
-		InternalServerError(c, err)
+		handlePowerStateError(c, err, string(*req.ResetType))
 
 		return
 	}
@@ -242,6 +190,16 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 	// Generate dynamic Task response
 	taskID := fmt.Sprintf("%d", time.Now().UnixNano())
 	now := time.Now().UTC().Format(time.RFC3339)
+
+	// Get success message from registry
+	successMsg, err := registryMgr.LookupMessage("Base", "Success")
+	if err != nil {
+		// Fallback if registry lookup fails
+		InternalServerError(c, err)
+
+		return
+	}
+
 	task := map[string]interface{}{
 		"@odata.context": "/redfish/v1/$metadata#Task.Task",
 		"@odata.id":      "/redfish/v1/TaskService/Tasks/" + taskID,
@@ -250,16 +208,16 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 		"Id":             taskID,
 		"Messages": []map[string]interface{}{
 			{
-				"Message":   "The request completed successfully.",
-				"MessageId": "Base.1.11.0.Success",
-				"Severity":  "OK",
+				"Message":   successMsg.Message,
+				"MessageId": msgIDBaseSuccess,
+				"Severity":  string(generated.OK),
 			},
 		},
 		"Name":       "System Reset Task",
 		"StartTime":  now,
-		"TaskState":  "Completed",
-		"TaskStatus": "OK",
+		"TaskState":  taskStateCompleted,
+		"TaskStatus": string(generated.OK),
 	}
-	c.Header("Location", "/redfish/v1/TaskService/Tasks/"+taskID)
+	c.Header(headerLocation, "/redfish/v1/TaskService/Tasks/"+taskID)
 	c.JSON(http.StatusAccepted, task)
 }

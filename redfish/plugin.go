@@ -10,13 +10,13 @@ import (
 	"github.com/device-management-toolkit/console/pkg/db"
 	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishgenerated "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
-	redfishhandler "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
+	v1 "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
 // Plugin represents the Redfish plugin for DMT.
 type Plugin struct {
-	server *redfishhandler.RedfishServer
+	server *v1.RedfishServer
 	config *PluginConfig
 }
 
@@ -30,17 +30,23 @@ type PluginConfig struct {
 const (
 	ModuleName    = "redfish"
 	ModuleVersion = "1.0.0"
+
+	// HTTP status codes.
+	statusBadRequest       = 400
+	statusUnauthorized     = 401
+	statusForbidden        = 403
+	statusMethodNotAllowed = 405
 )
 
 var (
-	server       *redfishhandler.RedfishServer
-	moduleConfig *Config
+	server       *v1.RedfishServer
+	moduleConfig *PluginConfig
 )
 
 // Initialize initializes the Redfish module with DMT infrastructure.
 func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtusecase.Usecases, _ *dmtconfig.Config) error {
 	// Initialize configuration with defaults
-	moduleConfig = &Config{
+	moduleConfig = &PluginConfig{
 		Enabled:      true,
 		AuthRequired: false,
 		BaseURL:      "/redfish/v1",
@@ -49,16 +55,16 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 	// Create Redfish-specific repository and use case using DMT's device management
 	devicesUC, ok := usecases.Devices.(*devices.UseCase)
 	if !ok {
-		ctx.Logger.Error("Failed to cast Devices usecase to *devices.UseCase")
+		log.Error("Failed to cast Devices usecase to *devices.UseCase")
 
 		return nil // Return nil to not block other plugins
 	}
 
-	repo := usecase.NewWsmanComputerSystemRepo(devicesUC, ctx.Logger)
-	computerSystemUC := &usecase.ComputerSystemUseCase{Repo: repo}
+	repo := redfishusecase.NewWsmanComputerSystemRepo(devicesUC, log)
+	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
 	// Initialize the Redfish server with shared infrastructure
-	server = &redfishhandler.RedfishServer{
+	server = &v1.RedfishServer{
 		ComputerSystemUC: computerSystemUC,
 	}
 
@@ -75,25 +81,31 @@ func RegisterRoutes(router *gin.Engine, log logger.Interface) error {
 		return nil
 	}
 
+	// Create a plugin instance to access the error handler
+	plugin := &Plugin{
+		server: server,
+		config: moduleConfig,
+	}
+
 	// Enable HandleMethodNotAllowed to return 405 for wrong HTTP methods
-	ctx.Router.HandleMethodNotAllowed = true
+	router.HandleMethodNotAllowed = true
 
 	// Register the Redfish handlers directly on the main router engine
 	// This ensures routes are /redfish/v1/* and not /api/redfish/v1/*
 	redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 		BaseURL:      "",
-		ErrorHandler: createErrorHandler(),
+		ErrorHandler: plugin.createErrorHandler(),
 	})
 
 	// Add NoMethod handler for Redfish routes to return 405 with proper error
-	ctx.Router.NoMethod(func(c *gin.Context) {
+	router.NoMethod(func(c *gin.Context) {
 		// Only handle Redfish routes
 		if len(c.Request.URL.Path) >= 10 && c.Request.URL.Path[:10] == "/redfish/v" {
-			redfishhandler.MethodNotAllowedError(c)
+			v1.MethodNotAllowedError(c)
 		}
 	})
 
-	ctx.Logger.Info("Redfish API routes registered successfully")
+	log.Info("Redfish API routes registered successfully")
 
 	return nil
 }
@@ -103,15 +115,15 @@ func (p *Plugin) createErrorHandler() func(*gin.Context, error, int) {
 	return func(c *gin.Context, err error, statusCode int) {
 		switch statusCode {
 		case statusUnauthorized:
-			redfishhandler.UnauthorizedError(c)
+			v1.UnauthorizedError(c)
 		case statusForbidden:
-			redfishhandler.ForbiddenError(c)
+			v1.ForbiddenError(c)
 		case statusMethodNotAllowed:
-			redfishhandler.MethodNotAllowedError(c)
+			v1.MethodNotAllowedError(c)
 		case statusBadRequest:
-			redfishhandler.BadRequestError(c, err.Error())
+			v1.BadRequestError(c, err.Error())
 		default:
-			redfishhandler.InternalServerError(c, err)
+			v1.InternalServerError(c, err)
 		}
 	}
 }

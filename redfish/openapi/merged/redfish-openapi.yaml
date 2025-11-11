@@ -111,283 +111,6 @@ paths:
       - BasicAuth: []
 components:
   schemas:
-    ComputerSystem_ComputerSystem:
-      additionalProperties: false
-      description: The `ComputerSystem` schema represents a computer or system instance
-        and the software-visible resources, or items within the data plane, such as
-        memory, CPU, and other devices that it can access.  Details of those resources
-        or subsystems are also linked through this resource.
-      properties:
-        '@odata.context':
-          $ref: '#/components/schemas/odata-v4_context'
-        '@odata.id':
-          $ref: '#/components/schemas/odata-v4_id'
-        '@odata.type':
-          $ref: '#/components/schemas/odata-v4_type'
-        Description:
-          oneOf:
-          - $ref: '#/components/schemas/Resource_Description'
-          - enum:
-            - null
-          readOnly: true
-        Id:
-          $ref: '#/components/schemas/Resource_Id'
-          readOnly: true
-        Manufacturer:
-          description: The manufacturer or OEM of this system.
-          nullable: true
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain a value that represents the
-            manufacturer of the system.
-        Model:
-          description: The product name for this system, without the manufacturer
-            name.
-          nullable: true
-          readOnly: true
-          type: string
-          x-longDescription: This property shall describe how the manufacturer refers
-            to this system.  Typically, this value is the product name for this system
-            without the manufacturer name.
-        Name:
-          $ref: '#/components/schemas/Resource_Name'
-          readOnly: true
-        PowerState:
-          description: The current power state of the system.
-          oneOf:
-          - $ref: '#/components/schemas/Resource_PowerState'
-          - enum:
-            - null
-          readOnly: true
-          x-longDescription: This property shall contain the power state of the system.
-        SerialNumber:
-          description: The serial number for this system.
-          nullable: true
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain the serial number for the
-            system.
-        Status:
-          $ref: '#/components/schemas/Resource_Status'
-          description: The status and health of the resource and its subordinate or
-            dependent resources.
-          x-longDescription: This property shall contain any status or health properties
-            of the resource.
-        SystemType:
-          $ref: '#/components/schemas/ComputerSystem_SystemType'
-          description: The type of computer system that this resource represents.
-          readOnly: true
-          x-longDescription: An enumeration that indicates the kind of system that
-            this resource represents.
-      required:
-      - '@odata.id'
-      - '@odata.type'
-      - Id
-      - Name
-      type: object
-      x-longDescription: This resource shall represent a computing system in the Redfish
-        Specification.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    ComputerSystem_ResetRequestBody:
-      additionalProperties: false
-      description: This action resets the system.
-      properties:
-        ResetType:
-          $ref: '#/components/schemas/Resource_ResetType'
-          description: The type of reset.
-          x-longDescription: This parameter shall contain the type of reset.  The
-            service can accept a request without the parameter and perform an implementation-specific
-            default reset.  Services should include the `@Redfish.AllowableValues`
-            annotation for this parameter to ensure compatibility with clients, even
-            when `ActionInfo` has been implemented.
-      type: object
-      x-longDescription: This action shall reset the system represented by the resource.  For
-        systems that implement ACPI Power Button functionality, the `PushPowerButton`
-        value shall perform or emulate an ACPI Power Button Push, and the `ForceOff`
-        value shall perform an ACPI Power Button Override, commonly known as a four-second
-        hold of the power button.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    ComputerSystem_SystemType:
-      enum:
-      - Physical
-      - Virtual
-      - OS
-      - PhysicallyPartitioned
-      - VirtuallyPartitioned
-      - Composed
-      - DPU
-      type: string
-      x-enumDeprecated:
-        OS: This value has been deprecated in favor of representing operating systems
-          with the `OperatingSystem` resource.
-      x-enumDescriptions:
-        Composed: A computer system constructed by binding resource blocks together.
-        DPU: A computer system that performs the functions of a data processing unit,
-          such as a SmartNIC.
-        OS: An operating system instance.
-        Physical: A computer system.
-        PhysicallyPartitioned: A hardware-based partition of a computer system.
-        Virtual: A virtual machine instance running on this system.
-        VirtuallyPartitioned: A virtual or software-based partition of a computer
-          system.
-      x-enumLongDescriptions:
-        Composed: A `SystemType` of `Composed` typically represents a single system
-          constructed from disaggregated resources through the Redfish composition
-          service.
-        DPU: A `SystemType` of `DPU` typically represents a single system that performs
-          offload computation as a data processing unit, such as a SmartNIC.
-        OS: A `SystemType` of `OS` typically represents an OS or hypervisor view of
-          the system.
-        Physical: A `SystemType` of `Physical` typically represents the hardware aspects
-          of a system, such as a management controller.
-        PhysicallyPartitioned: A `SystemType` of `PhysicallyPartitioned` typically
-          represents a single system constructed from one or more physical systems
-          through a firmware or hardware-based service.
-        Virtual: A `SystemType` of `Virtual` typically represents a system that is
-          actually a virtual machine instance.  Responses should contain the `ProcessorSummary`
-          and `MemorySummary` properties to show the processor and memory resources
-          allocated to the virtual machine.
-        VirtuallyPartitioned: A `SystemType` of `VirtuallyPartitioned` typically represents
-          a single system constructed from one or more virtual systems through a software-based
-          service.
-      x-enumVersionAdded:
-        Composed: v1_4_0
-        DPU: v1_16_0
-      x-enumVersionDeprecated:
-        OS: v1_21_0
-    RedfishError:
-      description: The error payload from a Redfish service.
-      properties:
-        error:
-          description: The properties that describe an error from a Redfish service.
-          properties:
-            '@Message.ExtendedInfo':
-              description: An array of messages describing one or more error messages.
-              items:
-                $ref: '#/components/schemas/Message_Message'
-              type: array
-              x-longDescription: This property shall be an array of message objects
-                describing one or more error messages.
-            code:
-              description: A string indicating a specific `MessageId` from a message
-                registry.
-              readOnly: true
-              type: string
-              x-longDescription: This property shall contain a string indicating a
-                specific `MessageId` from a message registry.
-            message:
-              description: A human-readable error message corresponding to the message
-                in a message registry.
-              readOnly: true
-              type: string
-              x-longDescription: This property shall contain a human-readable error
-                message corresponding to the message in a message registry.
-          required:
-          - code
-          - message
-          type: object
-          x-longDescription: The Redfish Specification-described type shall contain
-            properties that describe an error from a Redfish service.
-      required:
-      - error
-      type: object
-      x-longDescription: The Redfish Specification-described type shall contain an
-        error payload from a Redfish service.
-    Message_Message:
-      additionalProperties: false
-      description: The message that the Redfish service returns.
-      properties:
-        Message:
-          description: The human-readable message.
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain a human-readable message.
-        MessageArgs:
-          description: An array of message arguments that are substituted for the
-            arguments in the message when looked up in the message registry.
-          items:
-            type: string
-          readOnly: true
-          type: array
-          x-longDescription: This property shall contain an array of message arguments
-            that are substituted for the arguments in the message when looked up in
-            the message registry.  It has the same semantics as the `MessageArgs`
-            property in the Redfish `MessageRegistry` schema.  If the corresponding
-            `ParamType` value contains `number`, the service shall convert the number
-            to a string representation of the number.
-        MessageId:
-          description: The identifier for the message.
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain a `MessageId`, as defined
-            in the 'MessageId format' clause of the Redfish Specification.
-        MessageSeverity:
-          $ref: '#/components/schemas/Resource_Health'
-          description: The severity of the message.
-          readOnly: true
-          x-longDescription: This property shall contain the severity of the message.  Services
-            can replace the value defined in the message registry with a value more
-            applicable to the implementation.
-          x-versionAdded: v1_1_0
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All
-            values for properties contained in this object shall conform to the Redfish
-            Specification-described requirements.
-        RelatedProperties:
-          description: A set of properties described by the message.
-          items:
-            type: string
-          readOnly: true
-          type: array
-          x-longDescription: This property shall contain an array of RFC6901-defined
-            JSON pointers indicating the properties described by the message, if appropriate
-            for the message.
-        Resolution:
-          description: Used to provide suggestions on how to resolve the situation
-            that caused the message.
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain the resolution of the message.  Services
-            can replace the resolution defined in the message registry with a more
-            specific resolution in message payloads.
-        ResolutionSteps:
-          description: The list of recommended steps to resolve the situation that
-            caused the message.
-          items:
-            $ref: '#/components/schemas/ResolutionStep_ResolutionStep'
-          type: array
-          x-longDescription: This property shall contain an array of recommended steps
-            to resolve the situation that caused the message.  This property shall
-            not be present if the `MessageSeverity` or `Severity` properties contain
-            `OK`.
-          x-versionAdded: v1_2_0
-        Severity:
-          deprecated: true
-          description: The severity of the message.
-          readOnly: true
-          type: string
-          x-deprecatedReason: This property has been deprecated in favor of `MessageSeverity`,
-            which ties the values to the enumerations defined for the `Health` property
-            within `Status`.
-          x-longDescription: This property shall contain the severity of the message,
-            as defined in the 'Status' clause of the Redfish Specification.  Services
-            can replace the value defined in the message registry with a value more
-            applicable to the implementation.
-          x-versionDeprecated: v1_1_0
-      required:
-      - MessageId
-      type: object
-      x-longDescription: This type shall contain a message that the Redfish service
-        returns, as described in the Redfish Specification.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
     ActionInfo_ActionInfo:
       additionalProperties: false
       description: The `ActionInfo` schema defines the supported parameters and other
@@ -668,19 +391,15 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
-    Manager_Manager:
+    ComputerSystem_ComputerSystem:
       additionalProperties: false
-      description: In Redfish, a manager is a systems management entity that can implement
-        or provide access to a Redfish service.  Examples of managers are BMCs (baseboard
-        management controllers), enclosure managers, management controllers, and other
-        subsystems that are assigned manageability functions.  An implementation can
-        have multiple managers, which might be directly accessible through a Redfish-defined
-        interface.
+      description: The `ComputerSystem` schema represents a computer or system instance
+        and the software-visible resources, or items within the data plane, such as
+        memory, CPU, and other devices that it can access.  Details of those resources
+        or subsystems are also linked through this resource.
       properties:
         '@odata.context':
           $ref: '#/components/schemas/odata-v4_context'
-        '@odata.etag':
-          $ref: '#/components/schemas/odata-v4_etag'
         '@odata.id':
           $ref: '#/components/schemas/odata-v4_id'
         '@odata.type':
@@ -691,286 +410,264 @@ components:
           - enum:
             - null
           readOnly: true
-        FirmwareVersion:
-          description: The firmware version of this manager.
-          nullable: true
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain the firmware version as defined
-            by the manufacturer for the associated manager.
-        Id:
-          $ref: '#/components/schemas/Resource_Id'
-          readOnly: true
-        ManagerType:
-          $ref: '#/components/schemas/Manager_ManagerType'
-          description: The type of manager that this resource represents.
-          readOnly: true
-          x-longDescription: This property shall describe the function of this manager.  The
-            `ManagementController` value shall be used if none of the other enumerations
-            apply.
-        Model:
-          description: The model information of this manager, as defined by the manufacturer.
-          nullable: true
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain the information about how
-            the manufacturer refers to this manager.
-        Name:
-          $ref: '#/components/schemas/Resource_Name'
-          readOnly: true
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All
-            values for properties that this object contains shall conform to the Redfish
-            Specification-described requirements.
-        Status:
-          $ref: '#/components/schemas/Resource_Status'
-          description: The status and health of the resource and its subordinate or
-            dependent resources.
-          x-longDescription: This property shall contain any status or health properties
-            of the resource.
-      required:
-      - '@odata.id'
-      - '@odata.type'
-      - Id
-      - Name
-      type: object
-      x-longDescription: This resource shall represent a management subsystem for
-        a Redfish implementation.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    Manager_ManagerType:
-      enum:
-      - ManagementController
-      - EnclosureManager
-      - BMC
-      - RackManager
-      - AuxiliaryController
-      - Service
-      - FabricManager
-      type: string
-      x-enumDescriptions:
-        AuxiliaryController: A controller that provides management functions for a
-          particular subsystem or group of devices as part of a larger system.
-        BMC: A controller that provides management functions for one or more computer
-          systems.  Commonly known as a BMC (baseboard management controller).  Examples
-          of this include a BMC dedicated to one system or a multi-host manager providing
-          BMC capabilities to multiple systems.
-        EnclosureManager: A controller that provides management functions for a chassis,
-          group of devices, or group of systems with their own BMCs (baseboard management
-          controllers).  An example of this is a manager that aggregates and orchestrates
-          management functions across multiple BMCs in an enclosure.
-        FabricManager: A controller that primarily monitors or manages the operation
-          of a group of fabric attached nodes and switches.
-        ManagementController: A controller that primarily monitors or manages the
-          operation of a device or system.
-        RackManager: A controller that provides management functions for a whole or
-          part of a rack.  An example of this is a manager that aggregates and orchestrates
-          management functions across multiple managers, such as enclosure managers
-          and BMCs (baseboard management controllers), in a rack.
-        Service: A software-based service that provides management functions.
-      x-enumVersionAdded:
-        FabricManager: v1_22_0
-        Service: v1_4_0
-    Chassis_Chassis:
-      additionalProperties: false
-      description: The `Chassis` schema represents the physical components of a system.  This
-        resource represents the sheet-metal confined spaces and logical zones such
-        as racks, enclosures, chassis and all other containers.  Subsystems, such
-        as sensors, that operate outside of a system's data plane are linked either
-        directly or indirectly through this resource.  A subsystem that operates outside
-        of a system's data plane are not accessible to software that runs on the system.  It
-        also describes the location, such as a slot, socket, or bay, where a unit
-        can be installed, by populating a resource instance with an absent state if
-        a unit is not present.
-      properties:
-        '@odata.context':
-          $ref: '#/components/schemas/odata-v4_context'
-        '@odata.etag':
-          $ref: '#/components/schemas/odata-v4_etag'
-        '@odata.id':
-          $ref: '#/components/schemas/odata-v4_id'
-        '@odata.type':
-          $ref: '#/components/schemas/odata-v4_type'
-        ChassisType:
-          $ref: '#/components/schemas/Chassis_ChassisType'
-          description: The type of physical form factor of the chassis.
-          readOnly: true
-          x-longDescription: This property shall indicate the physical form factor
-            for the type of chassis.
         Id:
           $ref: '#/components/schemas/Resource_Id'
           readOnly: true
         Manufacturer:
-          description: The manufacturer of this chassis.
+          description: The manufacturer or OEM of this system.
           nullable: true
           readOnly: true
           type: string
-          x-longDescription: This property shall contain the name of the organization
-            responsible for producing the chassis.  This organization may be the entity
-            from whom the chassis is purchased, but this is not necessarily true.
+          x-longDescription: This property shall contain a value that represents the
+            manufacturer of the system.
         Model:
-          description: The model number of the chassis.
+          description: The product name for this system, without the manufacturer
+            name.
           nullable: true
           readOnly: true
           type: string
-          x-longDescription: This property shall contain the name by which the manufacturer
-            generally refers to the chassis.
+          x-longDescription: This property shall describe how the manufacturer refers
+            to this system.  Typically, this value is the product name for this system
+            without the manufacturer name.
         Name:
           $ref: '#/components/schemas/Resource_Name'
           readOnly: true
+        PowerState:
+          description: The current power state of the system.
+          oneOf:
+          - $ref: '#/components/schemas/Resource_PowerState'
+          - enum:
+            - null
+          readOnly: true
+          x-longDescription: This property shall contain the power state of the system.
         SerialNumber:
-          description: The serial number of the chassis.
+          description: The serial number for this system.
           nullable: true
           readOnly: true
           type: string
-          x-longDescription: This property shall contain a manufacturer-allocated
-            number that identifies the chassis.
+          x-longDescription: This property shall contain the serial number for the
+            system.
         Status:
           $ref: '#/components/schemas/Resource_Status'
           description: The status and health of the resource and its subordinate or
             dependent resources.
           x-longDescription: This property shall contain any status or health properties
             of the resource.
+        SystemType:
+          $ref: '#/components/schemas/ComputerSystem_SystemType'
+          description: The type of computer system that this resource represents.
+          readOnly: true
+          x-longDescription: An enumeration that indicates the kind of system that
+            this resource represents.
       required:
-      - ChassisType
       - '@odata.id'
       - '@odata.type'
       - Id
       - Name
       type: object
-      x-longDescription: This resource shall represent a chassis or other physical
-        enclosure for a Redfish implementation.  It may also represent a location,
-        such as a slot, socket, or bay, where a unit may be installed, but the `State`
-        property within the `Status` property contains `Absent`.
+      x-longDescription: This resource shall represent a computing system in the Redfish
+        Specification.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
-    Chassis_ChassisType:
-      enum:
-      - Rack
-      - Blade
-      - Enclosure
-      - StandAlone
-      - RackMount
-      - Card
-      - Cartridge
-      - Row
-      - Pod
-      - Expansion
-      - Sidecar
-      - Zone
-      - Sled
-      - Shelf
-      - Drawer
-      - Module
-      - Component
-      - IPBasedDrive
-      - RackGroup
-      - StorageEnclosure
-      - ImmersionTank
-      - HeatExchanger
-      - PowerStrip
-      - Other
-      type: string
-      x-enumDescriptions:
-        Blade: An enclosed or semi-enclosed, typically vertically-oriented, system
-          chassis that must be plugged into a multi-system chassis to function normally.
-        Card: A loose device or circuit board intended to be installed in a system
-          or other enclosure.
-        Cartridge: A small self-contained system intended to be plugged into a multi-system
-          chassis.
-        Component: A small chassis, card, or device that contains devices for a particular
-          subsystem or function.
-        Drawer: An enclosed or semi-enclosed, typically horizontally-oriented, system
-          chassis that can be slid into a multi-system chassis.
-        Enclosure: A generic term for a chassis that does not fit any other description.
-        Expansion: A chassis that expands the capabilities or capacity of another
-          chassis.
-        HeatExchanger: A heat exchanger.
-        IPBasedDrive: A chassis in a drive form factor with IP-based network connections.
-        ImmersionTank: An immersion cooling tank.
-        Module: A small, typically removable, chassis or card that contains devices
-          for a particular subsystem or function.
-        Other: A chassis that does not fit any of these definitions.
-        Pod: A collection of equipment racks in a large, likely transportable, container.
-        PowerStrip: A power strip, typically placed in the zero-U space of a rack.
-        Rack: An equipment rack, typically a 19-inch wide freestanding unit.
-        RackGroup: A group of racks that form a single entity or share infrastructure.
-        RackMount: A single-system chassis designed specifically for mounting in an
-          equipment rack.
-        Row: A collection of equipment racks.
-        Shelf: An enclosed or semi-enclosed, typically horizontally-oriented, system
-          chassis that must be plugged into a multi-system chassis to function normally.
-        Sidecar: A chassis that mates mechanically with another chassis to expand
-          its capabilities or capacity.
-        Sled: An enclosed or semi-enclosed, system chassis that must be plugged into
-          a multi-system chassis to function normally similar to a blade type chassis.
-        StandAlone: A single, free-standing system, commonly called a tower or desktop
-          chassis.
-        StorageEnclosure: A chassis that encloses storage.
-        Zone: A logical division or portion of a physical chassis that contains multiple
-          devices or systems that cannot be physically separated.
-      x-enumVersionAdded:
-        HeatExchanger: v1_23_0
-        IPBasedDrive: v1_3_0
-        ImmersionTank: v1_23_0
-        PowerStrip: v1_25_0
-        RackGroup: v1_4_0
-        StorageEnclosure: v1_6_0
-    odata-v4_context:
-      description: The OData description of a payload.
-      format: uri-reference
-      readOnly: true
-      type: string
-      x-longDescription: The value of this property shall be the context URL that
-        describes the resource according to OData-Protocol and shall be of the form
-        defined in the Redfish specification.
-    odata-v4_count:
-      description: The number of items in a collection.
-      format: int64
-      readOnly: true
-      type: integer
-      x-longDescription: The value of this property shall be an integer representing
-        the number of items in a collection.
-    odata-v4_etag:
-      description: The current ETag of the resource.
-      readOnly: true
-      type: string
-      x-longDescription: The value of this property shall be a string that is defined
-        by the ETag HTTP header definition in RFC7232.
-    odata-v4_id:
-      description: The unique identifier for a resource.
-      format: uri-reference
-      readOnly: true
-      type: string
-      x-longDescription: The value of this property shall be the unique identifier
-        for the resource and it shall be of the form defined in the Redfish specification.
-    odata-v4_idRef:
+    ComputerSystem_ResetRequestBody:
       additionalProperties: false
-      description: A reference to a resource.
+      description: This action resets the system.
       properties:
-        '@odata.id':
-          $ref: '#/components/schemas/odata-v4_id'
+        ResetType:
+          $ref: '#/components/schemas/Resource_ResetType'
+          description: The type of reset.
+          x-longDescription: This parameter shall contain the type of reset.  The
+            service can accept a request without the parameter and perform an implementation-specific
+            default reset.  Services should include the `@Redfish.AllowableValues`
+            annotation for this parameter to ensure compatibility with clients, even
+            when `ActionInfo` has been implemented.
       type: object
-      x-longDescription: The value of this property shall be used for references to
-        a resource.
-    odata-v4_nextLink:
-      description: The URI to the resource containing the next set of partial members.
-      format: uri-reference
-      readOnly: true
+      x-longDescription: This action shall reset the system represented by the resource.  For
+        systems that implement ACPI Power Button functionality, the `PushPowerButton`
+        value shall perform or emulate an ACPI Power Button Push, and the `ForceOff`
+        value shall perform an ACPI Power Button Override, commonly known as a four-second
+        hold of the power button.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_SystemType:
+      enum:
+      - Physical
+      - Virtual
+      - OS
+      - PhysicallyPartitioned
+      - VirtuallyPartitioned
+      - Composed
+      - DPU
       type: string
-      x-longDescription: The value of this property shall be a URI to a resource,
-        with the same @odata.type, containing the next set of partial members.
-    odata-v4_type:
-      description: The type of a resource.
-      readOnly: true
-      type: string
-      x-longDescription: The value of this property shall be a URI fragment that specifies
-        the type of the resource and it shall be of the form defined in the Redfish
-        specification.
+      x-enumDeprecated:
+        OS: This value has been deprecated in favor of representing operating systems
+          with the `OperatingSystem` resource.
+      x-enumDescriptions:
+        Composed: A computer system constructed by binding resource blocks together.
+        DPU: A computer system that performs the functions of a data processing unit,
+          such as a SmartNIC.
+        OS: An operating system instance.
+        Physical: A computer system.
+        PhysicallyPartitioned: A hardware-based partition of a computer system.
+        Virtual: A virtual machine instance running on this system.
+        VirtuallyPartitioned: A virtual or software-based partition of a computer
+          system.
+      x-enumLongDescriptions:
+        Composed: A `SystemType` of `Composed` typically represents a single system
+          constructed from disaggregated resources through the Redfish composition
+          service.
+        DPU: A `SystemType` of `DPU` typically represents a single system that performs
+          offload computation as a data processing unit, such as a SmartNIC.
+        OS: A `SystemType` of `OS` typically represents an OS or hypervisor view of
+          the system.
+        Physical: A `SystemType` of `Physical` typically represents the hardware aspects
+          of a system, such as a management controller.
+        PhysicallyPartitioned: A `SystemType` of `PhysicallyPartitioned` typically
+          represents a single system constructed from one or more physical systems
+          through a firmware or hardware-based service.
+        Virtual: A `SystemType` of `Virtual` typically represents a system that is
+          actually a virtual machine instance.  Responses should contain the `ProcessorSummary`
+          and `MemorySummary` properties to show the processor and memory resources
+          allocated to the virtual machine.
+        VirtuallyPartitioned: A `SystemType` of `VirtuallyPartitioned` typically represents
+          a single system constructed from one or more virtual systems through a software-based
+          service.
+      x-enumVersionAdded:
+        Composed: v1_4_0
+        DPU: v1_16_0
+      x-enumVersionDeprecated:
+        OS: v1_21_0
+    Message_Message:
+      additionalProperties: false
+      description: The message that the Redfish service returns.
+      properties:
+        Message:
+          description: The human-readable message.
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain a human-readable message.
+        MessageArgs:
+          description: An array of message arguments that are substituted for the
+            arguments in the message when looked up in the message registry.
+          items:
+            type: string
+          readOnly: true
+          type: array
+          x-longDescription: This property shall contain an array of message arguments
+            that are substituted for the arguments in the message when looked up in
+            the message registry.  It has the same semantics as the `MessageArgs`
+            property in the Redfish `MessageRegistry` schema.  If the corresponding
+            `ParamType` value contains `number`, the service shall convert the number
+            to a string representation of the number.
+        MessageId:
+          description: The identifier for the message.
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain a `MessageId`, as defined
+            in the 'MessageId format' clause of the Redfish Specification.
+        MessageSeverity:
+          $ref: '#/components/schemas/Resource_Health'
+          description: The severity of the message.
+          readOnly: true
+          x-longDescription: This property shall contain the severity of the message.  Services
+            can replace the value defined in the message registry with a value more
+            applicable to the implementation.
+          x-versionAdded: v1_1_0
+        Oem:
+          $ref: '#/components/schemas/Resource_Oem'
+          description: The OEM extension property.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties contained in this object shall conform to the Redfish
+            Specification-described requirements.
+        RelatedProperties:
+          description: A set of properties described by the message.
+          items:
+            type: string
+          readOnly: true
+          type: array
+          x-longDescription: This property shall contain an array of RFC6901-defined
+            JSON pointers indicating the properties described by the message, if appropriate
+            for the message.
+        Resolution:
+          description: Used to provide suggestions on how to resolve the situation
+            that caused the message.
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the resolution of the message.  Services
+            can replace the resolution defined in the message registry with a more
+            specific resolution in message payloads.
+        ResolutionSteps:
+          description: The list of recommended steps to resolve the situation that
+            caused the message.
+          items:
+            $ref: '#/components/schemas/ResolutionStep_ResolutionStep'
+          type: array
+          x-longDescription: This property shall contain an array of recommended steps
+            to resolve the situation that caused the message.  This property shall
+            not be present if the `MessageSeverity` or `Severity` properties contain
+            `OK`.
+          x-versionAdded: v1_2_0
+        Severity:
+          deprecated: true
+          description: The severity of the message.
+          readOnly: true
+          type: string
+          x-deprecatedReason: This property has been deprecated in favor of `MessageSeverity`,
+            which ties the values to the enumerations defined for the `Health` property
+            within `Status`.
+          x-longDescription: This property shall contain the severity of the message,
+            as defined in the 'Status' clause of the Redfish Specification.  Services
+            can replace the value defined in the message registry with a value more
+            applicable to the implementation.
+          x-versionDeprecated: v1_1_0
+      required:
+      - MessageId
+      type: object
+      x-longDescription: This type shall contain a message that the Redfish service
+        returns, as described in the Redfish Specification.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    RedfishError:
+      description: The error payload from a Redfish service.
+      properties:
+        error:
+          description: The properties that describe an error from a Redfish service.
+          properties:
+            '@Message.ExtendedInfo':
+              description: An array of messages describing one or more error messages.
+              items:
+                $ref: '#/components/schemas/Message_Message'
+              type: array
+              x-longDescription: This property shall be an array of message objects
+                describing one or more error messages.
+            code:
+              description: A string indicating a specific `MessageId` from a message
+                registry.
+              readOnly: true
+              type: string
+              x-longDescription: This property shall contain a string indicating a
+                specific `MessageId` from a message registry.
+            message:
+              description: A human-readable error message corresponding to the message
+                in a message registry.
+              readOnly: true
+              type: string
+              x-longDescription: This property shall contain a human-readable error
+                message corresponding to the message in a message registry.
+          required:
+          - code
+          - message
+          type: object
+          x-longDescription: The Redfish Specification-described type shall contain
+            properties that describe an error from a Redfish service.
+      required:
+      - error
+      type: object
+      x-longDescription: The Redfish Specification-described type shall contain an
+        error payload from a Redfish service.
     ResolutionStep_ResolutionStep:
       additionalProperties: false
       description: This type describes a recommended step of the service-defined resolution.
@@ -1058,6 +755,140 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    ResolutionStep_ResolutionType:
+      enum:
+      - ContactVendor
+      - ReplaceComponent
+      - FirmwareUpdate
+      - Reset
+      - PowerCycle
+      - ResetToDefaults
+      - CollectDiagnosticData
+      - OEM
+      type: string
+      x-enumDescriptions:
+        CollectDiagnosticData: Collect diagnostic data.
+        ContactVendor: Contact vendor for service.
+        FirmwareUpdate: Perform a firmware update operation.
+        OEM: Perform an OEM-defined resolution step.
+        PowerCycle: Perform a power cycle operation.
+        ReplaceComponent: Replace a component.
+        Reset: Perform a reset operation.
+        ResetToDefaults: Reset the settings to factory defaults.
+    Resource_Condition:
+      additionalProperties: false
+      description: A condition that requires attention.
+      properties:
+        ConditionType:
+          description: The type of condition.
+          oneOf:
+          - $ref: '#/components/schemas/Resource_ConditionType'
+          - enum:
+            - null
+          readOnly: true
+          x-longDescription: This property shall contain the type of condition.
+          x-versionAdded: v1_22_0
+        LogEntry:
+          $ref: '#/components/schemas/odata-v4_idRef'
+          description: The link to the log entry created for this condition.
+          readOnly: true
+          x-longDescription: This property shall contain a link to a resource of type
+            `LogEntry` that represents the log entry created for this condition.
+        Message:
+          description: The human-readable message for this condition.
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain a human-readable message
+            describing this condition.
+        MessageArgs:
+          description: An array of message arguments that are substituted for the
+            arguments in the message when looked up in the message registry.
+          items:
+            type: string
+          readOnly: true
+          type: array
+          x-longDescription: This property shall contain an array of message arguments
+            that are substituted for the arguments in the message when looked up in
+            the message registry.  It has the same semantics as the `MessageArgs`
+            property in the Redfish `MessageRegistry` schema.
+        MessageId:
+          description: The identifier for the message.
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain a `MessageId`, as defined
+            in the 'MessageId format' clause of the Redfish Specification.
+        Oem:
+          $ref: '#/components/schemas/Resource_Oem'
+          description: The OEM extension property.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties contained in this object shall conform to the Redfish
+            Specification-described requirements.
+          x-versionAdded: v1_21_0
+        OriginOfCondition:
+          $ref: '#/components/schemas/odata-v4_idRef'
+          description: A link to the resource or object that originated the condition.
+          readOnly: true
+          x-longDescription: This property shall contain a link to the resource or
+            object that originated the condition.  This property shall not be present
+            if the condition was caused by this resource.
+        Resolution:
+          description: Suggestions on how to resolve the condition.
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the resolution of the condition.  Services
+            should replace the resolution defined in the message registry with a more
+            specific resolution.
+          x-versionAdded: v1_14_0
+        ResolutionSteps:
+          description: The list of recommended steps to resolve the condition.
+          items:
+            $ref: '#/components/schemas/ResolutionStep_ResolutionStep'
+          type: array
+          x-longDescription: This property shall contain an array of recommended steps
+            to resolve the condition.  A client can stop executing the resolution
+            steps once the condition is removed from the resource.
+          x-versionAdded: v1_18_0
+        Severity:
+          $ref: '#/components/schemas/Resource_Health'
+          description: The severity of the condition.
+          readOnly: true
+          x-longDescription: This property shall contain the severity of the condition.  Services
+            can replace the value defined in the message registry with a value more
+            applicable to the implementation.
+        Timestamp:
+          description: The time the condition occurred.
+          format: date-time
+          readOnly: true
+          type: string
+          x-longDescription: This property shall indicate the time the condition occurred.
+        UserAuthenticationSource:
+          description: The source of authentication for the username property associated
+            with the condition.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the URL to the authentication
+            service that is associated with the username property.  This should be
+            used for conditions that result from a user action.
+          x-versionAdded: v1_20_0
+        Username:
+          description: The username of the account associated with the condition.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the username of the account
+            associated with the condition.  This should be used for conditions that
+            result from a user action.
+          x-versionAdded: v1_20_0
+      required:
+      - MessageId
+      type: object
+      x-longDescription: This type shall contain the description and details of a
+        condition that exists within this resource or a related resource that requires
+        attention.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     Resource_ConditionType:
       enum:
       - Alert
@@ -1111,6 +942,12 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    Resource_Description:
+      description: The description of this resource.  Used for commonality in the
+        schema definitions.
+      type: string
+      x-longDescription: This property shall contain the description of this resource.  The
+        value shall conform with the 'Description' clause of the Redfish Specification.
     Resource_DurableNameFormat:
       enum:
       - NAA
@@ -1188,6 +1025,22 @@ components:
         NSID: v1_6_0
       x-enumVersionDeprecated:
         NSID: v1_12_0
+    Resource_Health:
+      enum:
+      - OK
+      - Warning
+      - Critical
+      type: string
+      x-enumDescriptions:
+        Critical: A critical condition requires immediate attention.
+        OK: Normal.
+        Warning: A condition requires attention.
+    Resource_Id:
+      description: The unique identifier for this resource within the collection of
+        similar resources.
+      type: string
+      x-longDescription: This property shall contain the identifier for this resource.  The
+        value shall conform with the 'Id' clause of the Redfish Specification.
     Resource_Identifier:
       additionalProperties: false
       description: Any additional identifiers for a resource.
@@ -1235,6 +1088,47 @@ components:
       x-longDescription: This type shall contain the import parameters when passing
         a configuration file when using the URI specified by the `MultipartImportConfigurationPushURI`
         property to import configuration data.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    Resource_IndicatorLED:
+      enum:
+      - Lit
+      - Blinking
+      - 'Off'
+      type: string
+      x-enumDescriptions:
+        Blinking: The indicator LED is blinking.
+        Lit: The indicator LED is lit.
+        'Off': The indicator LED is off.
+      x-enumLongDescriptions:
+        Blinking: This value shall represent that the indicator LED is in a blinking
+          state where the LED is being turned on and off in repetition.  If the service
+          does not support this value, it shall reject `PATCH` or `PUT` requests containing
+          this value by returning the HTTP `400 Bad Request` status code.
+        Lit: This value shall represent that the indicator LED is in a solid on state.  If
+          the service does not support this value, it shall reject `PATCH` or `PUT`
+          requests containing this value by returning the HTTP `400 Bad Request` status
+          code.
+        'Off': This value shall represent that the indicator LED is in a solid off
+          state.  If the service does not support this value, it shall reject `PATCH`
+          or `PUT` requests containing this value by returning the HTTP `400 Bad Request`
+          status code.
+    Resource_Item:
+      $ref: '#/components/schemas/Resource_Resource'
+      description: The base type for resources and members that can be linked to.
+    Resource_ItemOrCollection:
+      $ref: '#/components/schemas/Resource_ResourceCollection'
+    Resource_Links:
+      additionalProperties: false
+      properties:
+        Oem:
+          $ref: '#/components/schemas/Resource_Oem'
+          description: The OEM extension property.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties contained in this object shall conform to the Redfish
+            Specification-described requirements.
+      type: object
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
@@ -1391,6 +1285,34 @@ components:
         Embedded: v1_13_0
       x-longDescription: This enumeration shall list the types of locations for a
         part within an enclosure.
+    Resource_Name:
+      description: The name of the resource or array member.
+      type: string
+      x-longDescription: This property shall contain the name of this resource or
+        array member.  The value shall conform with the 'Name' clause of the Redfish
+        Specification.
+    Resource_Oem:
+      additionalProperties: true
+      description: The OEM extension.
+      properties: {}
+      type: object
+      x-longDescription: This object represents the OEM properties.  The resource
+        values shall comply with the Redfish Specification-described requirements.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+        ^[A-Za-z0-9_]+$:
+          $ref: '#/components/schemas/Resource_OemObject'
+    Resource_OemObject:
+      additionalProperties: true
+      description: The base type for an OEM extension.
+      properties: {}
+      type: object
+      x-longDescription: This object represents the base type for an OEM object.  The
+        resource values shall comply with the Redfish Specification-described requirements.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     Resource_Orientation:
       description: The orientations for the ordering of the part location ordinal
         value.
@@ -1570,6 +1492,13 @@ components:
             that cannot be conveyed with other properties defined for the Placement
             object.
           x-versionAdded: v1_7_0
+        FacilityName:
+          description: The name of the facility.
+          nullable: true
+          readOnly: false
+          type: string
+          x-longDescription: This property shall contain the name of the facility.
+          x-versionAdded: v1_23_0
         Rack:
           description: The name of a rack location within a row.
           nullable: true
@@ -1584,8 +1513,9 @@ components:
           nullable: true
           readOnly: false
           type: integer
-          x-longDescription: The vertical location of the item in the rack.  Rack
-            offset units shall be measured from bottom to top, starting with 0.
+          x-longDescription: The vertical location of the item in the rack, at the
+            lowest point of the unit.  Rack offset units shall be measured from bottom
+            to top, starting with 0.
           x-versionAdded: v1_3_0
         RackOffsetUnits:
           description: The type of rack units in use.
@@ -1597,6 +1527,14 @@ components:
           x-longDescription: This property shall contain a RackUnit enumeration literal
             that indicates the type of rack units in use.
           x-versionAdded: v1_3_0
+        Room:
+          description: The name or number of the room.
+          nullable: true
+          readOnly: false
+          type: string
+          x-longDescription: This property shall contain the name or number of the
+            room.
+          x-versionAdded: v1_23_0
         Row:
           description: The name of the row.
           nullable: true
@@ -1907,6 +1845,25 @@ components:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
       x-versionDeprecated: v1_17_0
+    Resource_PowerState:
+      enum:
+      - 'On'
+      - 'Off'
+      - PoweringOn
+      - PoweringOff
+      - Paused
+      type: string
+      x-enumDescriptions:
+        'Off': The resource is powered off.  The components within the resource might
+          continue to have AUX power.
+        'On': The resource is powered on.
+        Paused: The resource is paused.
+        PoweringOff: A temporary state between on and off.  The components within
+          the resource can take time to process the power off action.
+        PoweringOn: A temporary state between off and on.  The components within the
+          resource can take time to process the power on action.
+      x-enumVersionAdded:
+        Paused: v1_13_0
     Resource_RackUnits:
       description: The type of rack unit in use.
       enum:
@@ -1980,405 +1937,6 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
-    Resource_Resource:
-      additionalProperties: false
-      description: The base type for resources and members that can be linked to.
-      properties:
-        '@odata.context':
-          $ref: '#/components/schemas/odata-v4_context'
-        '@odata.etag':
-          $ref: '#/components/schemas/odata-v4_etag'
-        '@odata.id':
-          $ref: '#/components/schemas/odata-v4_id'
-        '@odata.type':
-          $ref: '#/components/schemas/odata-v4_type'
-        Description:
-          oneOf:
-          - $ref: '#/components/schemas/Resource_Description'
-          - enum:
-            - null
-          readOnly: true
-        Id:
-          $ref: '#/components/schemas/Resource_Id'
-          readOnly: true
-        Name:
-          $ref: '#/components/schemas/Resource_Name'
-          readOnly: true
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All
-            values for properties that this object contains shall conform to the Redfish
-            Specification-described requirements.
-      required:
-      - Id
-      - Name
-      - '@odata.id'
-      - '@odata.type'
-      type: object
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    Resource_ResourceCollection:
-      additionalProperties: false
-      properties:
-        '@odata.context':
-          $ref: '#/components/schemas/odata-v4_context'
-        '@odata.etag':
-          $ref: '#/components/schemas/odata-v4_etag'
-        '@odata.id':
-          $ref: '#/components/schemas/odata-v4_id'
-        '@odata.type':
-          $ref: '#/components/schemas/odata-v4_type'
-        Description:
-          oneOf:
-          - $ref: '#/components/schemas/Resource_Description'
-          - enum:
-            - null
-          readOnly: true
-        Name:
-          $ref: '#/components/schemas/Resource_Name'
-          readOnly: true
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All
-            values for properties contained in this object shall conform to the Redfish
-            Specification-described requirements.
-      required:
-      - Name
-      - '@odata.id'
-      - '@odata.type'
-      type: object
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    ChassisCollection_ChassisCollection:
-      additionalProperties: false
-      description: The collection of `Chassis` resource instances.
-      properties:
-        '@odata.context':
-          $ref: '#/components/schemas/odata-v4_context'
-        '@odata.etag':
-          $ref: '#/components/schemas/odata-v4_etag'
-        '@odata.id':
-          $ref: '#/components/schemas/odata-v4_id'
-        '@odata.type':
-          $ref: '#/components/schemas/odata-v4_type'
-        Description:
-          oneOf:
-          - $ref: '#/components/schemas/Resource_Description'
-          - enum:
-            - null
-          readOnly: true
-        Members:
-          description: The members of this collection.
-          items:
-            $ref: '#/components/schemas/odata-v4_idRef'
-          readOnly: true
-          type: array
-          x-longDescription: This property shall contain an array of links to the
-            members of this collection.
-        Members@odata.count:
-          $ref: '#/components/schemas/odata-v4_count'
-        Members@odata.nextLink:
-          $ref: '#/components/schemas/odata-v4_nextLink'
-        Name:
-          $ref: '#/components/schemas/Resource_Name'
-          readOnly: true
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All
-            values for properties contained in this object shall conform to the Redfish
-            Specification-described requirements.
-      required:
-      - Members
-      - Members@odata.count
-      - '@odata.id'
-      - '@odata.type'
-      - Name
-      type: object
-      x-longDescription: This resource shall represent a resource collection of `Chassis`
-        instances for a Redfish implementation.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    ManagerCollection_ManagerCollection:
-      additionalProperties: false
-      description: The collection of `Manager` resource instances.
-      properties:
-        '@odata.context':
-          $ref: '#/components/schemas/odata-v4_context'
-        '@odata.etag':
-          $ref: '#/components/schemas/odata-v4_etag'
-        '@odata.id':
-          $ref: '#/components/schemas/odata-v4_id'
-        '@odata.type':
-          $ref: '#/components/schemas/odata-v4_type'
-        Description:
-          oneOf:
-          - $ref: '#/components/schemas/Resource_Description'
-          - enum:
-            - null
-          readOnly: true
-        Members:
-          description: The members of this collection.
-          items:
-            $ref: '#/components/schemas/odata-v4_idRef'
-          readOnly: true
-          type: array
-          x-longDescription: This property shall contain an array of links to the
-            members of this collection.
-        Members@odata.count:
-          $ref: '#/components/schemas/odata-v4_count'
-        Members@odata.nextLink:
-          $ref: '#/components/schemas/odata-v4_nextLink'
-        Name:
-          $ref: '#/components/schemas/Resource_Name'
-          readOnly: true
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All
-            values for properties contained in this object shall conform to the Redfish
-            Specification-described requirements.
-      required:
-      - Members
-      - Members@odata.count
-      - '@odata.id'
-      - '@odata.type'
-      - Name
-      type: object
-      x-longDescription: This resource shall represent a resource collection of `Manager`
-        instances for a Redfish implementation.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    Resource_Condition:
-      additionalProperties: false
-      description: A condition that requires attention.
-      properties:
-        ConditionType:
-          description: The type of condition.
-          oneOf:
-          - $ref: '#/components/schemas/Resource_ConditionType'
-          - enum:
-            - null
-          readOnly: true
-          x-longDescription: This property shall contain the type of condition.
-          x-versionAdded: v1_22_0
-        LogEntry:
-          $ref: '#/components/schemas/odata-v4_idRef'
-          description: The link to the log entry created for this condition.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource of type
-            `LogEntry` that represents the log entry created for this condition.
-        Message:
-          description: The human-readable message for this condition.
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain a human-readable message
-            describing this condition.
-        MessageArgs:
-          description: An array of message arguments that are substituted for the
-            arguments in the message when looked up in the message registry.
-          items:
-            type: string
-          readOnly: true
-          type: array
-          x-longDescription: This property shall contain an array of message arguments
-            that are substituted for the arguments in the message when looked up in
-            the message registry.  It has the same semantics as the `MessageArgs`
-            property in the Redfish `MessageRegistry` schema.
-        MessageId:
-          description: The identifier for the message.
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain a `MessageId`, as defined
-            in the 'MessageId format' clause of the Redfish Specification.
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All
-            values for properties contained in this object shall conform to the Redfish
-            Specification-described requirements.
-          x-versionAdded: v1_21_0
-        OriginOfCondition:
-          $ref: '#/components/schemas/odata-v4_idRef'
-          description: A link to the resource or object that originated the condition.
-          readOnly: true
-          x-longDescription: This property shall contain a link to the resource or
-            object that originated the condition.  This property shall not be present
-            if the condition was caused by this resource.
-        Resolution:
-          description: Suggestions on how to resolve the condition.
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain the resolution of the condition.  Services
-            should replace the resolution defined in the message registry with a more
-            specific resolution.
-          x-versionAdded: v1_14_0
-        ResolutionSteps:
-          description: The list of recommended steps to resolve the condition.
-          items:
-            $ref: '#/components/schemas/ResolutionStep_ResolutionStep'
-          type: array
-          x-longDescription: This property shall contain an array of recommended steps
-            to resolve the condition.  A client can stop executing the resolution
-            steps once the condition is removed from the resource.
-          x-versionAdded: v1_18_0
-        Severity:
-          $ref: '#/components/schemas/Resource_Health'
-          description: The severity of the condition.
-          readOnly: true
-          x-longDescription: This property shall contain the severity of the condition.  Services
-            can replace the value defined in the message registry with a value more
-            applicable to the implementation.
-        Timestamp:
-          description: The time the condition occurred.
-          format: date-time
-          readOnly: true
-          type: string
-          x-longDescription: This property shall indicate the time the condition occurred.
-        UserAuthenticationSource:
-          description: The source of authentication for the username property associated
-            with the condition.
-          nullable: true
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain the URL to the authentication
-            service that is associated with the username property.  This should be
-            used for conditions that result from a user action.
-          x-versionAdded: v1_20_0
-        Username:
-          description: The username of the account associated with the condition.
-          nullable: true
-          readOnly: true
-          type: string
-          x-longDescription: This property shall contain the username of the account
-            associated with the condition.  This should be used for conditions that
-            result from a user action.
-          x-versionAdded: v1_20_0
-      required:
-      - MessageId
-      type: object
-      x-longDescription: This type shall contain the description and details of a
-        condition that exists within this resource or a related resource that requires
-        attention.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    Resource_Description:
-      description: The description of this resource.  Used for commonality in the
-        schema definitions.
-      type: string
-      x-longDescription: This property shall contain the description of this resource.  The
-        value shall conform with the 'Description' clause of the Redfish Specification.
-    Resource_Health:
-      enum:
-      - OK
-      - Warning
-      - Critical
-      type: string
-      x-enumDescriptions:
-        Critical: A critical condition requires immediate attention.
-        OK: Normal.
-        Warning: A condition requires attention.
-    Resource_Id:
-      description: The unique identifier for this resource within the collection of
-        similar resources.
-      type: string
-      x-longDescription: This property shall contain the identifier for this resource.  The
-        value shall conform with the 'Id' clause of the Redfish Specification.
-    Resource_IndicatorLED:
-      enum:
-      - Lit
-      - Blinking
-      - 'Off'
-      type: string
-      x-enumDescriptions:
-        Blinking: The indicator LED is blinking.
-        Lit: The indicator LED is lit.
-        'Off': The indicator LED is off.
-      x-enumLongDescriptions:
-        Blinking: This value shall represent that the indicator LED is in a blinking
-          state where the LED is being turned on and off in repetition.  If the service
-          does not support this value, it shall reject `PATCH` or `PUT` requests containing
-          this value by returning the HTTP `400 Bad Request` status code.
-        Lit: This value shall represent that the indicator LED is in a solid on state.  If
-          the service does not support this value, it shall reject `PATCH` or `PUT`
-          requests containing this value by returning the HTTP `400 Bad Request` status
-          code.
-        'Off': This value shall represent that the indicator LED is in a solid off
-          state.  If the service does not support this value, it shall reject `PATCH`
-          or `PUT` requests containing this value by returning the HTTP `400 Bad Request`
-          status code.
-    Resource_Item:
-      $ref: '#/components/schemas/Resource_Resource'
-      description: The base type for resources and members that can be linked to.
-    Resource_ItemOrCollection:
-      $ref: '#/components/schemas/Resource_ResourceCollection'
-    Resource_Links:
-      additionalProperties: false
-      properties:
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All
-            values for properties contained in this object shall conform to the Redfish
-            Specification-described requirements.
-      type: object
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    Resource_Name:
-      description: The name of the resource or array member.
-      type: string
-      x-longDescription: This property shall contain the name of this resource or
-        array member.  The value shall conform with the 'Name' clause of the Redfish
-        Specification.
-    Resource_Oem:
-      additionalProperties: true
-      description: The OEM extension.
-      properties: {}
-      type: object
-      x-longDescription: This object represents the OEM properties.  The resource
-        values shall comply with the Redfish Specification-described requirements.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-        ^[A-Za-z0-9_]+$:
-          $ref: '#/components/schemas/Resource_OemObject'
-    Resource_OemObject:
-      additionalProperties: true
-      description: The base type for an OEM extension.
-      properties: {}
-      type: object
-      x-longDescription: This object represents the base type for an OEM object.  The
-        resource values shall comply with the Redfish Specification-described requirements.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    Resource_PowerState:
-      enum:
-      - 'On'
-      - 'Off'
-      - PoweringOn
-      - PoweringOff
-      - Paused
-      type: string
-      x-enumDescriptions:
-        'Off': The resource is powered off.  The components within the resource might
-          continue to have AUX power.
-        'On': The resource is powered on.
-        Paused: The resource is paused.
-        PoweringOff: A temporary state between on and off.  The components within
-          the resource can take time to process the power off action.
-        PoweringOn: A temporary state between off and on.  The components within the
-          resource can take time to process the power on action.
-      x-enumVersionAdded:
-        Paused: v1_13_0
     Resource_ResetType:
       enum:
       - 'On'
@@ -2490,6 +2048,79 @@ components:
         PowerCycle: v1_4_0
         Resume: v1_13_0
         Suspend: v1_13_0
+    Resource_Resource:
+      additionalProperties: false
+      description: The base type for resources and members that can be linked to.
+      properties:
+        '@odata.context':
+          $ref: '#/components/schemas/odata-v4_context'
+        '@odata.etag':
+          $ref: '#/components/schemas/odata-v4_etag'
+        '@odata.id':
+          $ref: '#/components/schemas/odata-v4_id'
+        '@odata.type':
+          $ref: '#/components/schemas/odata-v4_type'
+        Description:
+          oneOf:
+          - $ref: '#/components/schemas/Resource_Description'
+          - enum:
+            - null
+          readOnly: true
+        Id:
+          $ref: '#/components/schemas/Resource_Id'
+          readOnly: true
+        Name:
+          $ref: '#/components/schemas/Resource_Name'
+          readOnly: true
+        Oem:
+          $ref: '#/components/schemas/Resource_Oem'
+          description: The OEM extension property.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties that this object contains shall conform to the Redfish
+            Specification-described requirements.
+      required:
+      - Id
+      - Name
+      - '@odata.id'
+      - '@odata.type'
+      type: object
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    Resource_ResourceCollection:
+      additionalProperties: false
+      properties:
+        '@odata.context':
+          $ref: '#/components/schemas/odata-v4_context'
+        '@odata.etag':
+          $ref: '#/components/schemas/odata-v4_etag'
+        '@odata.id':
+          $ref: '#/components/schemas/odata-v4_id'
+        '@odata.type':
+          $ref: '#/components/schemas/odata-v4_type'
+        Description:
+          oneOf:
+          - $ref: '#/components/schemas/Resource_Description'
+          - enum:
+            - null
+          readOnly: true
+        Name:
+          $ref: '#/components/schemas/Resource_Name'
+          readOnly: true
+        Oem:
+          $ref: '#/components/schemas/Resource_Oem'
+          description: The OEM extension property.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties contained in this object shall conform to the Redfish
+            Specification-described requirements.
+      required:
+      - Name
+      - '@odata.id'
+      - '@odata.type'
+      type: object
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     Resource_State:
       enum:
       - Enabled
@@ -2629,26 +2260,6 @@ components:
     Resource_UUID:
       pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
       type: string
-    ResolutionStep_ResolutionType:
-      enum:
-      - ContactVendor
-      - ReplaceComponent
-      - FirmwareUpdate
-      - Reset
-      - PowerCycle
-      - ResetToDefaults
-      - CollectDiagnosticData
-      - OEM
-      type: string
-      x-enumDescriptions:
-        CollectDiagnosticData: Collect diagnostic data.
-        ContactVendor: Contact vendor for service.
-        FirmwareUpdate: Perform a firmware update operation.
-        OEM: Perform an OEM-defined resolution step.
-        PowerCycle: Perform a power cycle operation.
-        ReplaceComponent: Replace a component.
-        Reset: Perform a reset operation.
-        ResetToDefaults: Reset the settings to factory defaults.
     ServiceRoot_ServiceRoot:
       additionalProperties: false
       description: The `ServiceRoot` schema describes the root of the Redfish service,
@@ -2737,3 +2348,54 @@ x-basic-auth:
   default-auth: BasicAuth
   redfish-compliant: true
   service-root-public: true
+    odata-v4_context:
+      description: The OData description of a payload.
+      format: uri-reference
+      readOnly: true
+      type: string
+      x-longDescription: The value of this property shall be the context URL that
+        describes the resource according to OData-Protocol and shall be of the form
+        defined in the Redfish specification.
+    odata-v4_count:
+      description: The number of items in a collection.
+      format: int64
+      readOnly: true
+      type: integer
+      x-longDescription: The value of this property shall be an integer representing
+        the number of items in a collection.
+    odata-v4_etag:
+      description: The current ETag of the resource.
+      readOnly: true
+      type: string
+      x-longDescription: The value of this property shall be a string that is defined
+        by the ETag HTTP header definition in RFC7232.
+    odata-v4_id:
+      description: The unique identifier for a resource.
+      format: uri-reference
+      readOnly: true
+      type: string
+      x-longDescription: The value of this property shall be the unique identifier
+        for the resource and it shall be of the form defined in the Redfish specification.
+    odata-v4_idRef:
+      additionalProperties: false
+      description: A reference to a resource.
+      properties:
+        '@odata.id':
+          $ref: '#/components/schemas/odata-v4_id'
+      type: object
+      x-longDescription: The value of this property shall be used for references to
+        a resource.
+    odata-v4_nextLink:
+      description: The URI to the resource containing the next set of partial members.
+      format: uri-reference
+      readOnly: true
+      type: string
+      x-longDescription: The value of this property shall be a URI to a resource,
+        with the same @odata.type, containing the next set of partial members.
+    odata-v4_type:
+      description: The type of a resource.
+      readOnly: true
+      type: string
+      x-longDescription: The value of this property shall be a URI fragment that specifies
+        the type of the resource and it shall be of the form defined in the Redfish
+        specification.

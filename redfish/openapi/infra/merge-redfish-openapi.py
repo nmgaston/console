@@ -124,6 +124,12 @@ def merge_openapi_files():
     print("Converting file references to internal references...")
     main_spec = convert_file_refs_to_internal(main_spec)
 
+    # Sort the schemas alphabetically for better organization and consistency
+    if 'components' in main_spec and 'schemas' in main_spec['components']:
+        print("Sorting schemas alphabetically...")
+        sorted_schemas = dict(sorted(main_spec['components']['schemas'].items()))
+        main_spec['components']['schemas'] = sorted_schemas
+
     # Remove duplicate /redfish/v1/ path to avoid Go method conflicts
     if 'paths' in main_spec:
         if '/redfish/v1/' in main_spec['paths'] and '/redfish/v1' in main_spec['paths']:

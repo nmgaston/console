@@ -9,6 +9,8 @@ GENERATED_SPEC := ../../internal/controller/http/v1/generated/spec.gen.go
 GENERATED_TYPES := ../../internal/controller/http/v1/generated/types.gen.go
 GENERATED_SERVER := ../../internal/controller/http/v1/generated/server.gen.go
 MERGE_SCRIPT := merge-redfish-openapi.py
+# Tool versions
+OAPI_CODEGEN_VERSION := github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.5.1
 
 # Source YAML files in ../dmtf directory
 YAML_SOURCES := $(wildcard ../dmtf/*.yaml)
@@ -181,8 +183,8 @@ rf-install-missing-tools: ### Install missing tools automatically
 
 	# Install oapi-codegen
 	@if ! command -v oapi-codegen >/dev/null 2>&1; then \
-		echo "Installing oapi-codegen..."; \
-		go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest; \
+		echo "Installing oapi-codegen from $(OAPI_CODEGEN_VERSION)..."; \
+		go install $(OAPI_CODEGEN_VERSION); \
 	fi
 
 	# Install system tools based on OS
@@ -223,6 +225,14 @@ rf-auth: ### Add Basic Auth to OpenAPI spec and regenerate Go code
 	python3 add-basic-auth.py
 	@echo "✅ Basic Authentication added"
 .PHONY: rf-auth
+
+
+rf-update-tools: ### Update oapi-codegen to OAPI_CODEGEN_VERSION version
+	@echo "🔄 Updating oapi-codegen to $(OAPI_CODEGEN_VERSION)..."
+	@go install $(OAPI_CODEGEN_VERSION)
+	@echo "✅ Updated oapi-codegen to $(OAPI_CODEGEN_VERSION)"
+	@echo "📋 Current version: $$(oapi-codegen -version 2>/dev/null || echo 'unknown')"
+.PHONY: rf-update-tools
 
 rf-all: rf-merge rf-generate rf-validate rf-auth ### Run all Redfish API generation steps
 	@echo "✅ All Redfish API generation steps completed"

@@ -220,6 +220,13 @@ rf-clean: ### Clean generated files
 	@echo "✅ Cleaned generated files"
 .PHONY: rf-clean
 
+rf-auth: ### Add Basic Auth to OpenAPI spec and regenerate Go code
+	@echo "🔐 Adding Basic Authentication to Redfish OpenAPI spec..."
+	python3 add-basic-auth.py
+	@echo "✅ Basic Authentication added"
+.PHONY: rf-auth
+
+
 rf-update-tools: ### Update oapi-codegen to OAPI_CODEGEN_VERSION version
 	@echo "🔄 Updating oapi-codegen to $(OAPI_CODEGEN_VERSION)..."
 	@go install $(OAPI_CODEGEN_VERSION)
@@ -227,6 +234,6 @@ rf-update-tools: ### Update oapi-codegen to OAPI_CODEGEN_VERSION version
 	@echo "📋 Current version: $$(oapi-codegen -version 2>/dev/null || echo 'unknown')"
 .PHONY: rf-update-tools
 
-rf-all: rf-merge rf-generate rf-validate ### Run all Redfish API generation steps
+rf-all: rf-merge rf-generate rf-validate rf-auth ### Run all Redfish API generation steps
 	@echo "✅ All Redfish API generation steps completed"
 .PHONY: rf-all

@@ -19,6 +19,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
   /redfish/v1/$metadata:
     get:
       responses:
@@ -32,6 +34,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
   /redfish/v1/Systems:
     get:
       responses:
@@ -48,6 +52,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/Systems/{ComputerSystemId}:
     get:
       responses:
@@ -64,6 +70,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     parameters:
     - description: The value of the Id property of the ComputerSystem resource
       in: path
@@ -99,6 +107,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
 components:
   schemas:
     ActionInfo_ActionInfo:
@@ -2377,3 +2387,15 @@ components:
       x-longDescription: The value of this property shall be a URI fragment that specifies
         the type of the resource and it shall be of the form defined in the Redfish
         specification.
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic Authentication for Redfish API
+security:
+- BasicAuth: []
+- {}
+x-basic-auth:
+  default-auth: BasicAuth
+  redfish-compliant: true
+  service-root-public: true

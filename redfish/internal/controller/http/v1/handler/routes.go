@@ -2,6 +2,7 @@
 package v1
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,6 +16,9 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
+
+//go:embed metadata.xml
+var metadataXML string
 
 const (
 	// Task state constants from Redfish Task.v1_8_0 specification
@@ -72,12 +76,13 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 	c.JSON(http.StatusOK, serviceRoot)
 }
 
-// GetRedfishV1Metadata returns the OData metadata
+// GetRedfishV1Metadata returns the OData CSDL metadata document describing the service's data model.
+// Per Redfish specification, this endpoint is accessible without authentication.
 func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
-	metadata := ""
-
+	// Set Redfish-compliant headers
 	c.Header(headerContentType, contentTypeXML)
-	c.String(http.StatusOK, metadata)
+	c.Header(headerODataVersion, odataVersion)
+	c.String(http.StatusOK, metadataXML)
 }
 
 // GetRedfishV1Systems returns the computer systems collection

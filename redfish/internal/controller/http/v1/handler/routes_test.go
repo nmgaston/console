@@ -95,6 +95,7 @@ func TestGetRedfishV1Metadata(t *testing.T) {
 
 		// Execute multiple concurrent requests
 		const numRequests = 10
+
 		results := make(chan int, numRequests)
 
 		for i := 0; i < numRequests; i++ {
@@ -102,6 +103,7 @@ func TestGetRedfishV1Metadata(t *testing.T) {
 				req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
 				w := httptest.NewRecorder()
 				router.ServeHTTP(w, req)
+
 				results <- w.Code
 			}()
 		}

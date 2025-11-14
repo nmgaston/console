@@ -24,9 +24,6 @@ var (
 )
 
 // loadMetadata loads metadata.xml from the generated folder with XML validation.
-// This function uses a guard clause to ensure metadata is loaded only once.
-// Searches paths in order: project structure, alternative locations, system paths.
-// Note: Not thread-safe for concurrent writes. Consider using sync.Once for production.
 func loadMetadata() {
 	if metadataLoaded {
 		return
@@ -84,14 +81,12 @@ const (
 )
 
 // metadataSearchPaths defines the search order for metadata.xml file locations
-// This handles different deployment and working directory scenarios
 var metadataSearchPaths = []string{
 	"redfish/internal/controller/http/v1/generated/metadata.xml",
 	"./redfish/internal/controller/http/v1/generated/metadata.xml",
 	"../../../redfish/internal/controller/http/v1/generated/metadata.xml",
 	"redfish/openapi/metadata.xml",
 	"./redfish/openapi/metadata.xml",
-	"/etc/redfish/metadata.xml", // System-wide location for production
 }
 
 // RedfishServer implements the Redfish API handlers

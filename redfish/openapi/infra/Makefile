@@ -213,3 +213,9 @@ rf-auth: ### Add Basic Auth to OpenAPI spec and regenerate Go code
 rf-all: rf-merge rf-generate rf-validate rf-auth ### Run all Redfish API generation steps
 	@echo "✅ All Redfish API generation steps completed"
 .PHONY: rf-all
+
+rf-metadata-generate: ### Generate metadata.xml from DMTF schemas
+	@echo "📥 Generating metadata.xml from DMTF schemas..."
+	python3 metadata-generate.py
+	@echo "✅ Metadata generation completed"
+.PHONY: rf-metadata-generate

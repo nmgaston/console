@@ -2,10 +2,11 @@
 package v1
 
 import (
-	_ "embed"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,8 +18,61 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
-//go:embed metadata.xml
-var metadataXML string
+var (
+	metadataXML    string
+	metadataLoaded bool
+)
+
+// loadMetadata loads metadata.xml from the generated folder with XML validation.
+// This function uses a guard clause to ensure metadata is loaded only once.
+// Searches paths in order: project structure, alternative locations, system paths.
+// Note: Not thread-safe for concurrent writes. Consider using sync.Once for production.
+func loadMetadata() {
+	if metadataLoaded {
+		return
+	}
+
+	var data []byte
+
+	var err error
+
+	for _, path := range metadataSearchPaths {
+		data, err = os.ReadFile(path)
+		if err == nil {
+			metadataXML = string(data)
+			metadataLoaded = true
+
+			// Validate XML
+			if err := validateMetadataXML(metadataXML); err != nil {
+				log.Fatalf("Invalid metadata.xml at %s: %v", path, err)
+			}
+
+			log.Infof("metadata.xml loaded from %s and validation passed", path)
+
+			return
+		}
+	}
+
+	log.Warnf("Could not load metadata.xml from any known path. Attempted: %v", metadataSearchPaths)
+
+	metadataXML = ""
+	metadataLoaded = true
+}
+
+// validateMetadataXML checks if the provided XML string is well-formed.
+func validateMetadataXML(xmlData string) error {
+	if xmlData == "" {
+		return nil // Empty is acceptable
+	}
+
+	var doc interface{}
+
+	if err := xml.Unmarshal([]byte(xmlData), &doc); err != nil {
+		return fmt.Errorf("XML parsing failed: %w", err)
+	}
+
+	return nil
+}
 
 const (
 	// Task state constants from Redfish Task.v1_8_0 specification
@@ -28,6 +82,17 @@ const (
 	msgIDBaseSuccess      = "Base.1.22.0.Success"
 	msgIDBaseGeneralError = "Base.1.22.0.GeneralError"
 )
+
+// metadataSearchPaths defines the search order for metadata.xml file locations
+// This handles different deployment and working directory scenarios
+var metadataSearchPaths = []string{
+	"redfish/internal/controller/http/v1/generated/metadata.xml",
+	"./redfish/internal/controller/http/v1/generated/metadata.xml",
+	"../../../redfish/internal/controller/http/v1/generated/metadata.xml",
+	"redfish/openapi/metadata.xml",
+	"./redfish/openapi/metadata.xml",
+	"/etc/redfish/metadata.xml", // System-wide location for production
+}
 
 // RedfishServer implements the Redfish API handlers
 // Add dependencies here if needed (e.g., usecase, presenter, etc.)
@@ -79,6 +144,9 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 // GetRedfishV1Metadata returns the OData CSDL metadata document describing the service's data model.
 // Per Redfish specification, this endpoint is accessible without authentication.
 func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
+	// Ensure metadata is loaded
+	loadMetadata()
+
 	// Set Redfish-compliant headers
 	c.Header(headerContentType, contentTypeXML)
 	c.Header(headerODataVersion, odataVersion)

@@ -18,17 +18,29 @@ import (
 	v2 "github.com/device-management-toolkit/console/internal/controller/http/v2"
 	openapi "github.com/device-management-toolkit/console/internal/controller/openapi"
 	"github.com/device-management-toolkit/console/internal/usecase"
+	"github.com/device-management-toolkit/console/pkg/db"
 	"github.com/device-management-toolkit/console/pkg/logger"
+	redfish "github.com/device-management-toolkit/console/redfish"
 )
 
 //go:embed all:ui
 var content embed.FS
 
-// NewRouter -.
-func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg *config.Config) { //nolint:funlen // This function is responsible for setting up the router, so it's expected to be long
+const (
+	protocolHTTP  = "http://"
+	protocolHTTPS = "https://"
+)
+
+// NewRouter sets up the HTTP router with redfish support.
+func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg *config.Config, database *db.SQL) { //nolint:funlen // This function is responsible for setting up the router, so it's expected to be long
 	// Options
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
+
+	// Initialize redfish directly
+	if err := redfish.Initialize(handler, l, database, &t, cfg); err != nil {
+		l.Fatal("Failed to initialize redfish: " + err.Error())
+	}
 
 	// Initialize Fuego adapter
 	fuegoAdapter := openapi.NewFuegoAdapter(t, l)
@@ -113,9 +125,14 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		v2.NewAmtRoutes(h3, t.Devices, l)
 	}
 
-	// Catch-all route to serve index.html for any route not matched above to be handled by Angular
+	// Register redfish routes directly
+	if err := redfish.RegisterRoutes(handler, l); err != nil {
+		l.Fatal("Failed to register redfish routes: " + err.Error())
+	}
+
+	// Setup default NoRoute handler for SPA
 	handler.NoRoute(func(c *gin.Context) {
-		c.FileFromFS("./", http.FS(staticFiles)) // Serve static files from "/" route
+		c.FileFromFS("./", http.FS(staticFiles))
 	})
 }
 
@@ -127,16 +144,16 @@ func injectConfigToMainJS(l logger.Interface, cfg *config.Config) string {
 		return ""
 	}
 
-	protocol := "http://"
+	protocol := protocolHTTP
 
 	requireHTTPSReplacement := ",requireHttps:!1"
 	if cfg.UI.RequireHTTPS {
 		requireHTTPSReplacement = ",requireHttps:!0"
-		protocol = "https://"
+		protocol = protocolHTTPS
 	}
 
 	if cfg.TLS.Enabled {
-		protocol = "https://"
+		protocol = protocolHTTPS
 	}
 
 	// if there is a clientID, we assume oauth will be configured, so inject UI config values from YAML

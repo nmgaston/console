@@ -1,0 +1,38 @@
+components:
+  schemas:
+    OdataService_OdataService:
+      additionalProperties: false
+      description: The `OdataService` schema represents the OData service root for the Redfish service.
+      properties:
+        '@odata.context':
+          $ref: odata-v4.yaml#/components/schemas/odata-v4_context
+        '@odata.id':
+          $ref: odata-v4.yaml#/components/schemas/odata-v4_id
+        '@odata.type':
+          $ref: odata-v4.yaml#/components/schemas/odata-v4_type
+        Description:
+          oneOf:
+          - $ref: Resource.yaml#/components/schemas/Resource_Description
+          - enum:
+            - null
+          readOnly: true
+        Id:
+          $ref: Resource.yaml#/components/schemas/Resource_Id
+          readOnly: true
+        Name:
+          $ref: Resource.yaml#/components/schemas/Resource_Name
+          readOnly: true
+        Oem:
+          $ref: Resource.yaml#/components/schemas/Resource_Oem
+          description: The OEM extension.
+          x-longDescription: This property shall contain the OEM extensions. All values for properties that this object contains shall conform to the Redfish Specification-described requirements.
+      required:
+      - '@odata.id'
+      - '@odata.type'
+      - Id
+      - Name
+      type: object
+      x-longDescription: This resource represents the OData Service root for the Redfish service.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.

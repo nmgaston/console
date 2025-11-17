@@ -198,6 +198,7 @@ func (p *Plugin) RegisterRoutes(ctx *plugin.Context, _, _ *gin.RouterGroup) erro
 		publicEndpoints := map[string]bool{
 			"/redfish/v1/":          true,
 			"/redfish/v1/$metadata": true,
+			"/redfish/v1/odata":     true,
 		}
 
 		// Register handlers with OpenAPI-spec-compliant middleware

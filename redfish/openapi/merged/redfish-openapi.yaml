@@ -36,6 +36,24 @@ paths:
           description: Error condition
       security:
       - {}
+  /redfish/v1/odata:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OdataService_OdataService'
+          description: The response contains a representation of the OData Service
+            resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - {}
   /redfish/v1/Systems:
     get:
       responses:
@@ -627,6 +645,46 @@ components:
       type: object
       x-longDescription: This type shall contain a message that the Redfish service
         returns, as described in the Redfish Specification.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    OdataService_OdataService:
+      additionalProperties: false
+      description: The `OdataService` schema represents the OData service root for
+        the Redfish service.
+      properties:
+        '@odata.context':
+          $ref: '#/components/schemas/odata-v4_context'
+        '@odata.id':
+          $ref: '#/components/schemas/odata-v4_id'
+        '@odata.type':
+          $ref: '#/components/schemas/odata-v4_type'
+        Description:
+          oneOf:
+          - $ref: '#/components/schemas/Resource_Description'
+          - enum:
+            - null
+          readOnly: true
+        Id:
+          $ref: '#/components/schemas/Resource_Id'
+          readOnly: true
+        Name:
+          $ref: '#/components/schemas/Resource_Name'
+          readOnly: true
+        Oem:
+          $ref: '#/components/schemas/Resource_Oem'
+          description: The OEM extension.
+          x-longDescription: This property shall contain the OEM extensions. All values
+            for properties that this object contains shall conform to the Redfish
+            Specification-described requirements.
+      required:
+      - '@odata.id'
+      - '@odata.type'
+      - Id
+      - Name
+      type: object
+      x-longDescription: This resource represents the OData Service root for the Redfish
+        service.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.

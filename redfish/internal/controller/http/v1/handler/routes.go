@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,11 +22,18 @@ import (
 var (
 	metadataXML    string
 	metadataLoaded bool
+	metadataMutex  sync.Mutex
 )
 
 // loadMetadata loads metadata.xml from the generated folder with XML validation.
+// This function is thread-safe and ensures metadata is loaded only once.
 func loadMetadata() {
+	metadataMutex.Lock()
+
+	// Double-check locking pattern
 	if metadataLoaded {
+		metadataMutex.Unlock()
+
 		return
 	}
 
@@ -36,6 +44,8 @@ func loadMetadata() {
 		metadataXML = ""
 		metadataLoaded = true
 
+		metadataMutex.Unlock()
+
 		return
 	}
 
@@ -43,12 +53,15 @@ func loadMetadata() {
 
 	// Validate XML
 	if err := validateMetadataXML(metadataXML); err != nil {
+		metadataMutex.Unlock()
 		log.Fatalf("Invalid metadata.xml at %s: %v", metadataFilePath, err)
 	}
 
 	log.Infof("metadata.xml loaded from %s and validation passed", metadataFilePath)
 
 	metadataLoaded = true
+
+	metadataMutex.Unlock()
 }
 
 // validateMetadataXML checks if the provided XML string is well-formed.
@@ -133,10 +146,17 @@ func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
 	// Ensure metadata is loaded
 	loadMetadata()
 
+	// Read metadata safely
+	metadataMutex.Lock()
+
+	metadata := metadataXML
+
+	metadataMutex.Unlock()
+
 	// Set Redfish-compliant headers
 	c.Header(headerContentType, contentTypeXML)
 	c.Header(headerODataVersion, odataVersion)
-	c.String(http.StatusOK, metadataXML)
+	c.String(http.StatusOK, metadata)
 }
 
 // GetRedfishV1Systems returns the computer systems collection

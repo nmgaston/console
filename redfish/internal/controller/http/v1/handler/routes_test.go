@@ -13,6 +13,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// resetMetadataState safely resets the global metadata state for test isolation.
+// This must be called within a synchronized context to avoid race conditions.
+func resetMetadataState() {
+	metadataMutex.Lock()
+	defer metadataMutex.Unlock()
+
+	metadataXML = ""
+	metadataLoaded = false
+}
+
 // setupTestRouter creates and configures a test router with the metadata endpoint.
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -29,8 +39,7 @@ func TestGetRedfishV1Metadata(t *testing.T) {
 
 	// Reset global state for test isolation
 	t.Cleanup(func() {
-		metadataXML = ""
-		metadataLoaded = false
+		resetMetadataState()
 	})
 
 	gin.SetMode(gin.TestMode)
@@ -143,8 +152,7 @@ func TestLoadMetadata(t *testing.T) {
 
 	// Reset global state for test isolation
 	t.Cleanup(func() {
-		metadataXML = ""
-		metadataLoaded = false
+		resetMetadataState()
 	})
 
 	t.Run("metadata endpoint loads and caches metadata", func(t *testing.T) {
@@ -203,8 +211,7 @@ func TestValidateMetadataXML(t *testing.T) {
 
 	// Reset global state for test isolation
 	t.Cleanup(func() {
-		metadataXML = ""
-		metadataLoaded = false
+		resetMetadataState()
 	})
 
 	t.Run("endpoint returns valid XML response", func(t *testing.T) {
@@ -241,8 +248,7 @@ func TestLoadMetadataIntegration(t *testing.T) {
 
 	// Reset global state for test isolation
 	t.Cleanup(func() {
-		metadataXML = ""
-		metadataLoaded = false
+		resetMetadataState()
 	})
 
 	t.Run("metadata endpoint returns consistent results", func(t *testing.T) {

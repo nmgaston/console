@@ -65,14 +65,15 @@ func TestGetRedfishV1Metadata(t *testing.T) {
 			assert.Contains(t, body, `xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx"`)
 			assert.Contains(t, body, `Version="4.0"`)
 
-			// Assert required DMTF Redfish schema references
+			// Assert required DMTF Redfish schema references (auto-discovered from YAML files)
 			requiredSchemas := []string{
-				"ServiceRoot_v1.xml",
+				"ActionInfo_v1.xml",
 				"ComputerSystemCollection_v1.xml",
 				"ComputerSystem_v1.xml",
-				"Task_v1.xml",
 				"Message_v1.xml",
-				"RedfishExtensions_v1.xml",
+				"ResolutionStep_v1.xml",
+				"Resource_v1.xml",
+				"ServiceRoot_v1.xml",
 			}
 			for _, schema := range requiredSchemas {
 				assert.Contains(t, body, schema, "metadata should reference %s schema", schema)

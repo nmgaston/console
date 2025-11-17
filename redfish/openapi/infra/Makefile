@@ -210,7 +210,7 @@ rf-auth: ### Add Basic Auth to OpenAPI spec and regenerate Go code
 	@echo "✅ Basic Authentication added"
 .PHONY: rf-auth
 
-rf-all: rf-merge rf-generate rf-validate rf-auth ### Run all Redfish API generation steps
+rf-all: rf-merge rf-generate rf-validate rf-auth rf-metadata-generate ### Run all Redfish API generation steps
 	@echo "✅ All Redfish API generation steps completed"
 .PHONY: rf-all
 

@@ -51,6 +51,16 @@ func Int64Ptr(i int64) *int64 {
 	return &i
 }
 
+// CreateDescription creates a Description from a string using ResourceDescription.
+func CreateDescription(desc string) *generated.ComputerSystemCollectionComputerSystemCollection_Description {
+	description := &generated.ComputerSystemCollectionComputerSystemCollection_Description{}
+	if err := description.FromResourceDescription(desc); err != nil {
+		return nil
+	}
+
+	return description
+}
+
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
@@ -105,7 +115,7 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 		OdataId:           StringPtr("/redfish/v1/Systems"),
 		OdataType:         StringPtr("#ComputerSystemCollection.ComputerSystemCollection"),
 		Name:              "Computer System Collection",
-		Description:       nil,
+		Description:       CreateDescription("Collection of Computer Systems"),
 		MembersOdataCount: Int64Ptr(int64(len(members))),
 		Members:           &members,
 	}

@@ -99,7 +99,7 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 					path := c.Request.URL.Path
 
 					// Public endpoints as defined in OpenAPI spec (security: [{}])
-					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
+					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" || path == "/redfish/v1/odata" {
 						c.Next()
 
 						return

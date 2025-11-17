@@ -80,6 +80,20 @@ func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
 	c.String(http.StatusOK, metadata)
 }
 
+// GetRedfishV1Odata returns the OData service root
+func (s *RedfishServer) GetRedfishV1Odata(c *gin.Context) {
+	SetRedfishHeaders(c)
+
+	odataService := generated.OdataServiceOdataService{
+		OdataContext: StringPtr("/redfish/v1/$metadata#ServiceRoot.ServiceRoot"),
+		OdataId:      StringPtr("/redfish/v1/odata"),
+		OdataType:    StringPtr("#ServiceRoot.v1_19_0.ServiceRoot"),
+		Id:           "OdataService",
+		Name:         "OData Service Root",
+	}
+	c.JSON(http.StatusOK, odataService)
+}
+
 // GetRedfishV1Systems returns the computer systems collection
 func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 	// Get all system IDs from the repository

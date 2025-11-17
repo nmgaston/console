@@ -2,6 +2,7 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -26,8 +27,144 @@ const (
 	msgInternalServerError = "An internal server error occurred."
 )
 
+// ErrUnknownErrorType is returned when an unknown error type is requested
+var ErrUnknownErrorType = errors.New("unknown error type")
+
 // registryMgr is the global registry manager instance
 var registryMgr = GetRegistryManager()
+
+// ErrorConfig defines configuration for a specific error type
+type ErrorConfig struct {
+	RegistryKey    string
+	StatusCode     int
+	CustomMessage  string
+	OverrideMsg    bool
+	RetryAfter     int
+	MessageOveride func(string) string
+}
+
+// errorConfigMap maps error types to their registry configuration
+var errorConfigMap = map[string]ErrorConfig{
+	"Conflict": {
+		RegistryKey: "ResourceInUse",
+		StatusCode:  http.StatusConflict,
+	},
+	"PowerStateConflict": {
+		RegistryKey: "ResourceInUse",
+		StatusCode:  http.StatusConflict,
+	},
+	"MethodNotAllowed": {
+		RegistryKey: "MethodNotAllowed",
+		StatusCode:  http.StatusMethodNotAllowed,
+	},
+	"Unauthorized": {
+		RegistryKey:   "InsufficientPrivilege",
+		StatusCode:    http.StatusUnauthorized,
+		CustomMessage: "Unauthorized access",
+		OverrideMsg:   true,
+	},
+	"BadRequest": {
+		RegistryKey: "GeneralError",
+		StatusCode:  http.StatusBadRequest,
+	},
+	"Forbidden": {
+		RegistryKey:   "InsufficientPrivilege",
+		StatusCode:    http.StatusForbidden,
+		CustomMessage: "Insufficient privileges to perform operation",
+		OverrideMsg:   true,
+	},
+	"ServiceUnavailable": {
+		RegistryKey: "ServiceTemporarilyUnavailable",
+		StatusCode:  http.StatusServiceUnavailable,
+	},
+	"NotFound": {
+		RegistryKey: "ResourceMissing",
+		StatusCode:  http.StatusNotFound,
+		MessageOveride: func(resource string) string {
+			return resource + " not found"
+		},
+	},
+	"MalformedJSON": {
+		RegistryKey: "MalformedJSON",
+		StatusCode:  http.StatusBadRequest,
+	},
+	"PropertyMissing": {
+		RegistryKey: "PropertyMissing",
+		StatusCode:  http.StatusBadRequest,
+		MessageOveride: func(propertyName string) string {
+			return "Missing or empty " + propertyName
+		},
+	},
+	"PropertyValueNotInList": {
+		RegistryKey: "PropertyValueNotInList",
+		StatusCode:  http.StatusBadRequest,
+		MessageOveride: func(propertyName string) string {
+			return "Invalid " + propertyName
+		},
+	},
+}
+
+// sendRedfishError is a generic error handler using the error configuration lookup table
+func sendRedfishError(c *gin.Context, errorType, customMessage string, args ...interface{}) {
+	SetRedfishHeaders(c)
+
+	config, exists := errorConfigMap[errorType]
+	if !exists {
+		// Fallback to internal error if config not found
+		InternalServerError(c, fmt.Errorf("%w: %s", ErrUnknownErrorType, errorType))
+
+		return
+	}
+
+	handleRetryAfterHeader(c, config, errorType, args)
+
+	errorResponse, err := createErrorResponse("Base", config.RegistryKey, args...)
+	if err != nil {
+		// This should never happen since the registry is embedded
+		InternalServerError(c, err)
+
+		return
+	}
+
+	applyMessageOverrides(errorResponse, customMessage, config, args)
+
+	c.JSON(config.StatusCode, errorResponse)
+}
+
+// handleRetryAfterHeader sets the Retry-After header for service unavailable errors
+func handleRetryAfterHeader(c *gin.Context, config ErrorConfig, errorType string, args []interface{}) {
+	if config.RetryAfter <= 0 && (errorType != "ServiceUnavailable" || len(args) == 0) {
+		return
+	}
+
+	retryAfter := config.RetryAfter
+
+	if len(args) > 0 {
+		if seconds, ok := args[0].(int); ok {
+			retryAfter = seconds
+		}
+	}
+
+	if retryAfter > 0 {
+		c.Header(headerRetryAfter, fmt.Sprintf("%d", retryAfter))
+	}
+}
+
+// applyMessageOverrides applies custom message overrides to the error response
+func applyMessageOverrides(errorResponse *generated.RedfishError, customMessage string, config ErrorConfig, args []interface{}) {
+	switch {
+	case customMessage != "":
+		errorResponse.Error.Message = &customMessage
+		(*errorResponse.Error.MessageExtendedInfo)[0].Message = &customMessage
+	case config.OverrideMsg:
+		errorResponse.Error.Message = &config.CustomMessage
+	case config.MessageOveride != nil && len(args) > 0:
+		if strArg, ok := args[0].(string); ok {
+			overrideMsg := config.MessageOveride(strArg)
+			errorResponse.Error.Message = &overrideMsg
+		}
+	}
+}
 
 // mapSeverityToResourceHealth converts registry severity strings to generated.ResourceHealth enum
 func mapSeverityToResourceHealth(severity string) string {
@@ -53,8 +190,6 @@ func SetRedfishHeaders(c *gin.Context) {
 // createErrorResponse creates a Redfish error response using registry lookup.
 // Note: registryName currently always receives "Base", but the parameter is kept for
 // future extensibility when additional registries (Task, Update, ResourceEvent) are added.
-//
-//nolint:unparam // registryName is kept for future registry extensibility
 func createErrorResponse(registryName, messageKey string, args ...interface{}) (*generated.RedfishError, error) {
 	regMsg, err := registryMgr.LookupMessage(registryName, messageKey)
 	if err != nil {
@@ -90,149 +225,42 @@ func createErrorResponse(registryName, messageKey string, args ...interface{}) (
 
 // ConflictError returns a Redfish-compliant 409 error
 func ConflictError(c *gin.Context, _, message string) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "ResourceInUse")
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	// Use custom error message if provided
-	if message != "" {
-		errorResponse.Error.Message = &message
-	}
-
-	c.JSON(http.StatusConflict, errorResponse)
+	sendRedfishError(c, "Conflict", message)
 }
 
 // PowerStateConflictError returns a Redfish-compliant 409 error for power state conflicts
 func PowerStateConflictError(c *gin.Context, _ string) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "ResourceInUse")
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	c.JSON(http.StatusConflict, errorResponse)
+	sendRedfishError(c, "PowerStateConflict", "")
 }
 
 // MethodNotAllowedError returns a Redfish-compliant 405 error
 func MethodNotAllowedError(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "MethodNotAllowed")
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	c.JSON(http.StatusMethodNotAllowed, errorResponse)
+	sendRedfishError(c, "MethodNotAllowed", "")
 }
 
 // UnauthorizedError returns a Redfish-compliant 401 error
 func UnauthorizedError(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "InsufficientPrivilege")
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	// Override with unauthorized-specific message
-	errorMessage := "Unauthorized access"
-	errorResponse.Error.Message = &errorMessage
-
-	c.JSON(http.StatusUnauthorized, errorResponse)
+	sendRedfishError(c, "Unauthorized", "")
 }
 
 // BadRequestError returns a Redfish-compliant 400 error
 func BadRequestError(c *gin.Context, customMessage string) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "GeneralError")
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	// Override with custom message if provided
-	if customMessage != "" {
-		errorResponse.Error.Message = &customMessage
-		(*errorResponse.Error.MessageExtendedInfo)[0].Message = &customMessage
-	}
-
-	c.JSON(http.StatusBadRequest, errorResponse)
+	sendRedfishError(c, "BadRequest", customMessage)
 }
 
 // ForbiddenError returns a Redfish-compliant 403 error for insufficient privileges
 func ForbiddenError(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "InsufficientPrivilege")
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	// Override with forbidden-specific message
-	errorMessage := "Insufficient privileges to perform operation"
-	errorResponse.Error.Message = &errorMessage
-
-	c.JSON(http.StatusForbidden, errorResponse)
+	sendRedfishError(c, "Forbidden", "")
 }
 
 // ServiceUnavailableError returns a Redfish-compliant 503 error
 func ServiceUnavailableError(c *gin.Context, retryAfterSeconds int) {
-	SetRedfishHeaders(c)
-
-	if retryAfterSeconds > 0 {
-		c.Header(headerRetryAfter, fmt.Sprintf("%d", retryAfterSeconds))
-	}
-
-	errorResponse, err := createErrorResponse("Base", "ServiceTemporarilyUnavailable", fmt.Sprintf("%d", retryAfterSeconds))
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	c.JSON(http.StatusServiceUnavailable, errorResponse)
+	sendRedfishError(c, "ServiceUnavailable", "", retryAfterSeconds, fmt.Sprintf("%d", retryAfterSeconds))
 }
 
 // NotFoundError returns a Redfish-compliant 404 error
 func NotFoundError(c *gin.Context, resource string) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "ResourceMissing", resource, resource)
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	// Override with custom message
-	errorMessage := resource + " not found"
-	errorResponse.Error.Message = &errorMessage
-
-	c.JSON(http.StatusNotFound, errorResponse)
+	sendRedfishError(c, "NotFound", "", resource, resource)
 }
 
 // InternalServerError returns a Redfish-compliant 500 error
@@ -276,53 +304,15 @@ func InternalServerError(c *gin.Context, err error) {
 
 // MalformedJSONError returns a Redfish-compliant 400 error for malformed JSON
 func MalformedJSONError(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "MalformedJSON")
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	c.JSON(http.StatusBadRequest, errorResponse)
+	sendRedfishError(c, "MalformedJSON", "")
 }
 
 // PropertyMissingError returns a Redfish-compliant 400 error for missing required property
 func PropertyMissingError(c *gin.Context, propertyName string) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "PropertyMissing", propertyName)
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	// Override with custom message
-	errorMessage := "Missing or empty " + propertyName
-	errorResponse.Error.Message = &errorMessage
-
-	c.JSON(http.StatusBadRequest, errorResponse)
+	sendRedfishError(c, "PropertyMissing", "", propertyName)
 }
 
 // PropertyValueNotInListError returns a Redfish-compliant 400 error for invalid property value
 func PropertyValueNotInListError(c *gin.Context, propertyName string) {
-	SetRedfishHeaders(c)
-
-	errorResponse, err := createErrorResponse("Base", "PropertyValueNotInList", "invalid", propertyName)
-	if err != nil {
-		// This should never happen since the registry is embedded
-		InternalServerError(c, err)
-
-		return
-	}
-
-	// Override with custom message
-	errorMessage := "Invalid " + propertyName
-	errorResponse.Error.Message = &errorMessage
-
-	c.JSON(http.StatusBadRequest, errorResponse)
+	sendRedfishError(c, "PropertyValueNotInList", "", "invalid", propertyName)
 }

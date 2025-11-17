@@ -20,8 +20,7 @@ import (
 	"github.com/device-management-toolkit/console/internal/usecase"
 	"github.com/device-management-toolkit/console/pkg/db"
 	"github.com/device-management-toolkit/console/pkg/logger"
-	"github.com/device-management-toolkit/console/pkg/plugin"
-	redfish "github.com/device-management-toolkit/console/redfish/pkg"
+	redfish "github.com/device-management-toolkit/console/redfish"
 )
 
 //go:embed all:ui
@@ -32,26 +31,15 @@ const (
 	protocolHTTPS = "https://"
 )
 
-// NewRouter sets up the HTTP router with plugin support.
+// NewRouter sets up the HTTP router with redfish support.
 func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg *config.Config, database *db.SQL) { //nolint:funlen // This function is responsible for setting up the router, so it's expected to be long
 	// Options
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
 
-	// Create plugin manager with shared infrastructure
-	pluginManager := plugin.NewManager(cfg, l, database, &t, handler)
-
-	// Register plugins
-	pluginManager.Register(redfish.NewPlugin())
-
-	// Initialize plugins
-	if err := pluginManager.Initialize(); err != nil {
-		l.Fatal("Failed to initialize plugins: " + err.Error())
-	}
-
-	// Register plugin middleware
-	if err := pluginManager.RegisterMiddleware(); err != nil {
-		l.Fatal("Failed to register plugin middleware: " + err.Error())
+	// Initialize redfish directly
+	if err := redfish.Initialize(handler, l, database, &t, cfg); err != nil {
+		l.Fatal("Failed to initialize redfish: " + err.Error())
 	}
 
 	// Initialize Fuego adapter
@@ -140,9 +128,9 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		v2.NewAmtRoutes(h3, t.Devices, l)
 	}
 
-	// Register plugin routes
-	if err := pluginManager.RegisterRoutes(protected, unprotected); err != nil {
-		l.Fatal("Failed to register plugin routes: " + err.Error())
+	// Register redfish routes directly
+	if err := redfish.RegisterRoutes(handler, l); err != nil {
+		l.Fatal("Failed to register redfish routes: " + err.Error())
 	}
 
 	// Setup default NoRoute handler for SPA

@@ -9,13 +9,14 @@ GENERATED_SPEC := ../../internal/controller/http/v1/generated/spec.gen.go
 GENERATED_TYPES := ../../internal/controller/http/v1/generated/types.gen.go
 GENERATED_SERVER := ../../internal/controller/http/v1/generated/server.gen.go
 MERGE_SCRIPT := merge-redfish-openapi.py
+# Tool versions
+OAPI_CODEGEN_VERSION := github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.5.1
 
 # Source YAML files in ../dmtf directory
 YAML_SOURCES := $(wildcard ../dmtf/*.yaml)
 
 # Required tools for Redfish API generation
-REDFISH_REQUIRED_TOOLS := python3 go oapi-codegen
-REDFISH_OPTIONAL_TOOLS := jq curl swagger-cli
+REDFISH_REQUIRED_TOOLS := python3 go oapi-codegen swagger-cli
 PYTHON_TOOLS := PyYAML
 
 # Tool check functions
@@ -110,26 +111,12 @@ rf-check-tools: ### Check if all required tools are available
 				python3) echo "✅ $$(python3 --version 2>&1)";; \
 				go) echo "✅ $$(go version | cut -d' ' -f3-4)";; \
 				oapi-codegen) echo "✅ $$(oapi-codegen -version 2>/dev/null || echo 'installed')";; \
+				swagger-cli) echo "✅ $$(swagger-cli --version 2>/dev/null || echo 'installed')";; \
 				*) echo "✅ installed";; \
 			esac; \
 		else \
 			echo "❌ Missing"; \
 			missing_tools="$$missing_tools $$tool"; \
-		fi; \
-	done; \
-	echo ""; \
-	echo "Optional Tools:"; \
-	for tool in $(REDFISH_OPTIONAL_TOOLS); do \
-		echo -n "  $$tool: "; \
-		if command -v $$tool >/dev/null 2>&1; then \
-			case $$tool in \
-				jq) echo "✅ $$(jq --version 2>/dev/null || echo 'installed')";; \
-				curl) echo "✅ $$(curl --version 2>/dev/null | head -n1 | cut -d' ' -f2 || echo 'installed')";; \
-				swagger-cli) echo "✅ $$(swagger-cli --version 2>/dev/null || echo 'installed')";; \
-				*) echo "✅ installed";; \
-			esac; \
-		else \
-			echo "⚠️  Not installed"; \
 		fi; \
 	done; \
 	echo ""; \
@@ -181,24 +168,23 @@ rf-install-missing-tools: ### Install missing tools automatically
 
 	# Install oapi-codegen
 	@if ! command -v oapi-codegen >/dev/null 2>&1; then \
-		echo "Installing oapi-codegen..."; \
-		go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest; \
+		echo "Installing oapi-codegen from $(OAPI_CODEGEN_VERSION)..."; \
+		go install $(OAPI_CODEGEN_VERSION); \
 	fi
 
-	# Install system tools based on OS
-	@if command -v apt-get >/dev/null 2>&1; then \
-		echo "Installing system tools (Debian/Ubuntu)..."; \
-		sudo apt-get update >/dev/null 2>&1 || true; \
-		sudo apt-get install -y jq curl >/dev/null 2>&1 || echo "⚠️  Some tools may need manual installation"; \
-	elif command -v yum >/dev/null 2>&1; then \
-		echo "Installing system tools (RHEL/CentOS)..."; \
-		sudo yum install -y jq curl >/dev/null 2>&1 || echo "⚠️  Some tools may need manual installation"; \
-	elif command -v brew >/dev/null 2>&1; then \
-		echo "Installing system tools (macOS)..."; \
-		brew install jq curl 2>/dev/null || echo "⚠️  Some tools may need manual installation"; \
-	else \
-		echo "⚠️  Unknown package manager - please install jq and curl manually"; \
+	# Install swagger-cli
+	@if ! command -v swagger-cli >/dev/null 2>&1; then \
+		echo "Installing swagger-cli..."; \
+		if command -v npm >/dev/null 2>&1; then \
+			npm install -g @apidevtools/swagger-cli; \
+		else \
+			echo "❌ npm not found. Please install Node.js and npm first, then run:"; \
+			echo "   npm install -g @apidevtools/swagger-cli"; \
+			exit 1; \
+		fi; \
 	fi
+
+	@echo "✅ All required tools installed successfully"
 .PHONY: rf-install-missing-tools
 
 rf-validate: $(MERGED_OPENAPI) ### Validate OpenAPI specification
@@ -218,6 +204,12 @@ rf-clean: ### Clean generated files
 	@echo "✅ Cleaned generated files"
 .PHONY: rf-clean
 
-rf-all: rf-merge rf-generate rf-validate ### Run all Redfish API generation steps
+rf-auth: ### Add Basic Auth to OpenAPI spec and regenerate Go code
+	@echo "🔐 Adding Basic Authentication to Redfish OpenAPI spec..."
+	python3 add-basic-auth.py
+	@echo "✅ Basic Authentication added"
+.PHONY: rf-auth
+
+rf-all: rf-merge rf-generate rf-validate rf-auth ### Run all Redfish API generation steps
 	@echo "✅ All Redfish API generation steps completed"
 .PHONY: rf-all

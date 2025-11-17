@@ -37,7 +37,6 @@ type MessageDetails struct {
 	Description     string   `json:"Description"`
 	Message         string   `json:"Message"`
 	MessageSeverity string   `json:"MessageSeverity"`
-	Severity        string   `json:"Severity"`
 	NumberOfArgs    int      `json:"NumberOfArgs"`
 	ParamTypes      []string `json:"ParamTypes,omitempty"`
 	Resolution      string   `json:"Resolution"`

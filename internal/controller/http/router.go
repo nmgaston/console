@@ -104,9 +104,6 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		protected = handler.Group("/api", login.JWTAuthMiddleware())
 	}
 
-	// Unprotected routes group for plugins that handle their own auth
-	unprotected := handler.Group("")
-
 	// Routers
 	h2 := protected.Group("/v1")
 	{

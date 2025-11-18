@@ -14,6 +14,16 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 )
 
+// ServiceRoot OData metadata constants
+const (
+	odataContextServiceRoot = "/redfish/v1/$metadata#ServiceRoot.ServiceRoot"
+	odataIDServiceRoot      = "/redfish/v1"
+	odataTypeServiceRoot    = "#ServiceRoot.v1_19_0.ServiceRoot"
+	serviceRootID           = "RootService"
+	serviceRootName         = "Root Service"
+	redfishVersion          = "1.19.0"
+)
+
 // Metadata embedding and caching
 //
 //go:embed metadata.xml
@@ -40,14 +50,18 @@ func loadMetadata() {
 
 	data, err := metadataFS.ReadFile("metadata.xml")
 	if err != nil {
-		log.Fatalf("Could not load embedded metadata.xml: %v", err)
+		log.Warnf("Could not load embedded metadata.xml: %v", err)
+
+		return
 	}
 
 	metadataXML = string(data)
 
 	// Validate XML
 	if err := validateMetadataXML(metadataXML); err != nil {
-		log.Fatalf("Invalid metadata.xml: %v", err)
+		log.Warnf("Invalid metadata.xml: %v", err)
+
+		return
 	}
 
 	log.Infof("Embedded metadata.xml loaded and validation passed")
@@ -75,12 +89,12 @@ func validateMetadataXML(xmlData string) error {
 // Spec: Redfish ServiceRoot.v1_19_0
 func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 	serviceRoot := generated.ServiceRootServiceRoot{
-		OdataContext:   StringPtr("/redfish/v1/$metadata#ServiceRoot.ServiceRoot"),
-		OdataId:        StringPtr("/redfish/v1"),
-		OdataType:      StringPtr("#ServiceRoot.v1_19_0.ServiceRoot"),
-		Id:             "RootService",
-		Name:           "Root Service",
-		RedfishVersion: StringPtr("1.19.0"),
+		OdataContext:   StringPtr(odataContextServiceRoot),
+		OdataId:        StringPtr(odataIDServiceRoot),
+		OdataType:      StringPtr(odataTypeServiceRoot),
+		Id:             serviceRootID,
+		Name:           serviceRootName,
+		RedfishVersion: StringPtr(redfishVersion),
 		Systems: &generated.OdataV4IdRef{
 			OdataId: StringPtr("/redfish/v1/Systems"),
 		},

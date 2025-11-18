@@ -34,7 +34,7 @@ func setupMetadataTestRouter() *gin.Engine {
 	return router
 }
 
-func TestGetRedfishV1Metadata(t *testing.T) {
+func TestGetRedfishV1MetadataReturnsODataXML(t *testing.T) {
 	t.Parallel()
 
 	// Reset global state for test isolation
@@ -44,105 +44,115 @@ func TestGetRedfishV1Metadata(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	t.Run("returns OData metadata XML with proper headers", func(t *testing.T) {
-		t.Parallel()
+	// Setup
+	router := setupMetadataTestRouter()
 
-		// Setup
-		router := setupMetadataTestRouter()
+	// Execute request
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
+	require.NoError(t, err)
 
-		// Execute request
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
-		require.NoError(t, err)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+	// Assert status and headers
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/xml", w.Header().Get("Content-Type"))
+	assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
 
-		// Assert status and headers
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, "application/xml", w.Header().Get("Content-Type"))
-		assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
+	body := w.Body.String()
 
-		body := w.Body.String()
+	// Verify valid XML by parsing it (if body is not empty)
+	if body != "" {
+		assert.NoError(t, xml.Unmarshal([]byte(body), new(interface{})), "response should be valid XML")
 
-		// Verify valid XML by parsing it (if body is not empty)
-		if body != "" {
-			assert.NoError(t, xml.Unmarshal([]byte(body), new(interface{})), "response should be valid XML")
+		// Assert XML declaration and root element
+		assert.True(t, strings.HasPrefix(body, `<?xml version="1.0" encoding="UTF-8"?>`))
+		assert.Contains(t, body, `<edmx:Edmx`)
+		assert.Contains(t, body, `xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx"`)
+		assert.Contains(t, body, `Version="4.0"`)
 
-			// Assert XML declaration and root element
-			assert.True(t, strings.HasPrefix(body, `<?xml version="1.0" encoding="UTF-8"?>`))
-			assert.Contains(t, body, `<edmx:Edmx`)
-			assert.Contains(t, body, `xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx"`)
-			assert.Contains(t, body, `Version="4.0"`)
-
-			// Assert required DMTF Redfish schema references (auto-discovered from YAML files)
-			requiredSchemas := []string{
-				"ActionInfo_v1.xml",
-				"ComputerSystemCollection_v1.xml",
-				"ComputerSystem_v1.xml",
-				"Message_v1.xml",
-				"ResolutionStep_v1.xml",
-				"Resource_v1.xml",
-				"ServiceRoot_v1.xml",
-			}
-			for _, schema := range requiredSchemas {
-				assert.Contains(t, body, schema, "metadata should reference %s schema", schema)
-			}
-
-			// Assert EntityContainer structure
-			assert.Contains(t, body, `<edmx:DataServices>`)
-			assert.Contains(t, body, `<Schema`)
-			assert.Contains(t, body, `<EntityContainer Name="Service"`)
-			assert.Contains(t, body, `Extends="ServiceRoot.v1_19_0.ServiceContainer"`)
-
-			// Verify substantial content
-			assert.Greater(t, len(body), 1000, "metadata should contain substantial content")
+		// Assert required DMTF Redfish schema references (auto-discovered from YAML files)
+		requiredSchemas := []string{
+			"ActionInfo_v1.xml",
+			"ComputerSystemCollection_v1.xml",
+			"ComputerSystem_v1.xml",
+			"Message_v1.xml",
+			"ResolutionStep_v1.xml",
+			"Resource_v1.xml",
+			"ServiceRoot_v1.xml",
 		}
+		for _, schema := range requiredSchemas {
+			assert.Contains(t, body, schema, "metadata should reference %s schema", schema)
+		}
+
+		// Assert EntityContainer structure
+		assert.Contains(t, body, `<edmx:DataServices>`)
+		assert.Contains(t, body, `<Schema`)
+		assert.Contains(t, body, `<EntityContainer Name="Service"`)
+		assert.Contains(t, body, `Extends="ServiceRoot.v1_19_0.ServiceContainer"`)
+
+		// Verify substantial content
+		assert.Greater(t, len(body), 1000, "metadata should contain substantial content")
+	}
+}
+
+func TestGetRedfishV1MetadataServeValidResponse(t *testing.T) {
+	t.Parallel()
+
+	// Reset global state for test isolation
+	t.Cleanup(func() {
+		resetMetadataState()
 	})
 
-	t.Run("metadata endpoint serves valid response", func(t *testing.T) {
-		t.Parallel()
+	gin.SetMode(gin.TestMode)
 
-		router := setupMetadataTestRouter()
+	router := setupMetadataTestRouter()
 
-		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-		// Verify it's valid XML if response body is not empty
-		body := w.Body.String()
-		if body != "" {
-			var doc interface{}
+	// Verify it's valid XML if response body is not empty
+	body := w.Body.String()
+	if body != "" {
+		var doc interface{}
 
-			err := xml.Unmarshal([]byte(body), &doc)
-			assert.NoError(t, err, "response should be valid XML")
-		}
+		err := xml.Unmarshal([]byte(body), &doc)
+		assert.NoError(t, err, "response should be valid XML")
+	}
+}
+
+func TestGetRedfishV1MetadataConcurrentRequests(t *testing.T) {
+	t.Parallel()
+
+	// Reset global state for test isolation
+	t.Cleanup(func() {
+		resetMetadataState()
 	})
 
-	t.Run("handles concurrent requests", func(t *testing.T) {
-		t.Parallel()
+	gin.SetMode(gin.TestMode)
 
-		router := setupMetadataTestRouter()
+	router := setupMetadataTestRouter()
 
-		// Execute multiple concurrent requests
-		const numRequests = 10
+	// Execute multiple concurrent requests
+	const numRequests = 10
 
-		results := make(chan int, numRequests)
+	results := make(chan int, numRequests)
 
-		for i := 0; i < numRequests; i++ {
-			go func() {
-				req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
-				w := httptest.NewRecorder()
-				router.ServeHTTP(w, req)
+	for i := 0; i < numRequests; i++ {
+		go func() {
+			req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
 
-				results <- w.Code
-			}()
-		}
+			results <- w.Code
+		}()
+	}
 
-		// Verify all requests succeeded
-		for i := 0; i < numRequests; i++ {
-			assert.Equal(t, http.StatusOK, <-results)
-		}
-	})
+	// Verify all requests succeeded
+	for i := 0; i < numRequests; i++ {
+		assert.Equal(t, http.StatusOK, <-results)
+	}
 }
 
 // TestLoadMetadata tests the metadata loading behavior through the public endpoint.

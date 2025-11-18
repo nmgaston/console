@@ -24,14 +24,6 @@ const (
 	msgIDBaseSuccess      = "Base.1.22.0.Success"
 	msgIDBaseGeneralError = "Base.1.22.0.GeneralError"
 
-	// OData metadata constants - ServiceRoot
-	odataContextServiceRoot = "/redfish/v1/$metadata#ServiceRoot.ServiceRoot"
-	odataIDServiceRoot      = "/redfish/v1"
-	odataTypeServiceRoot    = "#ServiceRoot.v1_19_0.ServiceRoot"
-	serviceRootID           = "RootService"
-	serviceRootName         = "Root Service"
-	redfishVersion          = "1.19.0"
-
 	// OData metadata constants - Systems Collection
 	odataContextSystems        = "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"
 	odataIDSystems             = "/redfish/v1/Systems"

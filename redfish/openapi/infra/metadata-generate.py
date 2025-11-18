@@ -137,7 +137,7 @@ def generate_metadata_xml(discovered_schemas: Dict[str, Dict]) -> bool:
         "controller",
         "http",
         "v1",
-        "generated",
+        "handler",
         "metadata.xml"
     )
     

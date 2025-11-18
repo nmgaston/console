@@ -23,8 +23,8 @@ func resetMetadataState() {
 	metadataLoaded = false
 }
 
-// setupTestRouter creates and configures a test router with the metadata endpoint.
-func setupTestRouter() *gin.Engine {
+// setupMetadataTestRouter creates and configures a test router with the metadata endpoint.
+func setupMetadataTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
@@ -48,7 +48,7 @@ func TestGetRedfishV1Metadata(t *testing.T) {
 		t.Parallel()
 
 		// Setup
-		router := setupTestRouter()
+		router := setupMetadataTestRouter()
 
 		// Execute request
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
@@ -102,7 +102,7 @@ func TestGetRedfishV1Metadata(t *testing.T) {
 	t.Run("metadata endpoint serves valid response", func(t *testing.T) {
 		t.Parallel()
 
-		router := setupTestRouter()
+		router := setupMetadataTestRouter()
 
 		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
 		w := httptest.NewRecorder()
@@ -121,7 +121,7 @@ func TestGetRedfishV1Metadata(t *testing.T) {
 	t.Run("handles concurrent requests", func(t *testing.T) {
 		t.Parallel()
 
-		router := setupTestRouter()
+		router := setupMetadataTestRouter()
 
 		// Execute multiple concurrent requests
 		const numRequests = 10
@@ -161,7 +161,7 @@ func TestLoadMetadata(t *testing.T) {
 		gin.SetMode(gin.TestMode)
 
 		// Setup router
-		router := setupTestRouter()
+		router := setupMetadataTestRouter()
 
 		// First request
 		req1, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
@@ -189,7 +189,7 @@ func TestLoadMetadata(t *testing.T) {
 
 		gin.SetMode(gin.TestMode)
 
-		router := setupTestRouter()
+		router := setupMetadataTestRouter()
 
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
 		require.NoError(t, err)
@@ -219,7 +219,7 @@ func TestValidateMetadataXML(t *testing.T) {
 
 		gin.SetMode(gin.TestMode)
 
-		router := setupTestRouter()
+		router := setupMetadataTestRouter()
 
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
 		require.NoError(t, err)
@@ -256,7 +256,7 @@ func TestLoadMetadataIntegration(t *testing.T) {
 
 		gin.SetMode(gin.TestMode)
 
-		router := setupTestRouter()
+		router := setupMetadataTestRouter()
 
 		// Make multiple requests
 		responses := make([]string, 3)
@@ -282,7 +282,7 @@ func TestLoadMetadataIntegration(t *testing.T) {
 
 		gin.SetMode(gin.TestMode)
 
-		router := setupTestRouter()
+		router := setupMetadataTestRouter()
 
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
 		require.NoError(t, err)

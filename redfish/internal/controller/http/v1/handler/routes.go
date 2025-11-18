@@ -23,6 +23,30 @@ const (
 	// Registry message IDs
 	msgIDBaseSuccess      = "Base.1.22.0.Success"
 	msgIDBaseGeneralError = "Base.1.22.0.GeneralError"
+
+	// OData metadata constants - ServiceRoot
+	odataContextServiceRoot = "/redfish/v1/$metadata#ServiceRoot.ServiceRoot"
+	odataIDServiceRoot      = "/redfish/v1"
+	odataTypeServiceRoot    = "#ServiceRoot.v1_19_0.ServiceRoot"
+	serviceRootID           = "RootService"
+	serviceRootName         = "Root Service"
+	redfishVersion          = "1.19.0"
+
+	// OData metadata constants - Systems Collection
+	odataContextSystems        = "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"
+	odataIDSystems             = "/redfish/v1/Systems"
+	odataTypeSystemsCollection = "#ComputerSystemCollection.ComputerSystemCollection"
+	systemsCollectionName      = "Computer System Collection"
+	systemsCollectionDesc      = "Collection of Computer Systems"
+
+	// OData metadata constants - Task
+	odataContextTask = "/redfish/v1/$metadata#Task.Task"
+	odataTypeTask    = "#Task.v1_6_0.Task"
+	taskName         = "System Reset Task"
+	taskServiceTasks = "/redfish/v1/TaskService/Tasks/"
+
+	// Systems path patterns
+	systemsPath = "/redfish/v1/Systems/"
 )
 
 // RedfishServer implements the Redfish API handlers
@@ -51,6 +75,23 @@ func Int64Ptr(i int64) *int64 {
 	return &i
 }
 
+// CreateDescription creates a Description from a string using ResourceDescription.
+// If an error occurs during description creation, it logs the error and returns nil.
+// This allows the calling code to continue with a nil description while ensuring
+// the error is captured for debugging purposes.
+func CreateDescription(desc string, lgr logger.Interface) *generated.ComputerSystemCollectionComputerSystemCollection_Description {
+	description := &generated.ComputerSystemCollectionComputerSystemCollection_Description{}
+	if err := description.FromResourceDescription(desc); err != nil {
+		if lgr != nil {
+			lgr.Error("Failed to create description from resource description: %v, input: %s", err, desc)
+		}
+
+		return nil
+	}
+
+	return description
+}
+
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
@@ -71,17 +112,17 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 	for _, systemID := range systemIDs {
 		if systemID != "" {
 			members = append(members, generated.OdataV4IdRef{
-				OdataId: StringPtr("/redfish/v1/Systems/" + systemID),
+				OdataId: StringPtr(systemsPath + systemID),
 			})
 		}
 	}
 
 	collection := generated.ComputerSystemCollectionComputerSystemCollection{
-		OdataContext:      StringPtr("/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"),
-		OdataId:           StringPtr("/redfish/v1/Systems"),
-		OdataType:         StringPtr("#ComputerSystemCollection.ComputerSystemCollection"),
-		Name:              "Computer System Collection",
-		Description:       nil,
+		OdataContext:      StringPtr(odataContextSystems),
+		OdataId:           StringPtr(odataIDSystems),
+		OdataType:         StringPtr(odataTypeSystemsCollection),
+		Name:              systemsCollectionName,
+		Description:       CreateDescription(systemsCollectionDesc, s.Logger),
 		MembersOdataCount: Int64Ptr(int64(len(members))),
 		Members:           &members,
 	}
@@ -183,9 +224,9 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 	}
 
 	task := map[string]interface{}{
-		"@odata.context": "/redfish/v1/$metadata#Task.Task",
-		"@odata.id":      "/redfish/v1/TaskService/Tasks/" + taskID,
-		"@odata.type":    "#Task.v1_6_0.Task",
+		"@odata.context": odataContextTask,
+		"@odata.id":      taskServiceTasks + taskID,
+		"@odata.type":    odataTypeTask,
 		"EndTime":        now,
 		"Id":             taskID,
 		"Messages": []map[string]interface{}{
@@ -195,11 +236,11 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 				"Severity":  string(generated.OK),
 			},
 		},
-		"Name":       "System Reset Task",
+		"Name":       taskName,
 		"StartTime":  now,
 		"TaskState":  taskStateCompleted,
 		"TaskStatus": string(generated.OK),
 	}
-	c.Header(headerLocation, "/redfish/v1/TaskService/Tasks/"+taskID)
+	c.Header(headerLocation, taskServiceTasks+taskID)
 	c.JSON(http.StatusAccepted, task)
 }

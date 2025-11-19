@@ -24,14 +24,6 @@ const (
 	msgIDBaseSuccess      = "Base.1.22.0.Success"
 	msgIDBaseGeneralError = "Base.1.22.0.GeneralError"
 
-	// OData metadata constants - ServiceRoot
-	odataContextServiceRoot = "/redfish/v1/$metadata#ServiceRoot.ServiceRoot"
-	odataIDServiceRoot      = "/redfish/v1"
-	odataTypeServiceRoot    = "#ServiceRoot.v1_19_0.ServiceRoot"
-	serviceRootID           = "RootService"
-	serviceRootName         = "Root Service"
-	redfishVersion          = "1.19.0"
-
 	// OData metadata constants - Systems Collection
 	odataContextSystems        = "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"
 	odataIDSystems             = "/redfish/v1/Systems"
@@ -95,30 +87,6 @@ func CreateDescription(desc string, lgr logger.Interface) *generated.ComputerSys
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
-}
-
-// GetRedfishV1 returns the service root
-func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
-	serviceRoot := generated.ServiceRootServiceRoot{
-		OdataContext:   StringPtr(odataContextServiceRoot),
-		OdataId:        StringPtr(odataIDServiceRoot),
-		OdataType:      StringPtr(odataTypeServiceRoot),
-		Id:             serviceRootID,
-		Name:           serviceRootName,
-		RedfishVersion: StringPtr(redfishVersion),
-		Systems: &generated.OdataV4IdRef{
-			OdataId: StringPtr(odataIDSystems),
-		},
-	}
-	c.JSON(http.StatusOK, serviceRoot)
-}
-
-// GetRedfishV1Metadata returns the OData metadata
-func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
-	metadata := ""
-
-	c.Header(headerContentType, contentTypeXML)
-	c.String(http.StatusOK, metadata)
 }
 
 // GetRedfishV1Systems returns the computer systems collection

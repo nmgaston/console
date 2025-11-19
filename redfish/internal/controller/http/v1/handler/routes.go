@@ -129,7 +129,7 @@ func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, comp
 	system, err := s.ComputerSystemUC.GetComputerSystem(c.Request.Context(), computerSystemID)
 	if err != nil {
 		if errors.Is(err, usecase.ErrSystemNotFound) {
-			NotFoundError(c, "System")
+			NotFoundError(c, "System", computerSystemID)
 
 			return
 		}
@@ -188,7 +188,7 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 	if err != nil {
 		switch {
 		case errors.Is(err, usecase.ErrSystemNotFound):
-			NotFoundError(c, computerSystemID)
+			NotFoundError(c, "System", computerSystemID)
 		case errors.Is(err, usecase.ErrInvalidResetType):
 			BadRequestError(c, fmt.Sprintf("Invalid reset type: %s", string(*req.ResetType)))
 		case errors.Is(err, usecase.ErrPowerStateConflict):

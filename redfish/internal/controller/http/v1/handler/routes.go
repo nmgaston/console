@@ -24,14 +24,6 @@ const (
 	msgIDBaseSuccess      = "Base.1.22.0.Success"
 	msgIDBaseGeneralError = "Base.1.22.0.GeneralError"
 
-	// OData metadata constants - ServiceRoot
-	odataContextServiceRoot = "/redfish/v1/$metadata#ServiceRoot.ServiceRoot"
-	odataIDServiceRoot      = "/redfish/v1"
-	odataTypeServiceRoot    = "#ServiceRoot.v1_19_0.ServiceRoot"
-	serviceRootID           = "RootService"
-	serviceRootName         = "Root Service"
-	redfishVersion          = "1.19.0"
-
 	// OData metadata constants - Systems Collection
 	odataContextSystems        = "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"
 	odataIDSystems             = "/redfish/v1/Systems"
@@ -175,7 +167,7 @@ func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, comp
 	system, err := s.ComputerSystemUC.GetComputerSystem(c.Request.Context(), computerSystemID)
 	if err != nil {
 		if errors.Is(err, usecase.ErrSystemNotFound) {
-			NotFoundError(c, "System")
+			NotFoundError(c, "System", computerSystemID)
 
 			return
 		}
@@ -234,7 +226,7 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 	if err != nil {
 		switch {
 		case errors.Is(err, usecase.ErrSystemNotFound):
-			NotFoundError(c, computerSystemID)
+			NotFoundError(c, "System", computerSystemID)
 		case errors.Is(err, usecase.ErrInvalidResetType):
 			BadRequestError(c, fmt.Sprintf("Invalid reset type: %s", string(*req.ResetType)))
 		case errors.Is(err, usecase.ErrPowerStateConflict):

@@ -259,8 +259,13 @@ func ServiceUnavailableError(c *gin.Context, retryAfterSeconds int) {
 }
 
 // NotFoundError returns a Redfish-compliant 404 error
-func NotFoundError(c *gin.Context, resource string) {
-	sendRedfishError(c, "NotFound", "", resource, resource)
+func NotFoundError(c *gin.Context, resource string, id ...string) {
+	identifier := resource
+	if len(id) > 0 {
+		identifier = id[0]
+	}
+
+	sendRedfishError(c, "NotFound", "", resource, identifier)
 }
 
 // InternalServerError returns a Redfish-compliant 500 error

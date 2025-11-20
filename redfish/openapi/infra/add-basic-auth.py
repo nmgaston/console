@@ -58,7 +58,7 @@ def add_basic_auth_to_existing_spec():
     # Configure endpoint security (only if not already configured)
     if 'paths' in spec:
         # Public endpoints (Redfish spec compliance)
-        public_endpoints = ['/redfish/v1/', '/redfish/v1/$metadata']
+        public_endpoints = ['/redfish/v1/', '/redfish/v1/$metadata', '/redfish/v1/odata']
         
         for endpoint in public_endpoints:
             if endpoint in spec['paths']:

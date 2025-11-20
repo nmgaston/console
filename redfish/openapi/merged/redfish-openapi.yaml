@@ -6,6 +6,7 @@ info:
 paths:
   /redfish/v1/:
     get:
+      operationId: GetRedfishV1
       responses:
         '200':
           content:
@@ -23,11 +24,60 @@ paths:
       - {}
   /redfish/v1/$metadata:
     get:
+      operationId: GetRedfishV1Metadata
       responses:
         '200':
           content:
             application/xml: {}
-          description: OData $metadata.
+          description: OData CSDL metadata document describing the service data model
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - {}
+  /redfish/v1/odata:
+    get:
+      operationId: GetRedfishV1Odata
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: The OData service document from a Redfish service.
+                properties:
+                  '@odata.context':
+                    $ref: '#/components/schemas/odata-v4_context'
+                  value:
+                    description: The list of services provided by the Redfish service.
+                    items:
+                      properties:
+                        kind:
+                          description: Type of resource.  Value is `Singleton` for
+                            all cases defined by Redfish.
+                          readOnly: true
+                          type: string
+                        name:
+                          description: User-friendly resource name of the resource.
+                          readOnly: true
+                          type: string
+                        url:
+                          description: Relative URL for the top-level resource.
+                          readOnly: true
+                          type: string
+                      required:
+                      - name
+                      - kind
+                      - url
+                      type: object
+                    type: array
+                required:
+                - '@odata.context'
+                - value
+                type: object
+          description: OData service document
         default:
           content:
             application/json:
@@ -55,6 +105,13 @@ paths:
       security:
       - BasicAuth: []
   /redfish/v1/Systems/{ComputerSystemId}:
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
     get:
       responses:
         '200':
@@ -72,13 +129,6 @@ paths:
           description: Error condition
       security:
       - BasicAuth: []
-    parameters:
-    - description: The value of the Id property of the ComputerSystem resource
-      in: path
-      name: ComputerSystemId
-      required: true
-      schema:
-        type: string
   /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset:
     parameters:
     - description: The value of the Id property of the ComputerSystem resource

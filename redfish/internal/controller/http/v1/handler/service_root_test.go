@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
@@ -317,4 +318,174 @@ func TestLoadMetadataIntegration(t *testing.T) {
 			assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
 		}
 	})
+}
+
+// TestGetRedfishV1Odata tests the OData endpoint basic functionality
+func TestGetRedfishV1Odata(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
+	assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
+	assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
+}
+
+// TestGetRedfishV1OdataResponseStructure validates OData response format
+func TestGetRedfishV1OdataResponseStructure(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	var response map[string]interface{}
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	// Verify context
+	assert.Equal(t, "/redfish/v1/$metadata#ServiceRoot.ServiceRoot", response["@odata.context"])
+
+	// Verify value array exists
+	valueArray, ok := response["value"].([]interface{})
+	assert.True(t, ok, "value should be an array")
+	assert.Greater(t, len(valueArray), 0, "value array should not be empty")
+
+	// Verify service structure
+	for _, item := range valueArray {
+		service, ok := item.(map[string]interface{})
+		assert.True(t, ok)
+		assert.NotNil(t, service["name"])
+		assert.NotNil(t, service["kind"])
+		assert.NotNil(t, service["url"])
+		assert.Equal(t, "Singleton", service["kind"])
+	}
+}
+
+// TestGetRedfishV1OdataRequiredServices validates all required services present
+func TestGetRedfishV1OdataRequiredServices(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	var response map[string]interface{}
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	valueArray, ok := response["value"].([]interface{})
+	require.True(t, ok, "value should be an array")
+
+	expectedServices := map[string]string{
+		"Systems":        "/redfish/v1/Systems",
+		"Chassis":        "/redfish/v1/Chassis",
+		"Managers":       "/redfish/v1/Managers",
+		"AccountService": "/redfish/v1/AccountService",
+		"EventService":   "/redfish/v1/EventService",
+		"TaskService":    "/redfish/v1/TaskService",
+	}
+
+	actualServices := make(map[string]string)
+
+	for _, item := range valueArray {
+		service, ok := item.(map[string]interface{})
+		require.True(t, ok, "item should be a map")
+
+		name, ok := service["name"].(string)
+		require.True(t, ok, "name should be a string")
+
+		url, ok := service["url"].(string)
+		require.True(t, ok, "url should be a string")
+
+		actualServices[name] = url
+	}
+
+	for name, expectedURL := range expectedServices {
+		actualURL, exists := actualServices[name]
+		assert.True(t, exists, "service %s should be present", name)
+		assert.Equal(t, expectedURL, actualURL, "service %s URL mismatch", name)
+	}
+}
+
+// TestGetRedfishV1OdataNoAuthentication validates endpoint is public
+func TestGetRedfishV1OdataNoAuthentication(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// TestGetRedfishV1OdataConcurrentRequests validates thread safety
+func TestGetRedfishV1OdataConcurrentRequests(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	const numRequests = 10
+
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		go func() {
+			req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			results <- w.Code
+		}()
+	}
+
+	for i := 0; i < numRequests; i++ {
+		code := <-results
+		assert.Equal(t, http.StatusOK, code)
+	}
+}
+
+// BenchmarkGetRedfishV1Odata measures OData endpoint performance
+func BenchmarkGetRedfishV1Odata(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+	}
 }

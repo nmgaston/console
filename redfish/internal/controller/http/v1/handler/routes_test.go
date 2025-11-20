@@ -13,8 +13,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	dmtconfig "github.com/device-management-toolkit/console/config"
+	"github.com/device-management-toolkit/console/pkg/logger"
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
+	"github.com/device-management-toolkit/console/redfish/internal/infrastructure/services"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
@@ -51,14 +54,19 @@ func (m *MockComputerSystemRepository) UpdatePowerState(ctx context.Context, sys
 	return args.Error(0)
 }
 
-// setupTestRouter sets up a test router with the given server
-func setupTestRouter(server *RedfishServer) *gin.Engine {
+// setupTestRouter sets up a test router with the given use case
+func setupTestRouter(computerSystemUC *usecase.ComputerSystemUseCase) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
 
-	// Register the systems endpoint
-	router.GET("/redfish/v1/Systems", server.GetRedfishV1Systems)
+	// Create test config and logger
+	config := &dmtconfig.Config{}
+	log := logger.New("test")
+
+	// Create router and setup routes
+	r := CreateRouter(config, log, computerSystemUC)
+	r.SetupRoutes(router)
 
 	return router
 }
@@ -252,15 +260,23 @@ func TestGetRedfishV1Systems(t *testing.T) {
 			mockRepo := new(MockComputerSystemRepository)
 			tt.setupMock(mockRepo)
 
-			useCase := &usecase.ComputerSystemUseCase{
-				Repo: mockRepo,
-			}
-			server := &RedfishServer{
-				ComputerSystemUC: useCase,
-			}
+			// Create test logger and services
+			testLogger := logger.New("test")
+			accessPolicy := services.CreateAccessPolicyService(testLogger)
+			cacheService := services.CreateCacheService(testLogger)
+			auditService := services.CreateAuditService(testLogger)
+			metricsService := services.CreateMetricsService(testLogger)
+
+			useCase := usecase.CreateComputerSystemUseCase(
+				mockRepo,
+				accessPolicy,
+				cacheService,
+				auditService,
+				metricsService,
+			)
 
 			// Setup router and request
-			router := setupTestRouter(server)
+			router := setupTestRouter(useCase)
 			req, _ := http.NewRequestWithContext(context.Background(), tt.httpMethod, "/redfish/v1/Systems", http.NoBody)
 			w := httptest.NewRecorder()
 

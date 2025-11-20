@@ -43,8 +43,8 @@ type WsmanComputerSystemRepo struct {
 	log     logger.Interface
 }
 
-// NewWsmanComputerSystemRepo creates a new WSMAN-backed computer system repository.
-func NewWsmanComputerSystemRepo(uc *devices.UseCase, log logger.Interface) *WsmanComputerSystemRepo {
+// CreateWsmanComputerSystemRepo creates a new WSMAN-based computer system repository.
+func CreateWsmanComputerSystemRepo(uc *devices.UseCase, log logger.Interface) *WsmanComputerSystemRepo {
 	return &WsmanComputerSystemRepo{
 		usecase: uc,
 		log:     log,

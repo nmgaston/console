@@ -14,11 +14,19 @@ import (
 	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishgenerated "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	v1 "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
+	"github.com/device-management-toolkit/console/redfish/internal/infrastructure/services"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
 // ErrDevicesCastFailed is returned when the devices use case cannot be cast to the expected type.
 var ErrDevicesCastFailed = errors.New("failed to cast devices use case")
+
+// Constants for Redfish API paths.
+const (
+	redfishV1Path       = "/redfish/v1/"
+	redfishMetadataPath = "/redfish/v1/$metadata"
+	redfishV1PathPrefix = "/redfish/v1/"
+)
 
 // ComponentConfig holds component-specific configuration.
 type ComponentConfig struct {
@@ -27,21 +35,52 @@ type ComponentConfig struct {
 	BaseURL      string `yaml:"base_url" env:"REDFISH_BASE_URL"`
 }
 
-const (
-	// HTTP status codes.
-	statusBadRequest       = 400
-	statusUnauthorized     = 401
-	statusForbidden        = 403
-	statusMethodNotAllowed = 405
-)
+// Server implements the OpenAPI ServerInterface using individual handlers.
+type Server struct {
+	serviceRootHandler    *v1.ServiceRootHandler
+	computerSystemHandler *v1.ComputerSystemHandler
+	metadataHandler       *v1.MetadataHandler
+}
+
+// GetRedfishV1 implements ServerInterface.
+func (rs *Server) GetRedfishV1(c *gin.Context) {
+	rs.serviceRootHandler.GetRedfishV1(c)
+}
+
+// GetRedfishV1Metadata implements ServerInterface.
+func (rs *Server) GetRedfishV1Metadata(c *gin.Context) {
+	rs.metadataHandler.GetMetadata(c)
+}
+
+// GetRedfishV1Systems implements ServerInterface.
+func (rs *Server) GetRedfishV1Systems(c *gin.Context) {
+	rs.computerSystemHandler.GetComputerSystemCollection(c)
+}
+
+// GetRedfishV1SystemsComputerSystemId implements ServerInterface.
+//
+//nolint:revive // Method name must match OpenAPI generated interface
+func (rs *Server) GetRedfishV1SystemsComputerSystemId(c *gin.Context, _ string) {
+	rs.computerSystemHandler.GetComputerSystem(c)
+}
+
+// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset implements ServerInterface.
+//
+//nolint:revive // Method name must match OpenAPI generated interface
+func (rs *Server) PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, _ string) {
+	rs.computerSystemHandler.PostComputerSystemReset(c)
+}
 
 var (
-	server          *v1.RedfishServer
+	server          *Server
 	componentConfig *ComponentConfig
+	appConfig       *dmtconfig.Config
 )
 
-// Initialize initializes the Redfish component with DMT infrastructure.
+// Initialize initializes the Redfish component with proper dependency injection and layered architecture.
 func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtusecase.Usecases, config *dmtconfig.Config) error {
+	log.Info("Initializing Redfish component")
+
 	// Initialize configuration with defaults
 	auth := config.Auth
 	componentConfig = &ComponentConfig{
@@ -50,115 +89,130 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 		BaseURL:      "/redfish/v1",
 	}
 
-	// Create Redfish-specific repository and use case using DMT's device management
+	// External service dependencies
 	devicesUC, ok := usecases.Devices.(*devices.UseCase)
 	if !ok {
 		log.Error("Failed to cast Devices usecase to *devices.UseCase")
 
-		return nil // Return nil to not block other components
+		return ErrDevicesCastFailed
 	}
 
-	repo := redfishusecase.NewWsmanComputerSystemRepo(devicesUC, log)
-	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
+	// Infrastructure Services (Cross-cutting concerns)
+	accessPolicy := services.CreateAccessPolicyService(log)
+	cache := services.CreateCacheService(log)
+	audit := services.CreateAuditService(log)
+	metrics := services.CreateMetricsService(log)
 
-	// Initialize the Redfish server with shared infrastructure
-	server = &v1.RedfishServer{
-		ComputerSystemUC: computerSystemUC,
-		Config:           config,
-		Logger:           log,
+	// Repository for data access
+	repo := redfishusecase.CreateWsmanComputerSystemRepo(devicesUC, log)
+
+	// Business logic layer
+	computerSystemUC := redfishusecase.CreateComputerSystemUseCase(
+		repo,
+		accessPolicy,
+		cache,
+		audit,
+		metrics,
+	)
+
+	// Create individual handlers
+	serviceRootHandler := v1.CreateServiceRootHandler(log)
+	metadataHandler := v1.CreateMetadataHandler(log)
+	computerSystemHandler := v1.CreateComputerSystemHandler(computerSystemUC, log)
+
+	// Create server implementing OpenAPI ServerInterface
+	server = &Server{
+		serviceRootHandler:    serviceRootHandler,
+		computerSystemHandler: computerSystemHandler,
+		metadataHandler:       metadataHandler,
 	}
+
+	// Store config for later use
+	appConfig = config
 
 	log.Info("Redfish component initialized successfully")
 
 	return nil
 }
 
-// RegisterRoutes registers Redfish API routes.
-func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
+// RegisterRoutes registers Redfish API routes with OpenAPI-generated routing.
+func RegisterRoutes(ginRouter *gin.Engine, log logger.Interface) error {
 	if !componentConfig.Enabled {
-		server.Logger.Info("Redfish component is disabled, skipping route registration")
+		log.Info("Redfish component is disabled, skipping route registration")
 
 		return nil
 	}
 
+	log.Info("Registering Redfish API routes")
+
+	// Authentication is handled within OpenAPI middleware for selective endpoint protection
+
+	// Use OpenAPI-generated routing for full spec compliance
+	log.Info("Using OpenAPI-generated routing")
+
+	// Create basic auth middleware for protected endpoints
+	var basicAuthMiddleware gin.HandlerFunc
+
 	if componentConfig.AuthRequired {
-		// Apply Basic Auth middleware to OpenAPI-defined protected endpoints
-		// Use actual admin credentials from the DMT configuration
-		auth := server.Config.Auth
+		auth := appConfig.Auth
 		adminUsername := auth.AdminUsername
 		adminPassword := auth.AdminPassword
-		basicAuthMiddleware := v1.BasicAuthValidator(adminUsername, adminPassword)
-
-		// Register handlers with OpenAPI-spec-compliant middleware
-		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
-			BaseURL:      "",
-			ErrorHandler: createErrorHandler(),
-			Middlewares: []redfishgenerated.MiddlewareFunc{
-				// OpenAPI-spec-driven selective authentication
-				func(c *gin.Context) {
-					path := c.Request.URL.Path
-
-					// Public endpoints as defined in OpenAPI spec (security: [{}])
-					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
-						c.Next()
-
-						return
-					}
-
-					// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
-					if strings.HasPrefix(path, "/redfish/v1/") {
-						basicAuthMiddleware(c)
-
-						return
-					}
-
-					// Default: no authentication
-					c.Next()
-				},
-			},
-		})
-
-		server.Logger.Info("Redfish API routes registered with OpenAPI-spec-driven Basic Auth")
-	} else {
-		// Register without authentication (all endpoints public)
-		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
-			BaseURL:      "",
-			ErrorHandler: createErrorHandler(),
-		})
-
-		server.Logger.Info("Redfish API routes registered without authentication")
+		basicAuthMiddleware = v1.BasicAuthValidator(adminUsername, adminPassword)
 	}
 
+	redfishgenerated.RegisterHandlersWithOptions(ginRouter, server, redfishgenerated.GinServerOptions{
+		BaseURL:      "",
+		ErrorHandler: createErrorHandler(),
+		Middlewares: []redfishgenerated.MiddlewareFunc{
+			// OpenAPI-spec-driven selective authentication
+			func(c *gin.Context) {
+				path := c.Request.URL.Path
+
+				// Public endpoints as defined in OpenAPI spec (security: [{}])
+				if path == redfishV1Path || path == redfishMetadataPath {
+					c.Next()
+
+					return
+				}
+
+				// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
+				if strings.HasPrefix(path, redfishV1PathPrefix) {
+					if componentConfig.AuthRequired && basicAuthMiddleware != nil {
+						basicAuthMiddleware(c)
+					} else {
+						c.Next()
+					}
+
+					return
+				}
+
+				// Default: no authentication
+				c.Next()
+			},
+		},
+	})
+
 	// Enable HandleMethodNotAllowed to return 405 for wrong HTTP methods
-	router.HandleMethodNotAllowed = true
+	ginRouter.HandleMethodNotAllowed = true
 
 	// Add NoMethod handler for Redfish routes to return 405 with proper error
-	router.NoMethod(func(c *gin.Context) {
+	ginRouter.NoMethod(func(c *gin.Context) {
 		// Only handle Redfish routes
 		if len(c.Request.URL.Path) >= 10 && c.Request.URL.Path[:10] == "/redfish/v" {
 			v1.MethodNotAllowedError(c)
 		}
 	})
 
-	server.Logger.Info("Redfish API routes registered successfully")
+	log.Info("Redfish API routes registered successfully")
 
 	return nil
 }
 
 // createErrorHandler creates an error handler for OpenAPI-generated routes.
+// This provides consistent error handling across all endpoints.
 func createErrorHandler() func(*gin.Context, error, int) {
-	return func(c *gin.Context, err error, statusCode int) {
-		switch statusCode {
-		case statusUnauthorized:
-			v1.UnauthorizedError(c)
-		case statusForbidden:
-			v1.ForbiddenError(c)
-		case statusMethodNotAllowed:
-			v1.MethodNotAllowedError(c)
-		case statusBadRequest:
-			v1.BadRequestError(c, err.Error())
-		default:
-			v1.InternalServerError(c, err)
-		}
+	return func(c *gin.Context, err error, _ int) {
+		// Use standard error handling for OpenAPI routes
+		v1.InternalServerError(c, err)
 	}
 }

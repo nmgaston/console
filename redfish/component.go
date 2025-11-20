@@ -68,7 +68,20 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 		Logger:           log,
 	}
 
-	log.Info("Redfish component initialized successfully")
+	// Load OData services from OpenAPI spec
+	// Use relative path from console root: redfish/openapi/merged/redfish-openapi.yaml
+	specPath := "redfish/openapi/merged/redfish-openapi.yaml"
+
+	services, err := v1.ExtractServicesFromOpenAPI(specPath)
+	if err != nil {
+		log.Warn("Failed to load services from OpenAPI spec: %v, using defaults", err)
+
+		services = v1.GetDefaultServices()
+	}
+
+	server.Services = services
+
+	log.Info("Redfish component initialized successfully with %d OData services", len(server.Services))
 
 	return nil
 }

@@ -47,6 +47,7 @@ type RedfishServer struct {
 	ComputerSystemUC *usecase.ComputerSystemUseCase
 	Config           *dmtconfig.Config
 	Logger           logger.Interface
+	Services         []ODataService // Cached OData services loaded from OpenAPI spec
 }
 
 // Ensure RedfishServer implements generated.ServerInterface
@@ -87,44 +88,6 @@ func CreateDescription(desc string, lgr logger.Interface) *generated.ComputerSys
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
-}
-
-// GetRedfishV1 returns the service root
-func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
-	serviceRoot := generated.ServiceRootServiceRoot{
-		OdataContext:   StringPtr(odataContextServiceRoot),
-		OdataId:        StringPtr(odataIDServiceRoot),
-		OdataType:      StringPtr(odataTypeServiceRoot),
-		Id:             serviceRootID,
-		Name:           serviceRootName,
-		RedfishVersion: StringPtr(redfishVersion),
-		Systems: &generated.OdataV4IdRef{
-			OdataId: StringPtr(odataIDSystems),
-		},
-	}
-	c.JSON(http.StatusOK, serviceRoot)
-}
-
-// GetRedfishV1Metadata returns the OData metadata
-func (s *RedfishServer) GetRedfishV1Metadata(c *gin.Context) {
-	metadata := ""
-
-	c.Header(headerContentType, contentTypeXML)
-	c.String(http.StatusOK, metadata)
-}
-
-// GetRedfishV1Odata returns the OData service root
-func (s *RedfishServer) GetRedfishV1Odata(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	odataService := generated.OdataServiceOdataService{
-		OdataContext: StringPtr("/redfish/v1/$metadata#ServiceRoot.ServiceRoot"),
-		OdataId:      StringPtr("/redfish/v1/odata"),
-		OdataType:    StringPtr("#ServiceRoot.v1_19_0.ServiceRoot"),
-		Id:           "OdataService",
-		Name:         "OData Service Root",
-	}
-	c.JSON(http.StatusOK, odataService)
 }
 
 // GetRedfishV1Systems returns the computer systems collection

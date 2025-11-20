@@ -15,6 +15,9 @@
         <edmx:Include Namespace="Message"/>
         <edmx:Include Namespace="Message.1_2_1"/>
     </edmx:Reference>
+    <edmx:Reference Uri="http://redfish.dmtf.org/schemas/v1/OdataService_v1.xml">
+        <edmx:Include Namespace="OdataService"/>
+    </edmx:Reference>
     <edmx:Reference Uri="http://redfish.dmtf.org/schemas/v1/ResolutionStep_v1.xml">
         <edmx:Include Namespace="ResolutionStep"/>
         <edmx:Include Namespace="ResolutionStep.1_0_1"/>

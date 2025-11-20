@@ -288,34 +288,22 @@ type MessageMessage struct {
 	Severity *string `json:"Severity,omitempty"`
 }
 
-// OdataServiceOdataService The `OdataService` schema represents the OData service root for the Redfish service.
+// OdataServiceOdataService The OData service document from a Redfish service.
 type OdataServiceOdataService struct {
 	// OdataContext The OData description of a payload.
 	OdataContext *OdataV4Context `json:"@odata.context,omitempty"`
 
-	// OdataId The unique identifier for a resource.
-	OdataId *OdataV4Id `json:"@odata.id,omitempty"`
+	// Value The list of services provided by the Redfish service.
+	Value *[]struct {
+		// Kind Type of resource. Value is `Singleton` for all cases defined by Redfish.
+		Kind *string `json:"kind,omitempty"`
 
-	// OdataType The type of a resource.
-	OdataType   *OdataV4Type                          `json:"@odata.type,omitempty"`
-	Description *OdataServiceOdataService_Description `json:"Description,omitempty"`
+		// Name User-friendly resource name of the resource.
+		Name *string `json:"name,omitempty"`
 
-	// Id The unique identifier for this resource within the collection of similar resources.
-	Id ResourceId `json:"Id"`
-
-	// Name The name of the resource or array member.
-	Name ResourceName `json:"Name"`
-
-	// Oem The OEM extension.
-	Oem *ResourceOem `json:"Oem,omitempty"`
-}
-
-// OdataServiceOdataServiceDescription1 defines model for .
-type OdataServiceOdataServiceDescription1 = interface{}
-
-// OdataServiceOdataService_Description defines model for OdataServiceOdataService.Description.
-type OdataServiceOdataService_Description struct {
-	union json.RawMessage
+		// Url Relative URL for the top-level resource.
+		Url *string `json:"url,omitempty"`
+	} `json:"value,omitempty"`
 }
 
 // RedfishError The error payload from a Redfish service.
@@ -817,68 +805,6 @@ func (t ComputerSystemComputerSystem_PowerState) MarshalJSON() ([]byte, error) {
 }
 
 func (t *ComputerSystemComputerSystem_PowerState) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsResourceDescription returns the union data inside the OdataServiceOdataService_Description as a ResourceDescription
-func (t OdataServiceOdataService_Description) AsResourceDescription() (ResourceDescription, error) {
-	var body ResourceDescription
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromResourceDescription overwrites any union data inside the OdataServiceOdataService_Description as the provided ResourceDescription
-func (t *OdataServiceOdataService_Description) FromResourceDescription(v ResourceDescription) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeResourceDescription performs a merge with any union data inside the OdataServiceOdataService_Description, using the provided ResourceDescription
-func (t *OdataServiceOdataService_Description) MergeResourceDescription(v ResourceDescription) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsOdataServiceOdataServiceDescription1 returns the union data inside the OdataServiceOdataService_Description as a OdataServiceOdataServiceDescription1
-func (t OdataServiceOdataService_Description) AsOdataServiceOdataServiceDescription1() (OdataServiceOdataServiceDescription1, error) {
-	var body OdataServiceOdataServiceDescription1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromOdataServiceOdataServiceDescription1 overwrites any union data inside the OdataServiceOdataService_Description as the provided OdataServiceOdataServiceDescription1
-func (t *OdataServiceOdataService_Description) FromOdataServiceOdataServiceDescription1(v OdataServiceOdataServiceDescription1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeOdataServiceOdataServiceDescription1 performs a merge with any union data inside the OdataServiceOdataService_Description, using the provided OdataServiceOdataServiceDescription1
-func (t *OdataServiceOdataService_Description) MergeOdataServiceOdataServiceDescription1(v OdataServiceOdataServiceDescription1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t OdataServiceOdataService_Description) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *OdataServiceOdataService_Description) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

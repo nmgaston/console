@@ -347,7 +347,22 @@ type GetRedfishV1OdataResponseObject interface {
 	VisitGetRedfishV1OdataResponse(w http.ResponseWriter) error
 }
 
-type GetRedfishV1Odata200JSONResponse OdataServiceOdataService
+type GetRedfishV1Odata200JSONResponse struct {
+	// OdataContext The OData description of a payload.
+	OdataContext *OdataV4Context `json:"@odata.context,omitempty"`
+
+	// Value The list of services provided by the Redfish service.
+	Value []struct {
+		// Kind Type of resource.  Value is `Singleton` for all cases defined by Redfish.
+		Kind *string `json:"kind,omitempty"`
+
+		// Name User-friendly resource name of the resource.
+		Name *string `json:"name,omitempty"`
+
+		// Url Relative URL for the top-level resource.
+		Url *string `json:"url,omitempty"`
+	} `json:"value"`
+}
 
 func (response GetRedfishV1Odata200JSONResponse) VisitGetRedfishV1OdataResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")

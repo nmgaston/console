@@ -6,6 +6,7 @@ info:
 paths:
   /redfish/v1/:
     get:
+      operationId: GetRedfishV1
       responses:
         '200':
           content:
@@ -23,11 +24,12 @@ paths:
       - {}
   /redfish/v1/$metadata:
     get:
+      operationId: GetRedfishV1Metadata
       responses:
         '200':
           content:
             application/xml: {}
-          description: OData $metadata.
+          description: OData CSDL metadata document describing the service data model
         default:
           content:
             application/json:
@@ -38,14 +40,44 @@ paths:
       - {}
   /redfish/v1/odata:
     get:
+      operationId: GetRedfishV1Odata
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OdataService_OdataService'
-          description: The response contains a representation of the OData Service
-            resource
+                description: The OData service document from a Redfish service.
+                properties:
+                  '@odata.context':
+                    $ref: '#/components/schemas/odata-v4_context'
+                  value:
+                    description: The list of services provided by the Redfish service.
+                    items:
+                      properties:
+                        kind:
+                          description: Type of resource.  Value is `Singleton` for
+                            all cases defined by Redfish.
+                          readOnly: true
+                          type: string
+                        name:
+                          description: User-friendly resource name of the resource.
+                          readOnly: true
+                          type: string
+                        url:
+                          description: Relative URL for the top-level resource.
+                          readOnly: true
+                          type: string
+                      required:
+                      - name
+                      - kind
+                      - url
+                      type: object
+                    type: array
+                required:
+                - '@odata.context'
+                - value
+                type: object
+          description: OData service document
         default:
           content:
             application/json:
@@ -73,6 +105,13 @@ paths:
       security:
       - BasicAuth: []
   /redfish/v1/Systems/{ComputerSystemId}:
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
     get:
       responses:
         '200':
@@ -90,13 +129,6 @@ paths:
           description: Error condition
       security:
       - BasicAuth: []
-    parameters:
-    - description: The value of the Id property of the ComputerSystem resource
-      in: path
-      name: ComputerSystemId
-      required: true
-      schema:
-        type: string
   /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset:
     parameters:
     - description: The value of the Id property of the ComputerSystem resource
@@ -645,46 +677,6 @@ components:
       type: object
       x-longDescription: This type shall contain a message that the Redfish service
         returns, as described in the Redfish Specification.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    OdataService_OdataService:
-      additionalProperties: false
-      description: The `OdataService` schema represents the OData service root for
-        the Redfish service.
-      properties:
-        '@odata.context':
-          $ref: '#/components/schemas/odata-v4_context'
-        '@odata.id':
-          $ref: '#/components/schemas/odata-v4_id'
-        '@odata.type':
-          $ref: '#/components/schemas/odata-v4_type'
-        Description:
-          oneOf:
-          - $ref: '#/components/schemas/Resource_Description'
-          - enum:
-            - null
-          readOnly: true
-        Id:
-          $ref: '#/components/schemas/Resource_Id'
-          readOnly: true
-        Name:
-          $ref: '#/components/schemas/Resource_Name'
-          readOnly: true
-        Oem:
-          $ref: '#/components/schemas/Resource_Oem'
-          description: The OEM extension.
-          x-longDescription: This property shall contain the OEM extensions. All values
-            for properties that this object contains shall conform to the Redfish
-            Specification-described requirements.
-      required:
-      - '@odata.id'
-      - '@odata.type'
-      - Id
-      - Name
-      type: object
-      x-longDescription: This resource represents the OData Service root for the Redfish
-        service.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.

@@ -288,24 +288,6 @@ type MessageMessage struct {
 	Severity *string `json:"Severity,omitempty"`
 }
 
-// OdataServiceOdataService The OData service document from a Redfish service.
-type OdataServiceOdataService struct {
-	// OdataContext The OData description of a payload.
-	OdataContext *OdataV4Context `json:"@odata.context,omitempty"`
-
-	// Value The list of services provided by the Redfish service.
-	Value *[]struct {
-		// Kind Type of resource. Value is `Singleton` for all cases defined by Redfish.
-		Kind *string `json:"kind,omitempty"`
-
-		// Name User-friendly resource name of the resource.
-		Name *string `json:"name,omitempty"`
-
-		// Url Relative URL for the top-level resource.
-		Url *string `json:"url,omitempty"`
-	} `json:"value,omitempty"`
-}
-
 // RedfishError The error payload from a Redfish service.
 type RedfishError struct {
 	// Error The properties that describe an error from a Redfish service.

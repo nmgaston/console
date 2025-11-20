@@ -158,15 +158,9 @@ func TestGetRedfishV1MetadataConcurrentRequests(t *testing.T) {
 // TestLoadMetadata tests the metadata loading behavior through the public endpoint.
 // Since loadMetadata is internal, we test it indirectly through GetRedfishV1Metadata.
 func TestLoadMetadata(t *testing.T) {
-	t.Parallel()
-
-	// Reset global state for test isolation
-	t.Cleanup(func() {
-		resetMetadataState()
-	})
-
 	t.Run("metadata endpoint loads and caches metadata", func(t *testing.T) {
 		t.Parallel()
+		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
 
@@ -196,6 +190,7 @@ func TestLoadMetadata(t *testing.T) {
 
 	t.Run("metadata endpoint sets correct headers", func(t *testing.T) {
 		t.Parallel()
+		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
 
@@ -217,15 +212,9 @@ func TestLoadMetadata(t *testing.T) {
 // Direct validation testing is not possible since validateMetadataXML is private.
 // Instead, we verify that the endpoint returns valid XML responses.
 func TestValidateMetadataXML(t *testing.T) {
-	t.Parallel()
-
-	// Reset global state for test isolation
-	t.Cleanup(func() {
-		resetMetadataState()
-	})
-
 	t.Run("endpoint returns valid XML response", func(t *testing.T) {
 		t.Parallel()
+		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
 

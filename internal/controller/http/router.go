@@ -129,9 +129,9 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 	}
 
 	// Serve SPA only for root path
-	handler.GET("/", func(c *gin.Context) {
-		c.FileFromFS("./index.html", http.FS(staticFiles))
-	})
+	// handler.GET("/", func(c *gin.Context) {
+	// 	c.FileFromFS("./index.html", http.FS(staticFiles))
+	// })
 
 	handler.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
@@ -170,7 +170,7 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		}
 
 		// Serve SPA for all other routes (client-side routing)
-		c.FileFromFS("./index.html", http.FS(staticFiles))
+		// c.FileFromFS("./index.html", http.FS(staticFiles))
 	})
 }
 

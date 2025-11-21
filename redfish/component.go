@@ -61,8 +61,12 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 	repo := redfishusecase.NewWsmanComputerSystemRepo(devicesUC, log)
 	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
-	// Initialize the Redfish server with shared infrastructure
+	// Create systems handler for managing computer system endpoints
+	systemsHandler := v1.NewSystemsHandler(computerSystemUC, log)
+
+	// Initialize the Redfish server with handlers and configuration
 	server = &v1.RedfishServer{
+		SystemsHandler:   systemsHandler,
 		ComputerSystemUC: computerSystemUC,
 		Config:           config,
 		Logger:           log,

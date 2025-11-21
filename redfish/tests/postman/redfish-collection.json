@@ -408,6 +408,488 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Verify System Properties",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('System has PowerState property', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('PowerState');",
+                  "});",
+                  "",
+                  "pm.test('System has SystemType property', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('SystemType');",
+                  "});",
+                  "",
+                  "pm.test('System has required OData properties', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('@odata.context');",
+                  "    pm.expect(jsonData).to.have.property('@odata.id');",
+                  "    pm.expect(jsonData).to.have.property('@odata.type');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Power Control Actions",
+      "item": [
+        {
+          "name": "Reset System - On",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 202 Accepted or 409 Conflict', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([202, 409]);",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ResetType\": \"On\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset System - ForceOff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 202 Accepted', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ResetType\": \"ForceOff\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset System - ForceRestart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 202 Accepted or 409 Conflict', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([202, 409]);",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ResetType\": \"ForceRestart\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset System - GracefulShutdown",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 202 Accepted or 409 Conflict', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([202, 409]);",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ResetType\": \"GracefulShutdown\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset System - PowerCycle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 202 Accepted or 409 Conflict', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([202, 409]);",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ResetType\": \"PowerCycle\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset System - Missing ResetType",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Response contains Redfish error format', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset System - Invalid ResetType",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Response contains Redfish error format', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ResetType\": \"InvalidResetType\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset System - Invalid System ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Response contains Redfish error format', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ResetType\": \"On\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/invalid-system-id/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "invalid-system-id", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset System - Malformed JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ResetType\": \"On\",\n  invalid json\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+            }
+          },
+          "response": []
         }
       ]
     },

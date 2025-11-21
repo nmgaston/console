@@ -74,7 +74,7 @@
           "response": []
         },
         {
-          "name": "Get OData Service Document",
+          "name": "Get OData Metadata Document",
           "event": [
             {
               "listen": "test",
@@ -84,9 +84,34 @@
                   "    pm.response.to.have.status(200);",
                   "});",
                   "",
-                  "pm.test('Response is JSON or XML', function () {",
+                  "pm.test('Content-Type is application/xml', function () {",
                   "    var contentType = pm.response.headers.get('Content-Type');",
-                  "    pm.expect(contentType).to.match(/(application\\/json|application\\/xml)/);",
+                  "    pm.expect(contentType).to.include('application/xml');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid XML', function () {",
+                  "    var responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.include('<?xml version');",
+                  "    pm.expect(responseText).to.include('<edmx:Edmx');",
+                  "});",
+                  "",
+                  "pm.test('XML contains required DMTF namespaces', function () {",
+                  "    var responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.include('ServiceRoot');",
+                  "    pm.expect(responseText).to.include('ComputerSystem');",
+                  "    pm.expect(responseText).to.include('Resource');",
+                  "});",
+                  "",
+                  "pm.test('XML has proper EDMX structure', function () {",
+                  "    var responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.include('edmx:Reference');",
+                  "    pm.expect(responseText).to.include('edmx:DataServices');",
+                  "    pm.expect(responseText).to.include('http://docs.oasis-open.org/odata/ns/edmx');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -101,9 +126,117 @@
             "header": [
               {
                 "key": "Accept",
-                "value": "application/json"
+                "value": "application/xml"
               }
             ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/$metadata",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "$metadata"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Metadata - No Auth Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Metadata endpoint is publicly accessible', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('No authentication required', function () {",
+                  "    // This test passes if status is 200 without auth",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/$metadata",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "$metadata"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Metadata - Caching Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response body is not empty', function () {",
+                  "    pm.expect(pm.response.text().length).to.be.above(0);",
+                  "});",
+                  "",
+                  "// Store response for comparison",
+                  "pm.environment.set('metadata_response', pm.response.text());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/$metadata",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "$metadata"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Metadata - Verify Cached Response",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Cached response matches first request', function () {",
+                  "    var firstResponse = pm.environment.get('metadata_response');",
+                  "    var currentResponse = pm.response.text();",
+                  "    pm.expect(currentResponse).to.equal(firstResponse);",
+                  "});",
+                  "",
+                  "// Clean up",
+                  "pm.environment.unset('metadata_response');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
             "url": {
               "raw": "{{base_url}}/redfish/v1/$metadata",
               "host": ["{{base_url}}"],

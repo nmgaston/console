@@ -42,6 +42,11 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		l.Fatal("Failed to initialize redfish: " + err.Error())
 	}
 
+	// Register redfish routes FIRST (before static files)
+	if err := redfish.RegisterRoutes(handler, l); err != nil {
+		l.Fatal("Failed to register redfish routes: " + err.Error())
+	}
+
 	// Initialize Fuego adapter
 	fuegoAdapter := openapi.NewFuegoAdapter(t, l)
 	fuegoAdapter.RegisterRoutes()
@@ -57,8 +62,6 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 	if err != nil {
 		l.Fatal(err)
 	}
-
-	handler.StaticFileFS("/", "./", http.FS(staticFiles)) // Serve static files from "/" route
 
 	modifiedMainJS := injectConfigToMainJS(l, cfg)
 	handler.StaticFile("/main.js", modifiedMainJS)
@@ -125,14 +128,13 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		v2.NewAmtRoutes(h3, t.Devices, l)
 	}
 
-	// Register redfish routes directly
-	if err := redfish.RegisterRoutes(handler, l); err != nil {
-		l.Fatal("Failed to register redfish routes: " + err.Error())
-	}
-
-	// Setup default NoRoute handler for SPA
 	handler.NoRoute(func(c *gin.Context) {
-		c.FileFromFS("./", http.FS(staticFiles))
+		path := c.Request.URL.Path
+
+		// Handle API routes with regular JSON errors
+		if len(path) >= 4 && path[:4] == "/api" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
+		}
 	})
 }
 

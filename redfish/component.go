@@ -107,6 +107,11 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 			BaseURL:      "",
 			ErrorHandler: createErrorHandler(),
 			Middlewares: []redfishgenerated.MiddlewareFunc{
+				// Add OData-Version header to all Redfish responses
+				func(c *gin.Context) {
+					c.Header("OData-Version", "4.0")
+					c.Next()
+				},
 				// OpenAPI-spec-driven selective authentication
 				func(c *gin.Context) {
 					path := c.Request.URL.Path
@@ -137,6 +142,13 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
 			ErrorHandler: createErrorHandler(),
+			Middlewares: []redfishgenerated.MiddlewareFunc{
+				// Add OData-Version header to all Redfish responses
+				func(c *gin.Context) {
+					c.Header("OData-Version", "4.0")
+					c.Next()
+				},
+			},
 		})
 
 		server.Logger.Info("Redfish API routes registered without authentication")

@@ -10,6 +10,8 @@
 !config/config.yml
 !redfish/openapi/dmtf/*.yaml
 !redfish/openapi/merged/*.yaml
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -36,3 +38,6 @@ vendor/
 !**/ui/.gitkeep
 # Documentation files
 doc/openapi.json
+# Newman test results
+**/postman/results/
+

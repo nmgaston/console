@@ -3,6 +3,7 @@ package redfish
 
 import (
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -50,15 +51,27 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 		BaseURL:      "/redfish/v1",
 	}
 
-	// Create Redfish-specific repository and use case using DMT's device management
-	devicesUC, ok := usecases.Devices.(*devices.UseCase)
-	if !ok {
-		log.Error("Failed to cast Devices usecase to *devices.UseCase")
+	// Check if we should use mock repository (for testing)
+	useMock := os.Getenv("REDFISH_USE_MOCK") == "true"
 
-		return nil // Return nil to not block other components
+	var repo redfishusecase.ComputerSystemRepository
+
+	if useMock {
+		log.Info("Using mock WSMAN repository for Redfish API")
+
+		repo = redfishusecase.NewMockComputerSystemRepo()
+	} else {
+		// Create Redfish-specific repository and use case using DMT's device management
+		devicesUC, ok := usecases.Devices.(*devices.UseCase)
+		if !ok {
+			log.Error("Failed to cast Devices usecase to *devices.UseCase")
+
+			return nil // Return nil to not block other components
+		}
+
+		repo = redfishusecase.NewWsmanComputerSystemRepo(devicesUC, log)
 	}
 
-	repo := redfishusecase.NewWsmanComputerSystemRepo(devicesUC, log)
 	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
 	// Initialize the Redfish server with shared infrastructure
@@ -94,6 +107,11 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 			BaseURL:      "",
 			ErrorHandler: createErrorHandler(),
 			Middlewares: []redfishgenerated.MiddlewareFunc{
+				// Add OData-Version header to all Redfish responses
+				func(c *gin.Context) {
+					c.Header("OData-Version", "4.0")
+					c.Next()
+				},
 				// OpenAPI-spec-driven selective authentication
 				func(c *gin.Context) {
 					path := c.Request.URL.Path
@@ -124,6 +142,13 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
 			ErrorHandler: createErrorHandler(),
+			Middlewares: []redfishgenerated.MiddlewareFunc{
+				// Add OData-Version header to all Redfish responses
+				func(c *gin.Context) {
+					c.Header("OData-Version", "4.0")
+					c.Next()
+				},
+			},
 		})
 
 		server.Logger.Info("Redfish API routes registered without authentication")

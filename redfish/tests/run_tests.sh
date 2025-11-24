@@ -76,7 +76,7 @@ fi
 echo "✓ Build successful"
 
 # Start the built binary with config flag
-REDFISH_USE_MOCK=true HTTP_TLS_ENABLED=false HTTP_PORT=${PORT} /tmp/redfish_test_app -config ./config/config.yml > /tmp/redfish_test_server.log 2>&1 &
+REDFISH_USE_MOCK=true HTTP_TLS_ENABLED=false HTTP_PORT=${PORT} GIN_MODE=debug /tmp/redfish_test_app -config ./config/config.yml > /tmp/redfish_test_server.log 2>&1 &
 SERVER_PID=$!
 echo "Server PID: ${SERVER_PID}"
 

@@ -1,11 +1,12 @@
-// Package usecase provides a mock implementation of ComputerSystemRepository for testing.
-package usecase
+// Package mocks provides mock implementations for testing.
+package mocks
 
 import (
 	"context"
 	"fmt"
 
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
+	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
 // MockComputerSystemRepo implements ComputerSystemRepository with in-memory test data.
@@ -55,7 +56,7 @@ func (r *MockComputerSystemRepo) GetAll(_ context.Context) ([]string, error) {
 func (r *MockComputerSystemRepo) GetByID(_ context.Context, systemID string) (*redfishv1.ComputerSystem, error) {
 	system, exists := r.systems[systemID]
 	if !exists {
-		return nil, ErrSystemNotFound
+		return nil, usecase.ErrSystemNotFound
 	}
 
 	// Return a copy to prevent external modifications
@@ -68,7 +69,7 @@ func (r *MockComputerSystemRepo) GetByID(_ context.Context, systemID string) (*r
 func (r *MockComputerSystemRepo) UpdatePowerState(_ context.Context, systemID string, state redfishv1.PowerState) error {
 	system, exists := r.systems[systemID]
 	if !exists {
-		return ErrSystemNotFound
+		return usecase.ErrSystemNotFound
 	}
 
 	// Validate the state transition
@@ -89,20 +90,20 @@ func (r *MockComputerSystemRepo) validatePowerStateTransition(current, target re
 	switch target {
 	case redfishv1.ResetTypeOn:
 		if current == redfishv1.PowerStateOn {
-			return fmt.Errorf("%w: system is already on", ErrPowerStateConflict)
+			return fmt.Errorf("%w: system is already on", usecase.ErrPowerStateConflict)
 		}
 	case redfishv1.ResetTypeForceOff:
 		if current == redfishv1.PowerStateOff {
-			return fmt.Errorf("%w: system is already off", ErrPowerStateConflict)
+			return fmt.Errorf("%w: system is already off", usecase.ErrPowerStateConflict)
 		}
 	case redfishv1.PowerStateOff:
 		if current == redfishv1.PowerStateOff {
-			return fmt.Errorf("%w: system is already off", ErrPowerStateConflict)
+			return fmt.Errorf("%w: system is already off", usecase.ErrPowerStateConflict)
 		}
 	case redfishv1.ResetTypeForceRestart, redfishv1.ResetTypePowerCycle:
 		// These can always be performed
 	default:
-		return fmt.Errorf("%w: %s", ErrInvalidPowerState, target)
+		return fmt.Errorf("%w: %s", usecase.ErrInvalidPowerState, target)
 	}
 
 	return nil

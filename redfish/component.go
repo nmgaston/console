@@ -15,6 +15,7 @@ import (
 	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishgenerated "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	v1 "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
+	"github.com/device-management-toolkit/console/redfish/internal/mocks"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
@@ -59,7 +60,7 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 	if useMock {
 		log.Info("Using mock WSMAN repository for Redfish API")
 
-		repo = redfishusecase.NewMockComputerSystemRepo()
+		repo = mocks.NewMockComputerSystemRepo()
 	} else {
 		// Create Redfish-specific repository and use case using DMT's device management
 		devicesUC, ok := usecases.Devices.(*devices.UseCase)

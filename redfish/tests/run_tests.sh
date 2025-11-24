@@ -17,6 +17,47 @@ cd "${REPO_ROOT}"
 # Use port from environment or default to 8181
 PORT=${HTTP_PORT:-8181}
 
+# Create test config file if it doesn't exist or if we're in CI
+if [ ! -f config/config.yml ] || [ -n "$CI" ]; then
+    echo "Creating test configuration..."
+    mkdir -p config
+    # Backup existing config if it exists
+    [ -f config/config.yml ] && cp config/config.yml config/config.yml.bak 2>/dev/null || true
+    
+    cat > config/config.yml << 'EOF'
+app:
+  name: "console"
+  repo: "device-management-toolkit/console"
+  version: "test"
+  encryption_key: "test-encryption-key-for-ci-testing-only"
+
+http:
+  host: "localhost"
+  port: "8181"
+  allowed_origins: ["*"]
+  allowed_headers: ["*"]
+  ws_compression: false
+  tls:
+    enabled: false
+
+logger:
+  log_level: "info"
+
+postgres:
+  pool_max: 10
+  url: ""
+
+auth:
+  disabled: false
+  adminUsername: "standalone"
+  adminPassword: "G@ppm0ym"
+  jwtKey: "test-jwt-key-for-testing"
+  jwtExpiration: 1h
+  redirectionJWTExpiration: 5m
+EOF
+    echo "✓ Test configuration created"
+fi
+
 # Kill any existing servers
 pkill -9 -f "go run.*cmd/app" 2>/dev/null || true
 sleep 1
@@ -85,10 +126,25 @@ echo ""
 echo "Stopping server..."
 kill $SERVER_PID 2>/dev/null || true
 
+# Display test summary
+if [ -f "${SCRIPT_DIR}/postman/results/newman-report.json" ]; then
+    echo ""
+    echo "=== Redfish API Test Summary ==="
+    cat "${SCRIPT_DIR}/postman/results/newman-report.json" | jq -r '
+      "Total Requests: \(.run.stats.requests.total)",
+      "Passed: \(.run.stats.assertions.total - .run.stats.assertions.failed)",
+      "Failed: \(.run.stats.assertions.failed)"
+    ' 2>/dev/null || echo "Could not parse test results (jq not installed)"
+    echo ""
+fi
+
 if [ $TEST_RESULT -eq 0 ]; then
     echo "✓ All tests passed!"
 else
     echo "✗ Some tests failed. Check results above."
+    echo ""
+    echo "=== Server Log ==="
+    cat /tmp/redfish_test_server.log || echo "No log file found"
 fi
 
 exit $TEST_RESULT

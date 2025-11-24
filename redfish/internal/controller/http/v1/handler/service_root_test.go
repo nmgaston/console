@@ -255,15 +255,9 @@ func TestValidateMetadataXML(t *testing.T) {
 
 // TestLoadMetadataIntegration tests the metadata endpoint integration.
 func TestLoadMetadataIntegration(t *testing.T) {
-	t.Parallel()
-
-	// Reset global state for test isolation
-	t.Cleanup(func() {
-		resetMetadataState()
-	})
-
 	t.Run("metadata endpoint returns consistent results", func(t *testing.T) {
 		t.Parallel()
+		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
 
@@ -290,6 +284,7 @@ func TestLoadMetadataIntegration(t *testing.T) {
 
 	t.Run("metadata endpoint response has proper structure", func(t *testing.T) {
 		t.Parallel()
+		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
 

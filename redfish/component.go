@@ -95,46 +95,48 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		return nil
 	}
 
+	// Build middleware chain
+	middlewares := []redfishgenerated.MiddlewareFunc{
+		// Common OData header for all Redfish responses
+		func(c *gin.Context) {
+			c.Header("OData-Version", "4.0")
+			c.Next()
+		},
+	}
+
 	if componentConfig.AuthRequired {
 		// Apply Basic Auth middleware to OpenAPI-defined protected endpoints
 		// Use actual admin credentials from the DMT configuration
 		auth := server.Config.Auth
-		adminUsername := auth.AdminUsername
-		adminPassword := auth.AdminPassword
-		basicAuthMiddleware := v1.BasicAuthValidator(adminUsername, adminPassword)
+		basicAuthMiddleware := v1.BasicAuthValidator(auth.AdminUsername, auth.AdminPassword)
+
+		// Add authentication middleware to the chain
+		middlewares = append(middlewares, func(c *gin.Context) {
+			path := c.Request.URL.Path
+
+			// Public endpoints as defined in OpenAPI spec (security: [{}])
+			if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
+				c.Next()
+
+				return
+			}
+
+			// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
+			if strings.HasPrefix(path, "/redfish/v1/") {
+				basicAuthMiddleware(c)
+
+				return
+			}
+
+			// Default: no authentication
+			c.Next()
+		})
 
 		// Register handlers with OpenAPI-spec-compliant middleware
 		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
 			ErrorHandler: createErrorHandler(),
-			Middlewares: []redfishgenerated.MiddlewareFunc{
-				// Add OData-Version header to all Redfish responses
-				func(c *gin.Context) {
-					c.Header("OData-Version", "4.0")
-					c.Next()
-				},
-				// OpenAPI-spec-driven selective authentication
-				func(c *gin.Context) {
-					path := c.Request.URL.Path
-
-					// Public endpoints as defined in OpenAPI spec (security: [{}])
-					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
-						c.Next()
-
-						return
-					}
-
-					// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
-					if strings.HasPrefix(path, "/redfish/v1/") {
-						basicAuthMiddleware(c)
-
-						return
-					}
-
-					// Default: no authentication
-					c.Next()
-				},
-			},
+			Middlewares:  middlewares,
 		})
 
 		server.Logger.Info("Redfish API routes registered with OpenAPI-spec-driven Basic Auth")
@@ -143,13 +145,7 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
 			ErrorHandler: createErrorHandler(),
-			Middlewares: []redfishgenerated.MiddlewareFunc{
-				// Add OData-Version header to all Redfish responses
-				func(c *gin.Context) {
-					c.Header("OData-Version", "4.0")
-					c.Next()
-				},
-			},
+			Middlewares:  middlewares,
 		})
 
 		server.Logger.Info("Redfish API routes registered without authentication")

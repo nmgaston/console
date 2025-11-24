@@ -63,6 +63,8 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 		l.Fatal(err)
 	}
 
+	handler.StaticFileFS("/", "./", http.FS(staticFiles))
+
 	modifiedMainJS := injectConfigToMainJS(l, cfg)
 	handler.StaticFile("/main.js", modifiedMainJS)
 
@@ -129,12 +131,7 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 	}
 
 	handler.NoRoute(func(c *gin.Context) {
-		path := c.Request.URL.Path
-
-		// Handle API routes with regular JSON errors
-		if len(path) >= 4 && path[:4] == "/api" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
-		}
+		c.FileFromFS("./", http.FS(staticFiles))
 	})
 }
 

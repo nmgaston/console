@@ -110,10 +110,10 @@ for i in {1..10}; do
         exit 1
     fi
 done
-echo ""
 
 # Run tests
 echo "Running Newman tests..."
+echo ""
 newman run "${SCRIPT_DIR}/postman/redfish-collection.json" \
     --environment "${SCRIPT_DIR}/postman/test-environment.json" \
     --reporters cli,json \
@@ -126,25 +126,18 @@ echo ""
 echo "Stopping server..."
 kill $SERVER_PID 2>/dev/null || true
 
-# Display test summary
-if [ -f "${SCRIPT_DIR}/postman/results/newman-report.json" ]; then
+# Show server logs only on failure
+if [ $TEST_RESULT -ne 0 ]; then
     echo ""
-    echo "=== Redfish API Test Summary ==="
-    cat "${SCRIPT_DIR}/postman/results/newman-report.json" | jq -r '
-      "Total Requests: \(.run.stats.requests.total)",
-      "Passed: \(.run.stats.assertions.total - .run.stats.assertions.failed)",
-      "Failed: \(.run.stats.assertions.failed)"
-    ' 2>/dev/null || echo "Could not parse test results (jq not installed)"
-    echo ""
-fi
-
-if [ $TEST_RESULT -eq 0 ]; then
-    echo "✓ All tests passed!"
-else
-    echo "✗ Some tests failed. Check results above."
-    echo ""
-    echo "=== Server Log ==="
+    echo "=== Server Logs (Test Failed) ==="
     cat /tmp/redfish_test_server.log || echo "No log file found"
+    echo ""
+    echo "✗ Some tests failed. Check results above."
+else
+    echo "✓ All tests passed!"
+    echo ""
+    echo "Note: Server logs available at /tmp/redfish_test_server.log"
 fi
 
 exit $TEST_RESULT
+

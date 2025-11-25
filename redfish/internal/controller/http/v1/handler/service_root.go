@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -86,24 +87,85 @@ func validateMetadataXML(xmlData string) error {
 	return nil
 }
 
-// generateServiceUUID generates a deterministic UUID v5 for the service instance.
-// Per Redfish specification, this UUID should be consistent across service restarts
-// to identify the same service instance. Uses UUID v5 with RFC 4122 DNS namespace
-// combined with hostname for deterministic generation unique to each deployment.
-func generateServiceUUID() string {
-	// Get hostname to make UUID unique per server/deployment
-	// Falls back to serviceRootID if hostname unavailable
-	hostname, err := os.Hostname()
-	if err != nil || hostname == "" {
-		hostname = serviceRootID
+const uuidFileName = "service_uuid"
+
+// getUUIDStoragePath returns the OS-agnostic path for storing the service UUID.
+// Works across Linux, Windows, and macOS using the user config directory.
+func getUUIDStoragePath(appName string) (string, error) {
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user config directory: %w", err)
 	}
 
-	// Use RFC 4122 predefined DNS namespace (6ba7b810-9dad-11d1-80b4-00c04fd430c8)
-	// Combined with hostname to ensure same UUID across service restarts on same host
-	serviceIdentifier := "redfish-service-" + hostname
-	serviceUUID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte(serviceIdentifier))
+	dir := filepath.Join(base, appName)
 
-	return serviceUUID.String()
+	const dirPermissions = 0o755
+
+	if err := os.MkdirAll(dir, dirPermissions); err != nil {
+		return "", fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	return filepath.Join(dir, uuidFileName), nil
+}
+
+// loadOrCreateUUID loads an existing UUID from file or creates a new one.
+// This ensures the UUID persists across service restarts.
+func loadOrCreateUUID(appName string) (string, error) {
+	file, err := getUUIDStoragePath(appName)
+	if err != nil {
+		return "", err
+	}
+
+	// Try to read existing UUID
+	if data, err := os.ReadFile(file); err == nil {
+		storedUUID := string(data)
+		// Validate it's a proper UUID
+		if _, err := uuid.Parse(storedUUID); err == nil {
+			return storedUUID, nil
+		}
+
+		log.Warnf("Invalid UUID in storage file, generating new one")
+	}
+
+	// Create new UUID
+	newUUID := uuid.New().String()
+
+	const filePermissions = 0o600
+
+	// Save to file
+	if err := os.WriteFile(file, []byte(newUUID), filePermissions); err != nil {
+		log.Warnf("Failed to save UUID to file: %v", err)
+		// Continue with the generated UUID even if save fails
+	}
+
+	return newUUID, nil
+}
+
+// generateServiceUUID generates or retrieves the service instance UUID.
+// Per Redfish specification, this UUID should be consistent across service restarts.
+// Priority order:
+// 1. REDFISH_UUID environment variable (allows admin override)
+// 2. Persisted UUID from config file
+// 3. Newly generated UUID (saved to config file for future use)
+func generateServiceUUID() string {
+	// 1. Check environment variable override
+	if envUUID := os.Getenv("REDFISH_UUID"); envUUID != "" {
+		if _, parseErr := uuid.Parse(envUUID); parseErr == nil {
+			return envUUID
+		}
+
+		log.Warnf("Invalid REDFISH_UUID environment variable, ignoring")
+	}
+
+	// 2. Load or create persistent UUID
+	serviceUUID, err := loadOrCreateUUID("dmt-redfish-service")
+	if err != nil {
+		log.Warnf("Failed to load/create persistent UUID: %v, generating temporary UUID", err)
+		// Fallback to temporary UUID for this session
+		return uuid.New().String()
+	}
+
+	return serviceUUID
 }
 
 // GetRedfishV1 returns the service root
@@ -135,10 +197,6 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 		},
 		Registries: &generated.OdataV4IdRef{
 			OdataId: StringPtr("/redfish/v1/Registries"),
-		},
-		ProtocolFeaturesSupported: &generated.ServiceRootProtocolFeaturesSupported{
-			SelectQuery: BoolPtr(false),
-			FilterQuery: BoolPtr(false),
 		},
 	}
 

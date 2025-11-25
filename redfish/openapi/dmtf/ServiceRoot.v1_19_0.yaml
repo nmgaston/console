@@ -1,75 +1,5 @@
 components:
   schemas:
-    ServiceRoot_v1_19_0_DeepOperations:
-      additionalProperties: false
-      description: The information about deep operations that the service supports.
-      properties:
-        DeepPATCH:
-          description: An indication of whether the service supports the deep `PATCH` operation.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether this service supports the Redfish Specification-defined deep `PATCH` operation.
-          x-versionAdded: v1_7_0
-        DeepPOST:
-          description: An indication of whether the service supports the deep `POST` operation.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether this service supports the Redfish Specification-defined deep `POST` operation.
-          x-versionAdded: v1_7_0
-        MaxLevels:
-          description: The maximum levels of resources allowed in deep operations.
-          format: int64
-          minimum: 1
-          readOnly: true
-          type: integer
-          x-longDescription: This property shall contain the maximum levels of resources allowed in deep operations.
-          x-versionAdded: v1_7_0
-      type: object
-      x-longDescription: This type shall contain information about deep operations that the service supports.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    ServiceRoot_v1_19_0_Expand:
-      additionalProperties: false
-      description: The information about the use of `$expand` in the service.
-      properties:
-        ExpandAll:
-          description: An indication of whether the service supports the asterisk (`*`) option of the `$expand` query parameter.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether this service supports the asterisk (`*`) option of the `$expand` query parameter.
-          x-versionAdded: v1_3_0
-        Levels:
-          description: An indication of whether the service supports the `$levels` option of the `$expand` query parameter.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether the service supports the `$levels` option of the `$expand` query parameter.
-          x-versionAdded: v1_3_0
-        Links:
-          description: An indication of whether this service supports the tilde (`~`) option of the `$expand` query parameter.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether this service supports the supports the tilde (~) option of the `$expand` query parameter.
-          x-versionAdded: v1_3_0
-        MaxLevels:
-          description: The maximum `$levels` option value in the `$expand` query parameter.
-          format: int64
-          minimum: 1
-          readOnly: true
-          type: integer
-          x-longDescription: This property shall contain the maximum `$levels` option value in the `$expand` query parameter.  This property shall be present if the `Levels` property contains `true`.
-          x-versionAdded: v1_3_0
-        NoLinks:
-          description: An indication of whether the service supports the period (`.`) option of the `$expand` query parameter.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether the service supports the period (`.`) option of the `$expand` query parameter.
-          x-versionAdded: v1_3_0
-      type: object
-      x-longDescription: This type shall contain information about the support of the `$expand` query parameter by the service.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
     ServiceRoot_v1_19_0_Links:
       additionalProperties: false
       description: The links to other resources that are related to this resource.
@@ -93,49 +23,6 @@ components:
       - Sessions
       type: object
       x-longDescription: This Redfish Specification-described type shall contain links to resources that are related to but are not contained by, or subordinate to, this resource.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
-    ServiceRoot_v1_19_0_ProtocolFeaturesSupported:
-      additionalProperties: false
-      description: The information about protocol features that the service supports.
-      properties:
-        DeepOperations:
-          $ref: '#/components/schemas/ServiceRoot_v1_19_0_DeepOperations'
-          description: The information about deep operations that the service supports.
-          x-longDescription: This property shall contain information about deep operations that the service supports.
-          x-versionAdded: v1_7_0
-        ExcerptQuery:
-          description: An indication of whether the service supports the `excerpt` query parameter.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether this service supports the `excerpt` query parameter.
-          x-versionAdded: v1_4_0
-        ExpandQuery:
-          $ref: '#/components/schemas/ServiceRoot_v1_19_0_Expand'
-          description: The information about the use of `$expand` in the service.
-          x-longDescription: This property shall contain information about the support of the `$expand` query parameter by the service.
-          x-versionAdded: v1_3_0
-        FilterQuery:
-          description: An indication of whether the service supports the `$filter` query parameter.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether this service supports the `$filter` query parameter.
-          x-versionAdded: v1_3_0
-        OnlyMemberQuery:
-          description: An indication of whether the service supports the `only` query parameter.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether this service supports the `only` query parameter.
-          x-versionAdded: v1_4_0
-        SelectQuery:
-          description: An indication of whether the service supports the `$select` query parameter.
-          readOnly: true
-          type: boolean
-          x-longDescription: This property shall indicate whether this service supports the `$select` query parameter.
-          x-versionAdded: v1_3_0
-      type: object
-      x-longDescription: This type shall contain information about protocol features that the service supports.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
@@ -181,12 +68,6 @@ components:
           type: string
           x-longDescription: This property shall include the name of the product represented
             by this Redfish service.
-          x-versionAdded: v1_3_0
-        ProtocolFeaturesSupported:
-          $ref: '#/components/schemas/ServiceRoot_v1_19_0_ProtocolFeaturesSupported'
-          description: The information about protocol features that the service supports.
-          x-longDescription: This property shall contain information about protocol
-            features that the service supports.
           x-versionAdded: v1_3_0
         RedfishVersion:
           description: The version of the Redfish service.

@@ -6,10 +6,13 @@ import (
 	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -395,10 +398,10 @@ func TestGetRedfishV1ServiceRootUUIDConsistency(t *testing.T) {
 		err = json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
 
-		uuid, ok := response["UUID"].(string)
+		uuidValue, ok := response["UUID"].(string)
 		require.True(t, ok, "UUID should be a string")
 
-		uuids[i] = uuid
+		uuids[i] = uuidValue
 	}
 
 	// All UUIDs should be identical (deterministic generation)
@@ -552,4 +555,181 @@ func TestGetRedfishV1ServiceRootResponseStructure(t *testing.T) {
 	assert.Equal(t, "Root Service", serviceRoot.Name)
 	assert.Equal(t, "1.19.0", *serviceRoot.RedfishVersion)
 	assert.Equal(t, "/redfish/v1/Systems", *serviceRoot.Systems.OdataId)
+}
+
+// TestGenerateServiceUUID tests the UUID generation with different scenarios
+//
+//nolint:tparallel // Cannot use t.Parallel() because some subtests use t.Setenv()
+func TestGenerateServiceUUID(t *testing.T) {
+	t.Run("returns valid UUID format", func(t *testing.T) {
+		t.Parallel()
+
+		generatedUUID := generateServiceUUID()
+
+		// Should be valid UUID format
+		_, err := uuid.Parse(generatedUUID)
+		assert.NoError(t, err, "should generate valid UUID")
+		assert.Regexp(t, `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`, generatedUUID)
+	})
+
+	t.Run("returns consistent UUID across calls", func(t *testing.T) {
+		t.Parallel()
+
+		uuid1 := generateServiceUUID()
+		uuid2 := generateServiceUUID()
+
+		// Should be the same UUID (loaded from same file)
+		assert.Equal(t, uuid1, uuid2, "UUID should be consistent across calls")
+	})
+
+	t.Run("respects REDFISH_UUID environment variable", func(t *testing.T) {
+		testUUID := "12345678-1234-1234-1234-123456789abc"
+		t.Setenv("REDFISH_UUID", testUUID)
+
+		generatedUUID := generateServiceUUID()
+
+		assert.Equal(t, testUUID, generatedUUID, "should use UUID from environment variable")
+	})
+
+	t.Run("ignores invalid REDFISH_UUID environment variable", func(t *testing.T) {
+		t.Setenv("REDFISH_UUID", "not-a-valid-uuid")
+
+		generatedUUID := generateServiceUUID()
+
+		// Should fallback to file-based UUID, not use the invalid env var
+		_, err := uuid.Parse(generatedUUID)
+		assert.NoError(t, err, "should generate valid UUID despite invalid env var")
+		assert.NotEqual(t, "not-a-valid-uuid", generatedUUID)
+	})
+}
+
+// TestLoadOrCreateUUID tests the file-based UUID persistence
+func TestLoadOrCreateUUID(t *testing.T) {
+	t.Parallel()
+
+	t.Run("creates new UUID when file doesn't exist", func(t *testing.T) {
+		t.Parallel()
+
+		// Use unique app name for this test to avoid conflicts
+		appName := "test-app-new-uuid-" + uuid.New().String()
+
+		generatedUUID, err := loadOrCreateUUID(appName)
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, generatedUUID)
+
+		// Validate UUID format
+		_, parseErr := uuid.Parse(generatedUUID)
+		assert.NoError(t, parseErr, "should be valid UUID")
+
+		// Cleanup
+		if path, err := getUUIDStoragePath(appName); err == nil {
+			os.Remove(path)
+			os.Remove(filepath.Dir(path))
+		}
+	})
+
+	t.Run("loads existing UUID from file", func(t *testing.T) {
+		t.Parallel()
+
+		// Use unique app name for this test
+		appName := "test-app-existing-uuid-" + uuid.New().String()
+
+		// First call creates UUID
+		uuid1, err := loadOrCreateUUID(appName)
+		require.NoError(t, err)
+
+		// Second call should load the same UUID
+		uuid2, err := loadOrCreateUUID(appName)
+		require.NoError(t, err)
+
+		assert.Equal(t, uuid1, uuid2, "should load same UUID from file")
+
+		// Cleanup
+		if path, err := getUUIDStoragePath(appName); err == nil {
+			os.Remove(path)
+			os.Remove(filepath.Dir(path))
+		}
+	})
+
+	t.Run("handles invalid UUID in file", func(t *testing.T) {
+		t.Parallel()
+
+		// Use unique app name for this test
+		appName := "test-app-invalid-uuid-" + uuid.New().String()
+
+		// Write invalid UUID to file
+		path, err := getUUIDStoragePath(appName)
+		require.NoError(t, err)
+
+		const testFilePermissions = 0o600
+
+		err = os.WriteFile(path, []byte("invalid-uuid-content"), testFilePermissions)
+		require.NoError(t, err)
+
+		// Should generate new valid UUID
+		generatedUUID, err := loadOrCreateUUID(appName)
+		require.NoError(t, err)
+
+		_, parseErr := uuid.Parse(generatedUUID)
+		assert.NoError(t, parseErr, "should generate valid UUID when file contains invalid data")
+		assert.NotEqual(t, "invalid-uuid-content", generatedUUID)
+
+		// Cleanup
+		os.Remove(path)
+		os.Remove(filepath.Dir(path))
+	})
+}
+
+// TestGetUUIDStoragePath tests the storage path generation
+func TestGetUUIDStoragePath(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns valid path", func(t *testing.T) {
+		t.Parallel()
+
+		path, err := getUUIDStoragePath("test-app")
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, path)
+		assert.Contains(t, path, "test-app")
+		assert.Contains(t, path, uuidFileName)
+
+		// Cleanup if directory was created
+		os.Remove(path)
+		os.Remove(filepath.Dir(path))
+	})
+
+	t.Run("creates directory if not exists", func(t *testing.T) {
+		t.Parallel()
+
+		appName := "test-app-dir-" + uuid.New().String()
+
+		path, err := getUUIDStoragePath(appName)
+		require.NoError(t, err)
+
+		// Directory should exist
+		dir := filepath.Dir(path)
+		info, err := os.Stat(dir)
+		assert.NoError(t, err)
+		assert.True(t, info.IsDir())
+
+		// Cleanup
+		os.Remove(path)
+		os.Remove(dir)
+	})
+
+	t.Run("path is OS-specific", func(t *testing.T) {
+		t.Parallel()
+
+		path, err := getUUIDStoragePath("test-app")
+
+		require.NoError(t, err)
+		// Should use OS-specific path separator
+		assert.Contains(t, path, string(filepath.Separator))
+
+		// Cleanup
+		os.Remove(path)
+		os.Remove(filepath.Dir(path))
+	})
 }

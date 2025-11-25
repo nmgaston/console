@@ -153,7 +153,7 @@ paths:
                 description: The OData service document from a Redfish service.
                 properties:
                   '@odata.context':
-                    $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_context
+                    $ref: odata-v4.yaml#/components/schemas/odata-v4_context
                   value:
                     description: The list of services provided by the Redfish service.
                     items:

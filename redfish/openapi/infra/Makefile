@@ -219,3 +219,8 @@ rf-metadata-generate: ### Generate metadata.xml from DMTF schemas
 	python3 metadata-generate.py
 	@echo "✅ Metadata generation completed"
 .PHONY: rf-metadata-generate
+
+rf-integration-test: ### Run Redfish API integration tests with Newman
+	@echo "🧪 Running Redfish API integration tests..."
+	@cd ../../.. && bash redfish/tests/run_tests.sh
+.PHONY: rf-integration-test

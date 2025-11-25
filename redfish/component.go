@@ -75,7 +75,7 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 
 	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
-	// Initialize the Redfish server with shared infrastructure
+	// Initialize the Redfish server with configuration
 	server = &v1.RedfishServer{
 		ComputerSystemUC: computerSystemUC,
 		Config:           config,

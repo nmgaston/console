@@ -93,6 +93,34 @@ make rf-clean                # Clean generated files
    make rf-validate   # Just validate OpenAPI spec
    ```
 
+## Integration Testing
+
+The Redfish API implementation includes comprehensive integration tests using Newman/Postman:
+
+```bash
+make rf-integration-test
+```
+
+This runs automated tests against a mock Redfish server that validate:
+- All OpenAPI endpoints (100% coverage)
+- Power control actions (On, ForceOff, ForceRestart, GracefulShutdown, PowerCycle)
+- Authentication and authorization
+- Error handling (invalid requests, malformed JSON, etc.)
+- DMTF Redfish standard compliance
+
+**Test Requirements:**
+- `newman` - Newman CLI for running Postman collections
+- `jq` - JSON processor (optional, for enhanced reporting)
+
+The test runner automatically:
+- Builds the application
+- Starts a mock Redfish server on port 8181
+- Runs 22 requests with 66 assertions
+- Displays formatted test results
+- Cleans up resources on completion
+
+Server logs are saved to `/tmp/redfish_test_server.log` and displayed only on test failures.
+
 ## Tool Requirements
 
 The Makefile automatically checks for and can install:

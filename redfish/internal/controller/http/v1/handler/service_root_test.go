@@ -243,6 +243,8 @@ func TestLoadMetadataIntegration(t *testing.T) {
 	t.Parallel()
 
 	t.Run("metadata endpoint returns consistent results", func(t *testing.T) {
+		t.Parallel()
+
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
@@ -263,12 +265,18 @@ func TestLoadMetadataIntegration(t *testing.T) {
 			responses[i] = w.Body.String()
 		}
 
+		// Verify all responses are non-empty
+		assert.NotEmpty(t, responses[0], "First response should not be empty")
+		assert.NotEmpty(t, responses[1], "Second response should not be empty")
+		assert.NotEmpty(t, responses[2], "Third response should not be empty")
+
 		// All responses should be identical (caching works)
 		assert.Equal(t, responses[0], responses[1])
 		assert.Equal(t, responses[1], responses[2])
 	})
 
 	t.Run("metadata endpoint response has proper structure", func(t *testing.T) {
+		t.Parallel()
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)

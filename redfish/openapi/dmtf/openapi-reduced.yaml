@@ -50,7 +50,6 @@ openapi: 3.0.1
 paths:
   /redfish/v1/:
     get:
-      operationId: GetRedfishV1
       responses:
         '200':
           content:
@@ -64,27 +63,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
-      security:
-      - {}
   /redfish/v1/$metadata:
     get:
-      operationId: GetRedfishV1Metadata
       responses:
         '200':
           content:
             application/xml: {}
-          description: OData CSDL metadata document describing the service data model
+          description: OData $metadata.
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
-      security:
-      - {}
   /redfish/v1/odata:
     get:
-      operationId: GetRedfishV1Odata
       responses:
         '200':
           content:
@@ -127,8 +120,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
-      security:
-      - {}
   /redfish/v1/Systems:
     get:
       responses:
@@ -146,13 +137,6 @@ paths:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
   /redfish/v1/Systems/{ComputerSystemId}:
-    parameters:
-    - description: The value of the Id property of the ComputerSystem resource
-      in: path
-      name: ComputerSystemId
-      required: true
-      schema:
-        type: string
     get:
       responses:
         '200':
@@ -168,6 +152,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
   /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset:
     parameters:
     - description: The value of the Id property of the ComputerSystem resource
@@ -196,8 +187,3 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
-securitySchemes:
-  BasicAuth:
-    description: Basic authentication using username and password
-    scheme: basic
-    type: http

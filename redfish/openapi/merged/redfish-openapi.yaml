@@ -6,7 +6,6 @@ info:
 paths:
   /redfish/v1/:
     get:
-      operationId: GetRedfishV1
       responses:
         '200':
           content:
@@ -24,12 +23,11 @@ paths:
       - {}
   /redfish/v1/$metadata:
     get:
-      operationId: GetRedfishV1Metadata
       responses:
         '200':
           content:
             application/xml: {}
-          description: OData CSDL metadata document describing the service data model
+          description: OData $metadata.
         default:
           content:
             application/json:
@@ -40,7 +38,6 @@ paths:
       - {}
   /redfish/v1/odata:
     get:
-      operationId: GetRedfishV1Odata
       responses:
         '200':
           content:
@@ -105,13 +102,6 @@ paths:
       security:
       - BasicAuth: []
   /redfish/v1/Systems/{ComputerSystemId}:
-    parameters:
-    - description: The value of the Id property of the ComputerSystem resource
-      in: path
-      name: ComputerSystemId
-      required: true
-      schema:
-        type: string
     get:
       responses:
         '200':
@@ -129,6 +119,13 @@ paths:
           description: Error condition
       security:
       - BasicAuth: []
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
   /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset:
     parameters:
     - description: The value of the Id property of the ComputerSystem resource

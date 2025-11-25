@@ -255,6 +255,7 @@ func TestValidateMetadataXML(t *testing.T) {
 
 // TestLoadMetadataIntegration tests the metadata endpoint integration.
 func TestLoadMetadataIntegration(t *testing.T) {
+	t.Parallel()
 	t.Run("metadata endpoint returns consistent results", func(t *testing.T) {
 		t.Parallel()
 		resetMetadataState()

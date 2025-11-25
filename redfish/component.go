@@ -2,6 +2,7 @@
 package redfish
 
 import (
+	_ "embed"
 	"errors"
 	"os"
 	"strings"
@@ -18,6 +19,11 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/mocks"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
+
+// Embed the OpenAPI specification at build time
+//
+//go:embed openapi/merged/redfish-openapi.yaml
+var embeddedOpenAPISpec []byte
 
 // ErrDevicesCastFailed is returned when the devices use case cannot be cast to the expected type.
 var ErrDevicesCastFailed = errors.New("failed to cast devices use case")
@@ -82,13 +88,10 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 		Logger:           log,
 	}
 
-	// Load OData services from OpenAPI spec
-	// Use relative path from console root: redfish/openapi/merged/redfish-openapi.yaml
-	specPath := "redfish/openapi/merged/redfish-openapi.yaml"
-
-	services, err := v1.ExtractServicesFromOpenAPI(specPath)
+	// Load OData services from embedded OpenAPI spec
+	services, err := v1.ExtractServicesFromOpenAPIData(embeddedOpenAPISpec)
 	if err != nil {
-		log.Warn("Failed to load services from OpenAPI spec: %v, using defaults", err)
+		log.Warn("Failed to load services from embedded OpenAPI spec: %v, using defaults", err)
 
 		services = v1.GetDefaultServices()
 	}

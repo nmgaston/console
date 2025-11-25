@@ -6,7 +6,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -35,7 +34,7 @@ type ODataService struct {
 	URL  string `json:"url"`
 }
 
-// Metadata embedding and caching
+// Metadata and OpenAPI spec embedding and caching
 //
 //go:embed metadata.xml
 var metadataFS embed.FS
@@ -95,16 +94,9 @@ func validateMetadataXML(xmlData string) error {
 	return nil
 }
 
-// ExtractServicesFromOpenAPI reads the OpenAPI spec and extracts all top-level Redfish services
+// ExtractServicesFromOpenAPIData parses the embedded OpenAPI spec data and extracts all top-level Redfish services
 // Automatically discovers services from /redfish/v1/* paths in the spec
-func ExtractServicesFromOpenAPI(specPath string) ([]ODataService, error) {
-	data, err := os.ReadFile(specPath)
-	if err != nil {
-		log.Warnf("Could not read OpenAPI spec: %v", err)
-		// Return default services if spec can't be read
-		return GetDefaultServices(), nil
-	}
-
+func ExtractServicesFromOpenAPIData(data []byte) ([]ODataService, error) {
 	var spec map[string]interface{}
 	if err := yaml.Unmarshal(data, &spec); err != nil {
 		log.Warnf("Could not parse OpenAPI spec: %v", err)

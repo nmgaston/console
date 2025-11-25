@@ -166,11 +166,6 @@ func ExtractServicesFromOpenAPIData(data []byte) ([]ODataService, error) {
 func GetDefaultServices() []ODataService {
 	return []ODataService{
 		{Name: "Systems", Kind: "Singleton", URL: "/redfish/v1/Systems"},
-		{Name: "Chassis", Kind: "Singleton", URL: "/redfish/v1/Chassis"},
-		{Name: "Managers", Kind: "Singleton", URL: "/redfish/v1/Managers"},
-		{Name: "AccountService", Kind: "Singleton", URL: "/redfish/v1/AccountService"},
-		{Name: "EventService", Kind: "Singleton", URL: "/redfish/v1/EventService"},
-		{Name: "TaskService", Kind: "Singleton", URL: "/redfish/v1/TaskService"},
 	}
 }
 

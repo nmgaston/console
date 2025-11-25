@@ -363,7 +363,7 @@ func TestGetRedfishV1OdataResponseStructure(t *testing.T) {
 	}
 }
 
-// TestGetRedfishV1OdataRequiredServices validates all required services present
+// TestGetRedfishV1OdataRequiredServices validates Systems service is present
 func TestGetRedfishV1OdataRequiredServices(t *testing.T) {
 	t.Parallel()
 	gin.SetMode(gin.TestMode)
@@ -384,16 +384,10 @@ func TestGetRedfishV1OdataRequiredServices(t *testing.T) {
 	valueArray, ok := response["value"].([]interface{})
 	require.True(t, ok, "value should be an array")
 
-	expectedServices := map[string]string{
-		"Systems":        "/redfish/v1/Systems",
-		"Chassis":        "/redfish/v1/Chassis",
-		"Managers":       "/redfish/v1/Managers",
-		"AccountService": "/redfish/v1/AccountService",
-		"EventService":   "/redfish/v1/EventService",
-		"TaskService":    "/redfish/v1/TaskService",
-	}
+	// Find Systems service
+	var foundSystems bool
 
-	actualServices := make(map[string]string)
+	var systemsURL string
 
 	for _, item := range valueArray {
 		service, ok := item.(map[string]interface{})
@@ -402,17 +396,16 @@ func TestGetRedfishV1OdataRequiredServices(t *testing.T) {
 		name, ok := service["name"].(string)
 		require.True(t, ok, "name should be a string")
 
-		url, ok := service["url"].(string)
-		require.True(t, ok, "url should be a string")
+		if name == "Systems" {
+			foundSystems = true
+			systemsURL, _ = service["url"].(string)
 
-		actualServices[name] = url
+			break
+		}
 	}
 
-	for name, expectedURL := range expectedServices {
-		actualURL, exists := actualServices[name]
-		assert.True(t, exists, "service %s should be present", name)
-		assert.Equal(t, expectedURL, actualURL, "service %s URL mismatch", name)
-	}
+	assert.True(t, foundSystems, "Systems service should be present")
+	assert.Equal(t, "/redfish/v1/Systems", systemsURL)
 }
 
 // TestGetRedfishV1OdataNoAuthentication validates endpoint is public
@@ -475,4 +468,72 @@ func BenchmarkGetRedfishV1Odata(b *testing.B) {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 	}
+}
+
+// TestExtractServicesFromOpenAPIData tests the service extraction from OpenAPI spec
+func TestExtractServicesFromOpenAPIData(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid OpenAPI spec with Systems service", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems:
+    get:
+      summary: Get Systems collection
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "Singleton", services[0].Kind)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("returns default when no valid services found", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems/{ComputerSystemId}:
+    get:
+      summary: Parametrized path (should be ignored)
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("handles invalid YAML gracefully", func(t *testing.T) {
+		t.Parallel()
+
+		invalidYAML := []byte(`invalid yaml content`)
+
+		services, err := ExtractServicesFromOpenAPIData(invalidYAML)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+	})
+}
+
+// TestGetDefaultServices tests the default services fallback
+func TestGetDefaultServices(t *testing.T) {
+	t.Parallel()
+
+	services := GetDefaultServices()
+
+	assert.Len(t, services, 1)
+	assert.Equal(t, "Systems", services[0].Name)
+	assert.Equal(t, "Singleton", services[0].Kind)
+	assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
 }

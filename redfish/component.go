@@ -3,6 +3,7 @@ package redfish
 
 import (
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,7 @@ import (
 	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishgenerated "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	v1 "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
+	"github.com/device-management-toolkit/console/redfish/internal/mocks"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
@@ -50,15 +52,27 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 		BaseURL:      "/redfish/v1",
 	}
 
-	// Create Redfish-specific repository and use case using DMT's device management
-	devicesUC, ok := usecases.Devices.(*devices.UseCase)
-	if !ok {
-		log.Error("Failed to cast Devices usecase to *devices.UseCase")
+	// Check if we should use mock repository (for testing)
+	useMock := os.Getenv("REDFISH_USE_MOCK") == "true"
 
-		return nil // Return nil to not block other components
+	var repo redfishusecase.ComputerSystemRepository
+
+	if useMock {
+		log.Info("Using mock WSMAN repository for Redfish API")
+
+		repo = mocks.NewMockComputerSystemRepo()
+	} else {
+		// Create Redfish-specific repository and use case using DMT's device management
+		devicesUC, ok := usecases.Devices.(*devices.UseCase)
+		if !ok {
+			log.Error("Failed to cast Devices usecase to *devices.UseCase")
+
+			return nil // Return nil to not block other components
+		}
+
+		repo = redfishusecase.NewWsmanComputerSystemRepo(devicesUC, log)
 	}
 
-	repo := redfishusecase.NewWsmanComputerSystemRepo(devicesUC, log)
 	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
 	// Initialize the Redfish server with shared infrastructure
@@ -81,41 +95,48 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		return nil
 	}
 
+	// Build middleware chain
+	middlewares := []redfishgenerated.MiddlewareFunc{
+		// Common OData header for all Redfish responses
+		func(c *gin.Context) {
+			c.Header("OData-Version", "4.0")
+			c.Next()
+		},
+	}
+
 	if componentConfig.AuthRequired {
 		// Apply Basic Auth middleware to OpenAPI-defined protected endpoints
 		// Use actual admin credentials from the DMT configuration
 		auth := server.Config.Auth
-		adminUsername := auth.AdminUsername
-		adminPassword := auth.AdminPassword
-		basicAuthMiddleware := v1.BasicAuthValidator(adminUsername, adminPassword)
+		basicAuthMiddleware := v1.BasicAuthValidator(auth.AdminUsername, auth.AdminPassword)
+
+		// Add authentication middleware to the chain
+		middlewares = append(middlewares, func(c *gin.Context) {
+			path := c.Request.URL.Path
+
+			// Public endpoints as defined in OpenAPI spec (security: [{}])
+			if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
+				c.Next()
+
+				return
+			}
+
+			// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
+			if strings.HasPrefix(path, "/redfish/v1/") {
+				basicAuthMiddleware(c)
+
+				return
+			}
+
+			// Default: no authentication
+			c.Next()
+		})
 
 		// Register handlers with OpenAPI-spec-compliant middleware
 		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
 			ErrorHandler: createErrorHandler(),
-			Middlewares: []redfishgenerated.MiddlewareFunc{
-				// OpenAPI-spec-driven selective authentication
-				func(c *gin.Context) {
-					path := c.Request.URL.Path
-
-					// Public endpoints as defined in OpenAPI spec (security: [{}])
-					if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
-						c.Next()
-
-						return
-					}
-
-					// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
-					if strings.HasPrefix(path, "/redfish/v1/") {
-						basicAuthMiddleware(c)
-
-						return
-					}
-
-					// Default: no authentication
-					c.Next()
-				},
-			},
+			Middlewares:  middlewares,
 		})
 
 		server.Logger.Info("Redfish API routes registered with OpenAPI-spec-driven Basic Auth")
@@ -124,6 +145,7 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 			BaseURL:      "",
 			ErrorHandler: createErrorHandler(),
+			Middlewares:  middlewares,
 		})
 
 		server.Logger.Info("Redfish API routes registered without authentication")

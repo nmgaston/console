@@ -8,9 +8,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
+	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
 // Test constants
@@ -20,37 +20,58 @@ const (
 )
 
 // Type declarations
-// MockComputerSystemRepository is a mock implementation of ComputerSystemRepository
-type MockComputerSystemRepository struct {
-	mock.Mock
+// TestComputerSystemRepository is a test implementation of ComputerSystemRepository
+type TestComputerSystemRepository struct {
+	systems map[string]*redfishv1.ComputerSystem
 }
 
-func (m *MockComputerSystemRepository) GetAll(ctx context.Context) ([]string, error) {
-	args := m.Called(ctx)
-	if result, ok := args.Get(0).([]string); ok {
-		return result, args.Error(1)
+func NewTestComputerSystemRepository() *TestComputerSystemRepository {
+	return &TestComputerSystemRepository{
+		systems: make(map[string]*redfishv1.ComputerSystem),
 	}
-
-	return nil, args.Error(1)
 }
 
-func (m *MockComputerSystemRepository) GetByID(ctx context.Context, systemID string) (*redfishv1.ComputerSystem, error) {
-	args := m.Called(ctx, systemID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	if result, ok := args.Get(0).(*redfishv1.ComputerSystem); ok {
-		return result, args.Error(1)
-	}
-
-	return nil, args.Error(1)
+func (r *TestComputerSystemRepository) AddSystem(id string, system *redfishv1.ComputerSystem) {
+	r.systems[id] = system
 }
 
-func (m *MockComputerSystemRepository) UpdatePowerState(ctx context.Context, systemID string, state redfishv1.PowerState) error {
-	args := m.Called(ctx, systemID, state)
+func (r *TestComputerSystemRepository) GetAll(_ context.Context) ([]string, error) {
+	ids := make([]string, 0, len(r.systems))
+	for id := range r.systems {
+		ids = append(ids, id)
+	}
 
-	return args.Error(0)
+	return ids, nil
+}
+
+func (r *TestComputerSystemRepository) GetByID(_ context.Context, systemID string) (*redfishv1.ComputerSystem, error) {
+	if system, exists := r.systems[systemID]; exists {
+		return system, nil
+	}
+
+	return nil, usecase.ErrSystemNotFound
+}
+
+func (r *TestComputerSystemRepository) UpdatePowerState(_ context.Context, systemID string, state redfishv1.PowerState) error {
+	if system, exists := r.systems[systemID]; exists {
+		system.PowerState = state
+
+		return nil
+	}
+
+	return usecase.ErrSystemNotFound
+}
+
+// createTestSystemData creates a test system for the repository
+func createTestSystemData(systemID, name, manufacturer, model, serialNumber string) *redfishv1.ComputerSystem {
+	return &redfishv1.ComputerSystem{
+		ID:           systemID,
+		Name:         name,
+		Manufacturer: manufacturer,
+		Model:        model,
+		SerialNumber: serialNumber,
+		PowerState:   redfishv1.PowerStateOn,
+	}
 }
 
 // setupTestRouter sets up a test router with the given server
@@ -90,12 +111,15 @@ func TestGetRedfishV1Systems(t *testing.T) {
 	t.Parallel()
 
 	// Setup
-	mockUseCase := new(MockComputerSystemUseCase)
-	mockUseCase.On("GetAll", mock.Anything).Return([]string{"System1"}, nil)
+	testRepo := NewTestComputerSystemRepository()
+	testRepo.AddSystem("System1", createTestSystemData("System1", "Test System", "Test Manufacturer", "Test Model", "SN123456"))
 
-	systemsHandler := NewSystemsHandler(mockUseCase, nil)
+	useCase := &usecase.ComputerSystemUseCase{
+		Repo: testRepo,
+	}
+
 	server := &RedfishServer{
-		SystemsHandler: systemsHandler,
+		ComputerSystemUC: useCase,
 	}
 
 	router := setupTestRouter(server)
@@ -109,7 +133,9 @@ func TestGetRedfishV1Systems(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
 
-	mockUseCase.AssertExpectations(t)
+	// Additional assertions for concrete implementation
+	assert.Contains(t, w.Body.String(), "Computer System Collection")
+	assert.Contains(t, w.Body.String(), "@odata.count")
 }
 
 // TestGetRedfishV1SystemsComputerSystemId provides minimal framework test for GetRedfishV1SystemsComputerSystemId endpoint
@@ -118,13 +144,15 @@ func TestGetRedfishV1SystemsComputerSystemId(t *testing.T) {
 	t.Parallel()
 
 	// Setup
-	mockUseCase := new(MockComputerSystemUseCase)
-	system := createTestSystemData("System1", "Test System", "Test Manufacturer", "Test Model", "SN123456")
-	mockUseCase.On("GetComputerSystem", mock.Anything, "System1").Return(system, nil)
+	testRepo := NewTestComputerSystemRepository()
+	testRepo.AddSystem("System1", createTestSystemData("System1", "Test System", "Test Manufacturer", "Test Model", "SN123456"))
 
-	systemsHandler := NewSystemsHandler(mockUseCase, nil)
+	useCase := &usecase.ComputerSystemUseCase{
+		Repo: testRepo,
+	}
+
 	server := &RedfishServer{
-		SystemsHandler: systemsHandler,
+		ComputerSystemUC: useCase,
 	}
 
 	router := setupTestRouterForSystemByID(server)
@@ -138,5 +166,7 @@ func TestGetRedfishV1SystemsComputerSystemId(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
 
-	mockUseCase.AssertExpectations(t)
+	// Additional assertions for concrete implementation
+	assert.Contains(t, w.Body.String(), "System1")
+	assert.Contains(t, w.Body.String(), "ComputerSystem")
 }

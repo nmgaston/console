@@ -32,7 +32,6 @@ const (
 
 // RedfishServer implements the Redfish API handlers and delegates operations to specialized handlers
 type RedfishServer struct {
-	SystemsHandler   *SystemsHandler
 	ComputerSystemUC *usecase.ComputerSystemUseCase
 	Config           *dmtconfig.Config
 	Logger           logger.Interface
@@ -56,40 +55,9 @@ func Int64Ptr(i int64) *int64 {
 	return &i
 }
 
-// CreateDescription creates a Description from a string using ResourceDescription.
-// If an error occurs during description creation, it logs the error and returns nil.
-// This allows the calling code to continue with a nil description while ensuring
-// the error is captured for debugging purposes.
-func CreateDescription(desc string, lgr logger.Interface) *generated.ComputerSystemCollectionComputerSystemCollection_Description {
-	description := &generated.ComputerSystemCollectionComputerSystemCollection_Description{}
-	if err := description.FromResourceDescription(desc); err != nil {
-		if lgr != nil {
-			lgr.Error("Failed to create description from resource description: %v, input: %s", err, desc)
-		}
-
-		return nil
-	}
-
-	return description
-}
-
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
-}
-
-// GetRedfishV1Systems handles GET requests for the systems collection
-func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
-	s.SystemsHandler.GetSystemsCollection(c)
-}
-
-// GetRedfishV1SystemsComputerSystemId handles GET requests for individual computer systems
-//
-//revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
-func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
-	// Set the system ID in the context so the handler can access it
-	c.Params = append(c.Params, gin.Param{Key: "ComputerSystemId", Value: computerSystemID})
-	s.SystemsHandler.GetSystemByID(c)
 }
 
 // PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset handles the reset action for a computer system

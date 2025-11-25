@@ -2,7 +2,6 @@
 package v1
 
 import (
-	"context"
 	"errors"
 	"net/http"
 
@@ -25,70 +24,25 @@ const (
 	systemsBasePath = "/redfish/v1/Systems/"
 )
 
-// SystemsHandler handles HTTP requests for Computer Systems resources.
-type SystemsHandler struct {
-	computerSystemUC ComputerSystemUseCase
-	logger           logger.Interface
-}
-
-// ComputerSystemUseCase defines the interface for computer systems operations.
-type ComputerSystemUseCase interface {
-	GetAll(ctx context.Context) ([]string, error)
-	GetComputerSystem(ctx context.Context, systemID string) (*generated.ComputerSystemComputerSystem, error)
-}
-
-// NewSystemsHandler creates a new systems handler with its dependencies.
-func NewSystemsHandler(computerSystemUC ComputerSystemUseCase, log logger.Interface) *SystemsHandler {
-	return &SystemsHandler{
-		computerSystemUC: computerSystemUC,
-		logger:           log,
-	}
-}
-
-// GetSystemsCollection handles GET /redfish/v1/Systems
-func (h *SystemsHandler) GetSystemsCollection(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	systemIDs, err := h.computerSystemUC.GetAll(ctx)
-	if err != nil {
-		if h.logger != nil {
-			h.logger.Error("Failed to retrieve computer systems collection", "error", err)
+// CreateDescription creates a Description from a string using ResourceDescription.
+// If an error occurs during description creation, it logs the error and returns nil.
+// This allows the calling code to continue with a nil description while ensuring
+// the error is captured for debugging purposes.
+func CreateDescription(desc string, lgr logger.Interface) *generated.ComputerSystemCollectionComputerSystemCollection_Description {
+	description := &generated.ComputerSystemCollectionComputerSystemCollection_Description{}
+	if err := description.FromResourceDescription(desc); err != nil {
+		if lgr != nil {
+			lgr.Error("Failed to create description from resource description: %v, input: %s", err, desc)
 		}
 
-		InternalServerError(c, err)
-
-		return
+		return nil
 	}
 
-	members := h.transformToMembers(systemIDs)
-	collection := h.buildSystemsCollectionResponse(members)
-
-	c.JSON(http.StatusOK, collection)
-}
-
-// GetSystemByID handles GET /redfish/v1/Systems/{systemId}
-func (h *SystemsHandler) GetSystemByID(c *gin.Context) {
-	ctx := c.Request.Context()
-	systemID := c.Param("ComputerSystemId")
-
-	if systemID == "" {
-		BadRequestError(c, "Computer system ID is required")
-
-		return
-	}
-
-	system, err := h.computerSystemUC.GetComputerSystem(ctx, systemID)
-	if err != nil {
-		h.handleGetSystemError(c, err, systemID)
-
-		return
-	}
-
-	c.JSON(http.StatusOK, system)
+	return description
 }
 
 // transformToMembers converts system IDs to OData member references.
-func (h *SystemsHandler) transformToMembers(systemIDs []string) []generated.OdataV4IdRef {
+func (s *RedfishServer) transformToMembers(systemIDs []string) []generated.OdataV4IdRef {
 	members := make([]generated.OdataV4IdRef, 0, len(systemIDs))
 	for _, systemID := range systemIDs {
 		if systemID != "" {
@@ -102,30 +56,73 @@ func (h *SystemsHandler) transformToMembers(systemIDs []string) []generated.Odat
 }
 
 // buildSystemsCollectionResponse constructs the systems collection response.
-func (h *SystemsHandler) buildSystemsCollectionResponse(members []generated.OdataV4IdRef) generated.ComputerSystemCollectionComputerSystemCollection {
+func (s *RedfishServer) buildSystemsCollectionResponse(members []generated.OdataV4IdRef) generated.ComputerSystemCollectionComputerSystemCollection {
 	return generated.ComputerSystemCollectionComputerSystemCollection{
 		OdataContext:      StringPtr(systemsOdataContextCollection),
 		OdataId:           StringPtr(systemsOdataIDCollection),
 		OdataType:         StringPtr(systemsOdataTypeCollection),
 		Name:              systemsCollectionTitle,
-		Description:       CreateDescription(systemsCollectionDescription, h.logger),
+		Description:       CreateDescription(systemsCollectionDescription, s.Logger),
 		MembersOdataCount: Int64Ptr(int64(len(members))),
 		Members:           &members,
 	}
 }
 
 // handleGetSystemError handles errors from GetComputerSystem operations.
-func (h *SystemsHandler) handleGetSystemError(c *gin.Context, err error, systemID string) {
+func (s *RedfishServer) handleGetSystemError(c *gin.Context, err error, systemID string) {
 	switch {
 	case errors.Is(err, usecase.ErrSystemNotFound):
 		NotFoundError(c, "System", systemID)
 	default:
-		if h.logger != nil {
-			h.logger.Error("Failed to retrieve computer system",
+		if s.Logger != nil {
+			s.Logger.Error("Failed to retrieve computer system",
 				"systemID", systemID,
 				"error", err)
 		}
 
 		InternalServerError(c, err)
 	}
+}
+
+// GetRedfishV1Systems handles GET requests for the systems collection
+func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	systemIDs, err := s.ComputerSystemUC.GetAll(ctx)
+	if err != nil {
+		if s.Logger != nil {
+			s.Logger.Error("Failed to retrieve computer systems collection", "error", err)
+		}
+
+		InternalServerError(c, err)
+
+		return
+	}
+
+	members := s.transformToMembers(systemIDs)
+	collection := s.buildSystemsCollectionResponse(members)
+
+	c.JSON(http.StatusOK, collection)
+}
+
+// GetRedfishV1SystemsComputerSystemId handles GET requests for individual computer systems
+//
+//revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
+func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
+	ctx := c.Request.Context()
+
+	if computerSystemID == "" {
+		BadRequestError(c, "Computer system ID is required")
+
+		return
+	}
+
+	system, err := s.ComputerSystemUC.GetComputerSystem(ctx, computerSystemID)
+	if err != nil {
+		s.handleGetSystemError(c, err, computerSystemID)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, system)
 }

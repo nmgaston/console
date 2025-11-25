@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
+	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
@@ -33,43 +34,75 @@ var (
 	errSystemRepoFailure = errors.New("system repository operation failed")
 )
 
-// MockComputerSystemUseCase mocks the ComputerSystemUseCase interface for systems handler
-type MockComputerSystemUseCase struct {
-	mock.Mock
+// TestSystemsComputerSystemRepository is a test implementation for systems tests
+type TestSystemsComputerSystemRepository struct {
+	systems        map[string]*redfishv1.ComputerSystem
+	errorOnGetAll  bool
+	errorOnGetByID map[string]error
 }
 
-func (m *MockComputerSystemUseCase) GetAll(ctx context.Context) ([]string, error) {
-	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+func NewTestSystemsComputerSystemRepository() *TestSystemsComputerSystemRepository {
+	return &TestSystemsComputerSystemRepository{
+		systems:        make(map[string]*redfishv1.ComputerSystem),
+		errorOnGetByID: make(map[string]error),
 	}
-
-	result, ok := args.Get(0).([]string)
-	if !ok {
-		return nil, args.Error(1)
-	}
-
-	return result, args.Error(1)
 }
 
-func (m *MockComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID string) (*generated.ComputerSystemComputerSystem, error) {
-	args := m.Called(ctx, systemID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+func (r *TestSystemsComputerSystemRepository) AddSystem(id string, system *redfishv1.ComputerSystem) {
+	r.systems[id] = system
+}
+
+func (r *TestSystemsComputerSystemRepository) SetErrorOnGetAll(err bool) {
+	r.errorOnGetAll = err
+}
+
+func (r *TestSystemsComputerSystemRepository) SetErrorOnGetByID(systemID string, err error) {
+	r.errorOnGetByID[systemID] = err
+}
+
+func (r *TestSystemsComputerSystemRepository) GetAll(_ context.Context) ([]string, error) {
+	if r.errorOnGetAll {
+		return nil, errSystemRepoFailure
 	}
 
-	result, ok := args.Get(0).(*generated.ComputerSystemComputerSystem)
-	if !ok {
-		return nil, args.Error(1)
+	ids := make([]string, 0, len(r.systems))
+	for id := range r.systems {
+		if id != "" {
+			ids = append(ids, id)
+		}
+	}
+	// Sort to ensure consistent ordering for tests
+	sort.Strings(ids)
+
+	return ids, nil
+}
+
+func (r *TestSystemsComputerSystemRepository) GetByID(_ context.Context, systemID string) (*redfishv1.ComputerSystem, error) {
+	if err, exists := r.errorOnGetByID[systemID]; exists {
+		return nil, err
 	}
 
-	return result, args.Error(1)
+	if system, exists := r.systems[systemID]; exists {
+		return system, nil
+	}
+
+	return nil, usecase.ErrSystemNotFound
+}
+
+func (r *TestSystemsComputerSystemRepository) UpdatePowerState(_ context.Context, systemID string, state redfishv1.PowerState) error {
+	if system, exists := r.systems[systemID]; exists {
+		system.PowerState = state
+
+		return nil
+	}
+
+	return usecase.ErrSystemNotFound
 }
 
 // TestCase represents a generic test case structure
 type SystemsTestCase[T any] struct {
 	name           string
-	setupMock      func(*MockComputerSystemUseCase, T)
+	setupRepo      func(*TestSystemsComputerSystemRepository, T)
 	httpMethod     string
 	expectedStatus int
 	validateFunc   func(*testing.T, *httptest.ResponseRecorder, T)
@@ -79,7 +112,7 @@ type SystemsTestCase[T any] struct {
 // TestConfig holds configuration for running tests
 type SystemsTestConfig[T any] struct {
 	endpoint    string
-	routerSetup func(*SystemsHandler) *gin.Engine
+	routerSetup func(*RedfishServer) *gin.Engine
 	urlBuilder  func(T) string
 }
 
@@ -126,22 +159,27 @@ func validateSystemsCollectionResponse(t *testing.T, w *httptest.ResponseRecorde
 
 // Router setup for testing
 
-func setupSystemsTestRouter(handler *SystemsHandler) *gin.Engine {
+func setupSystemsTestRouter(server *RedfishServer) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	router.GET(systemsEndpointTest, handler.GetSystemsCollection)
+	router.GET(systemsEndpointTest, server.GetRedfishV1Systems)
 
 	return router
 }
 
-func setupSystemByIDTestRouter(handler *SystemsHandler) *gin.Engine {
+func setupSystemByIDTestRouter(server *RedfishServer) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	router.GET("/redfish/v1/Systems/:ComputerSystemId", handler.GetSystemByID)
+	router.GET("/redfish/v1/Systems/:ComputerSystemId", func(c *gin.Context) {
+		computerSystemID := c.Param("ComputerSystemId")
+		server.GetRedfishV1SystemsComputerSystemId(c, computerSystemID)
+	})
 	// Add route for empty system ID case (trailing slash)
-	router.GET("/redfish/v1/Systems/", handler.GetSystemByID)
+	router.GET("/redfish/v1/Systems/", func(c *gin.Context) {
+		server.GetRedfishV1SystemsComputerSystemId(c, "")
+	})
 
 	return router
 }
@@ -164,8 +202,8 @@ func validateFilteredSystemsResponseTest(t *testing.T, w *httptest.ResponseRecor
 	t.Helper()
 	validateSystemsCollectionResponse(t, w, 3, []string{
 		fmt.Sprintf("%s/System1", systemsEndpointTest),
-		fmt.Sprintf("%s/abc-123", systemsEndpointTest),
 		fmt.Sprintf("%s/System2", systemsEndpointTest),
+		fmt.Sprintf("%s/abc-123", systemsEndpointTest),
 	})
 }
 
@@ -177,9 +215,18 @@ func validateSingleSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder
 func validateLargeCollectionResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ struct{}) {
 	t.Helper()
 
-	expectedMembers := make([]string, 10)
-	for i := 0; i < 10; i++ {
-		expectedMembers[i] = fmt.Sprintf("%s/System%d", systemsEndpointTest, i+1)
+	// Create expected members in alphabetical order (as returned by sorted repository)
+	expectedMembers := []string{
+		fmt.Sprintf("%s/System1", systemsEndpointTest),
+		fmt.Sprintf("%s/System10", systemsEndpointTest),
+		fmt.Sprintf("%s/System2", systemsEndpointTest),
+		fmt.Sprintf("%s/System3", systemsEndpointTest),
+		fmt.Sprintf("%s/System4", systemsEndpointTest),
+		fmt.Sprintf("%s/System5", systemsEndpointTest),
+		fmt.Sprintf("%s/System6", systemsEndpointTest),
+		fmt.Sprintf("%s/System7", systemsEndpointTest),
+		fmt.Sprintf("%s/System8", systemsEndpointTest),
+		fmt.Sprintf("%s/System9", systemsEndpointTest),
 	}
 
 	validateSystemsCollectionResponse(t, w, 10, expectedMembers)
@@ -232,48 +279,40 @@ func validateErrorResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ str
 	_ = validateErrorResponseDataTest(t, w, "Base.1.22.0.GeneralError", "An internal server error occurred.")
 }
 
-// setupCollectionMockWithIDsTest sets up mock to return specific system IDs
-func setupCollectionMockWithIDsTest(mockUseCase *MockComputerSystemUseCase, systemIDs []string) {
-	mockUseCase.On("GetAll", mock.Anything).Return(systemIDs, nil)
+// Repository setup functions for Systems collection
+func setupMultipleSystemsMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
+	repo.AddSystem("System1", &redfishv1.ComputerSystem{ID: "System1", Name: "System 1", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem("System2", &redfishv1.ComputerSystem{ID: "System2", Name: "System 2", PowerState: redfishv1.PowerStateOn})
 }
 
-// setupCollectionMockWithErrorTest sets up mock to return an error
-func setupCollectionMockWithErrorTest(mockUseCase *MockComputerSystemUseCase, err error) {
-	mockUseCase.On("GetAll", mock.Anything).Return([]string(nil), err)
+func setupEmptyCollectionMockTest(_ *TestSystemsComputerSystemRepository, _ struct{}) {
+	// No systems added - empty collection
 }
 
-// Mock setup functions for Systems collection (reusing shared functions)
-func setupMultipleSystemsMockTest(mockUseCase *MockComputerSystemUseCase, _ struct{}) {
-	setupCollectionMockWithIDsTest(mockUseCase, []string{"System1", "System2"})
+func setupFilteredSystemsMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
+	repo.AddSystem("System1", &redfishv1.ComputerSystem{ID: "System1", Name: "System 1", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem("", &redfishv1.ComputerSystem{ID: "", Name: "Empty ID", PowerState: redfishv1.PowerStateOn}) // This will be filtered out
+	repo.AddSystem("abc-123", &redfishv1.ComputerSystem{ID: "abc-123", Name: "ABC System", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem("System2", &redfishv1.ComputerSystem{ID: "System2", Name: "System 2", PowerState: redfishv1.PowerStateOn})
 }
 
-func setupEmptyCollectionMockTest(mockUseCase *MockComputerSystemUseCase, _ struct{}) {
-	setupCollectionMockWithIDsTest(mockUseCase, []string{})
+func setupSingleSystemMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
+	repo.AddSystem("System1", &redfishv1.ComputerSystem{ID: "System1", Name: "System 1", PowerState: redfishv1.PowerStateOn})
 }
 
-func setupFilteredSystemsMockTest(mockUseCase *MockComputerSystemUseCase, _ struct{}) {
-	setupCollectionMockWithIDsTest(mockUseCase, []string{"System1", "", "abc-123", "", "System2"})
-}
-
-func setupSingleSystemMockTest(mockUseCase *MockComputerSystemUseCase, _ struct{}) {
-	setupCollectionMockWithIDsTest(mockUseCase, []string{"System1"})
-}
-
-func setupLargeCollectionMockTest(mockUseCase *MockComputerSystemUseCase, _ struct{}) {
-	systemIDs := make([]string, 10)
-	for i := 0; i < 10; i++ {
-		systemIDs[i] = fmt.Sprintf("System%d", i+1)
+func setupLargeCollectionMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
+	for i := 1; i <= 10; i++ {
+		systemID := fmt.Sprintf("System%d", i)
+		repo.AddSystem(systemID, &redfishv1.ComputerSystem{ID: systemID, Name: fmt.Sprintf("System %d", i), PowerState: redfishv1.PowerStateOn})
 	}
-
-	setupCollectionMockWithIDsTest(mockUseCase, systemIDs)
 }
 
-func setupErrorMockTest(mockUseCase *MockComputerSystemUseCase, _ struct{}) {
-	setupCollectionMockWithErrorTest(mockUseCase, errSystemRepoFailure)
+func setupErrorMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
+	repo.SetErrorOnGetAll(true)
 }
 
-func setupNoMockTest(_ *MockComputerSystemUseCase, _ struct{}) {
-	// No mock setup needed for HTTP method tests
+func setupNoMockTest(_ *TestSystemsComputerSystemRepository, _ struct{}) {
+	// No setup needed for HTTP method tests
 }
 
 // Generic Test Framework for Systems endpoints
@@ -283,14 +322,20 @@ func runGenericSystemsTest[T any](t *testing.T, testCase SystemsTestCase[T], con
 	t.Helper()
 
 	// Setup
-	mockUseCase := new(MockComputerSystemUseCase)
-	testCase.setupMock(mockUseCase, testCase.params)
+	testRepo := NewTestSystemsComputerSystemRepository()
+	testCase.setupRepo(testRepo, testCase.params)
 
-	// Create SystemsHandler
-	systemsHandler := NewSystemsHandler(mockUseCase, nil) // Using nil logger for tests
+	useCase := &usecase.ComputerSystemUseCase{
+		Repo: testRepo,
+	}
+
+	// Create RedfishServer
+	server := &RedfishServer{
+		ComputerSystemUC: useCase,
+	}
 
 	// Setup router and request
-	router := config.routerSetup(systemsHandler)
+	router := config.routerSetup(server)
 	url := config.urlBuilder(testCase.params)
 	req, _ := http.NewRequestWithContext(context.Background(), testCase.httpMethod, url, http.NoBody)
 	w := httptest.NewRecorder()
@@ -305,59 +350,41 @@ func runGenericSystemsTest[T any](t *testing.T, testCase SystemsTestCase[T], con
 	if testCase.validateFunc != nil {
 		testCase.validateFunc(t, w, testCase.params)
 	}
-
-	mockUseCase.AssertExpectations(t)
 }
 
-// createTestSystemData creates a test system with specified properties
-func createTestSystemData(systemID, name, manufacturer, model, serialNumber string) *generated.ComputerSystemComputerSystem {
-	powerState := &generated.ComputerSystemComputerSystem_PowerState{}
-	_ = powerState.FromResourcePowerState(generated.On)
-
-	return &generated.ComputerSystemComputerSystem{
-		OdataContext: StringPtr("/redfish/v1/$metadata#ComputerSystem.ComputerSystem"),
-		OdataId:      StringPtr(fmt.Sprintf("%s/%s", systemsEndpointTest, systemID)),
-		OdataType:    StringPtr(systemODataType),
-		Id:           systemID,
+// createTestSystemEntityData creates a test system entity for repository
+func createTestSystemEntityData(systemID, name, manufacturer, model, serialNumber string) *redfishv1.ComputerSystem {
+	return &redfishv1.ComputerSystem{
+		ID:           systemID,
 		Name:         name,
-		Manufacturer: StringPtr(manufacturer),
-		Model:        StringPtr(model),
-		SerialNumber: StringPtr(serialNumber),
-		PowerState:   powerState,
+		Manufacturer: manufacturer,
+		Model:        model,
+		SerialNumber: serialNumber,
+		PowerState:   redfishv1.PowerStateOn,
 	}
 }
 
-// setupSystemMockWithDataTest sets up mock to return a specific system
-func setupSystemMockWithDataTest(mockUseCase *MockComputerSystemUseCase, systemID string, system *generated.ComputerSystemComputerSystem) {
-	mockUseCase.On("GetComputerSystem", mock.Anything, systemID).Return(system, nil)
+// Repository setup functions for system by ID tests
+func setupExistingSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityData(systemID, "Test System", "Test Manufacturer", "Test Model", "SN123456")
+	repo.AddSystem(systemID, system)
 }
 
-// setupSystemMockWithErrorTest sets up mock to return an error
-func setupSystemMockWithErrorTest(mockUseCase *MockComputerSystemUseCase, systemID string, err error) {
-	mockUseCase.On("GetComputerSystem", mock.Anything, systemID).Return(nil, err)
+func setupUUIDSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityData(systemID, "UUID System", "UUID Manufacturer", "UUID Model", "UUID-SN789")
+	repo.AddSystem(systemID, system)
 }
 
-// Mock setup functions for system by ID tests (reusing shared functions)
-func setupExistingSystemMockTest(mockUseCase *MockComputerSystemUseCase, systemID string) {
-	system := createTestSystemData(systemID, "Test System", "Test Manufacturer", "Test Model", "SN123456")
-	setupSystemMockWithDataTest(mockUseCase, systemID, system)
+func setupSystemNotFoundMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	repo.SetErrorOnGetByID(systemID, usecase.ErrSystemNotFound)
 }
 
-func setupUUIDSystemMockTest(mockUseCase *MockComputerSystemUseCase, systemID string) {
-	system := createTestSystemData(systemID, "UUID System", "UUID Manufacturer", "UUID Model", "UUID-SN789")
-	setupSystemMockWithDataTest(mockUseCase, systemID, system)
+func setupSystemRepositoryErrorMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	repo.SetErrorOnGetByID(systemID, errSystemRepoFailure)
 }
 
-func setupSystemNotFoundMockTest(mockUseCase *MockComputerSystemUseCase, systemID string) {
-	setupSystemMockWithErrorTest(mockUseCase, systemID, usecase.ErrSystemNotFound)
-}
-
-func setupSystemRepositoryErrorMockTest(mockUseCase *MockComputerSystemUseCase, systemID string) {
-	setupSystemMockWithErrorTest(mockUseCase, systemID, errSystemRepoFailure)
-}
-
-func setupNoSystemMockTest(_ *MockComputerSystemUseCase, _ string) {
-	// No mock setup needed for HTTP method tests
+func setupNoSystemMockTest(_ *TestSystemsComputerSystemRepository, _ string) {
+	// No setup needed for HTTP method tests
 }
 
 // validateSystemResponseDataTest validates system response with expected data
@@ -411,29 +438,43 @@ func validateBadRequestResponseTest(t *testing.T, w *httptest.ResponseRecorder, 
 	_ = validateErrorResponseDataTest(t, w, "Base.1.22.0.GeneralError", "Computer system ID is required")
 }
 
-// Mock logger for testing logger code paths
-type MockLogger struct {
-	mock.Mock
+// TestLogger for testing logger code paths - captures log calls
+type TestLogger struct {
+	DebugCalls [][]interface{}
+	InfoCalls  [][]interface{}
+	WarnCalls  [][]interface{}
+	ErrorCalls [][]interface{}
+	FatalCalls [][]interface{}
 }
 
-func (m *MockLogger) Debug(message interface{}, args ...interface{}) {
-	m.Called(message, args)
+func NewTestLogger() *TestLogger {
+	return &TestLogger{
+		DebugCalls: make([][]interface{}, 0),
+		InfoCalls:  make([][]interface{}, 0),
+		WarnCalls:  make([][]interface{}, 0),
+		ErrorCalls: make([][]interface{}, 0),
+		FatalCalls: make([][]interface{}, 0),
+	}
 }
 
-func (m *MockLogger) Info(msg string, args ...interface{}) {
-	m.Called(msg, args)
+func (l *TestLogger) Debug(message interface{}, args ...interface{}) {
+	l.DebugCalls = append(l.DebugCalls, append([]interface{}{message}, args...))
 }
 
-func (m *MockLogger) Warn(msg string, args ...interface{}) {
-	m.Called(msg, args)
+func (l *TestLogger) Info(msg string, args ...interface{}) {
+	l.InfoCalls = append(l.InfoCalls, append([]interface{}{msg}, args...))
 }
 
-func (m *MockLogger) Error(message interface{}, args ...interface{}) {
-	m.Called(message, args)
+func (l *TestLogger) Warn(msg string, args ...interface{}) {
+	l.WarnCalls = append(l.WarnCalls, append([]interface{}{msg}, args...))
 }
 
-func (m *MockLogger) Fatal(message interface{}, args ...interface{}) {
-	m.Called(message, args)
+func (l *TestLogger) Error(message interface{}, args ...interface{}) {
+	l.ErrorCalls = append(l.ErrorCalls, append([]interface{}{message}, args...))
+}
+
+func (l *TestLogger) Fatal(message interface{}, args ...interface{}) {
+	l.FatalCalls = append(l.FatalCalls, append([]interface{}{message}, args...))
 }
 
 // ====================================================================================================
@@ -515,22 +556,29 @@ func TestSystemsHandler_GetSystemsCollection_WithLogger(t *testing.T) {
 	t.Parallel()
 
 	// Test error logging path
-	mockUseCase := new(MockComputerSystemUseCase)
-	mockLogger := new(MockLogger)
+	testRepo := NewTestSystemsComputerSystemRepository()
+	testRepo.SetErrorOnGetAll(true)
 
-	mockUseCase.On("GetAll", mock.Anything).Return([]string(nil), errSystemRepoFailure)
-	mockLogger.On("Error", "Failed to retrieve computer systems collection", []interface{}{"error", errSystemRepoFailure}).Return()
+	testLogger := NewTestLogger()
 
-	handler := NewSystemsHandler(mockUseCase, mockLogger)
-	router := setupSystemsTestRouter(handler)
+	useCase := &usecase.ComputerSystemUseCase{
+		Repo: testRepo,
+	}
+
+	server := &RedfishServer{
+		ComputerSystemUC: useCase,
+		Logger:           testLogger,
+	}
+	router := setupSystemsTestRouter(server)
 	req, _ := http.NewRequestWithContext(context.Background(), "GET", systemsEndpointTest, http.NoBody)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	mockUseCase.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
+	// Verify logger was called
+	assert.Len(t, testLogger.ErrorCalls, 1)
+	assert.Equal(t, "Failed to retrieve computer systems collection", testLogger.ErrorCalls[0][0])
 }
 
 // TestSystemsHandler_GetSystemByID_WithLogger tests logging paths
@@ -538,20 +586,27 @@ func TestSystemsHandler_GetSystemByID_WithLogger(t *testing.T) {
 	t.Parallel()
 
 	// Test error logging path
-	mockUseCase := new(MockComputerSystemUseCase)
-	mockLogger := new(MockLogger)
+	testRepo := NewTestSystemsComputerSystemRepository()
+	testRepo.SetErrorOnGetByID("System1", errSystemRepoFailure)
 
-	mockUseCase.On("GetComputerSystem", mock.Anything, "System1").Return(nil, errSystemRepoFailure)
-	mockLogger.On("Error", "Failed to retrieve computer system", []interface{}{"systemID", "System1", "error", errSystemRepoFailure}).Return()
+	testLogger := NewTestLogger()
 
-	handler := NewSystemsHandler(mockUseCase, mockLogger)
-	router := setupSystemByIDTestRouter(handler)
+	useCase := &usecase.ComputerSystemUseCase{
+		Repo: testRepo,
+	}
+
+	server := &RedfishServer{
+		ComputerSystemUC: useCase,
+		Logger:           testLogger,
+	}
+	router := setupSystemByIDTestRouter(server)
 	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/redfish/v1/Systems/System1", http.NoBody)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	mockUseCase.AssertExpectations(t)
-	mockLogger.AssertExpectations(t)
+	// Verify logger was called
+	assert.Len(t, testLogger.ErrorCalls, 1)
+	assert.Equal(t, "Failed to retrieve computer system", testLogger.ErrorCalls[0][0])
 }

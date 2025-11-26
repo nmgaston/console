@@ -2,6 +2,7 @@
 package redfish
 
 import (
+	_ "embed"
 	"errors"
 	"os"
 	"strings"
@@ -18,6 +19,11 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/mocks"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
+
+// Embed the OpenAPI specification at build time
+//
+//go:embed openapi/merged/redfish-openapi.yaml
+var embeddedOpenAPISpec []byte
 
 // ErrDevicesCastFailed is returned when the devices use case cannot be cast to the expected type.
 var ErrDevicesCastFailed = errors.New("failed to cast devices use case")
@@ -82,7 +88,17 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 		Logger:           log,
 	}
 
-	log.Info("Redfish component initialized successfully")
+	// Load OData services from embedded OpenAPI spec
+	services, err := v1.ExtractServicesFromOpenAPIData(embeddedOpenAPISpec)
+	if err != nil {
+		log.Warn("Failed to load services from embedded OpenAPI spec: %v, using defaults", err)
+
+		services = v1.GetDefaultServices()
+	}
+
+	server.Services = services
+
+	log.Info("Redfish component initialized successfully with %d OData services", len(server.Services))
 
 	return nil
 }
@@ -115,7 +131,7 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 			path := c.Request.URL.Path
 
 			// Public endpoints as defined in OpenAPI spec (security: [{}])
-			if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" {
+			if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" || path == "/redfish/v1/odata" {
 				c.Next()
 
 				return

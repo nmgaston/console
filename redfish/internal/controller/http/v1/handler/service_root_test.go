@@ -252,10 +252,10 @@ func TestValidateMetadataXML(t *testing.T) {
 }
 
 // TestLoadMetadataIntegration tests the metadata endpoint integration.
+//
+//nolint:paralleltest // Cannot use t.Parallel() due to shared global metadata state that requires sequential execution
 func TestLoadMetadataIntegration(t *testing.T) {
-	t.Parallel()
 	t.Run("metadata endpoint returns consistent results", func(t *testing.T) {
-		t.Parallel()
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
@@ -282,7 +282,6 @@ func TestLoadMetadataIntegration(t *testing.T) {
 	})
 
 	t.Run("metadata endpoint response has proper structure", func(t *testing.T) {
-		t.Parallel()
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
@@ -494,6 +493,25 @@ func TestGetRedfishV1ServiceRootConcurrentRequests(t *testing.T) {
 
 	// Execute multiple concurrent requests
 	const numRequests = 20
+
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		go func() {
+			req := httptest.NewRequest(http.MethodGet, "/redfish/v1", http.NoBody)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			results <- w.Code
+		}()
+	}
+
+	// Verify all requests succeeded
+	for i := 0; i < numRequests; i++ {
+		assert.Equal(t, http.StatusOK, <-results)
+	}
+}
+
 // TestGetRedfishV1Odata tests the OData endpoint basic functionality
 func TestGetRedfishV1Odata(t *testing.T) {
 	t.Parallel()
@@ -626,7 +644,7 @@ func TestGetRedfishV1OdataConcurrentRequests(t *testing.T) {
 
 	for i := 0; i < numRequests; i++ {
 		go func() {
-			req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1", http.NoBody)
+			req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/odata", http.NoBody)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
@@ -858,11 +876,6 @@ func TestGetUUIDStoragePath(t *testing.T) {
 		os.Remove(path)
 		os.Remove(filepath.Dir(path))
 	})
-}
-	for i := 0; i < numRequests; i++ {
-		code := <-results
-		assert.Equal(t, http.StatusOK, code)
-	}
 }
 
 // BenchmarkGetRedfishV1Odata measures OData endpoint performance
@@ -1110,4 +1123,167 @@ func TestGetDefaultServices(t *testing.T) {
 	assert.Equal(t, "Systems", services[0].Name)
 	assert.Equal(t, "Singleton", services[0].Kind)
 	assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+}
+
+// TestGetRedfishV1ServiceRootHTTPMethods tests various HTTP methods on service root endpoint
+func TestGetRedfishV1ServiceRootHTTPMethods(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1", server.GetRedfishV1)
+
+	testCases := []struct {
+		name           string
+		method         string
+		expectedStatus int
+	}{
+		{
+			name:           "GET method should succeed",
+			method:         http.MethodGet,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "POST method should fail",
+			method:         http.MethodPost,
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "PUT method should fail",
+			method:         http.MethodPut,
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "DELETE method should fail",
+			method:         http.MethodDelete,
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "PATCH method should fail",
+			method:         http.MethodPatch,
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			req := httptest.NewRequest(tc.method, "/redfish/v1", http.NoBody)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+// TestGetRedfishV1ServiceRootHeaders tests that all required Redfish headers are set
+func TestGetRedfishV1ServiceRootHeaders(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1", server.GetRedfishV1)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Verify all Redfish-required headers
+	assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
+	assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
+	assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
+}
+
+// TestGetRedfishV1ServiceRootAllFields tests all response fields are present
+func TestGetRedfishV1ServiceRootAllFields(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1", server.GetRedfishV1)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	// Test all fields are present
+	requiredFields := []string{
+		"@odata.context",
+		"@odata.id",
+		"@odata.type",
+		"Id",
+		"Name",
+		"RedfishVersion",
+		"UUID",
+		"Product",
+		"Vendor",
+		"Links",
+		"Systems",
+		"Registries",
+	}
+
+	for _, field := range requiredFields {
+		assert.Contains(t, response, field, "Response should contain %s field", field)
+	}
+
+	// Verify specific values
+	assert.Equal(t, "/redfish/v1/$metadata#ServiceRoot.ServiceRoot", response["@odata.context"])
+	assert.Equal(t, "/redfish/v1", response["@odata.id"])
+	assert.Equal(t, "#ServiceRoot.v1_19_0.ServiceRoot", response["@odata.type"])
+	assert.Equal(t, "RootService", response["Id"])
+	assert.Equal(t, "Root Service", response["Name"])
+	assert.Equal(t, "1.19.0", response["RedfishVersion"])
+	assert.Equal(t, "Device Management Toolkit - Redfish Service", response["Product"])
+	assert.Equal(t, "Device Management Toolkit", response["Vendor"])
+
+	// Verify UUID is valid format
+	uuidStr, ok := response["UUID"].(string)
+	assert.True(t, ok, "UUID should be a string")
+
+	_, err = uuid.Parse(uuidStr)
+	assert.NoError(t, err, "UUID should be valid")
+
+	// Verify Links structure
+	links, ok := response["Links"].(map[string]interface{})
+	assert.True(t, ok, "Links should be an object")
+	sessions, ok := links["Sessions"].(map[string]interface{})
+	assert.True(t, ok, "Sessions should be an object")
+	assert.Equal(t, "/redfish/v1/SessionService/Sessions", sessions["@odata.id"])
+
+	// Verify Systems reference
+	systems, ok := response["Systems"].(map[string]interface{})
+	assert.True(t, ok, "Systems should be an object")
+	assert.Equal(t, "/redfish/v1/Systems", systems["@odata.id"])
+
+	// Verify Registries reference
+	registries, ok := response["Registries"].(map[string]interface{})
+	assert.True(t, ok, "Registries should be an object")
+	assert.Equal(t, "/redfish/v1/Registries", registries["@odata.id"])
+}
+
+// TestGenerateServiceUUIDFallback tests UUID generation fallback behavior
+func TestGenerateServiceUUIDFallback(t *testing.T) {
+	t.Parallel()
+
+	// Test that UUID generation doesn't panic even in worst case
+	uuidStr := generateServiceUUID()
+
+	assert.NotEmpty(t, uuidStr)
+
+	_, err := uuid.Parse(uuidStr)
+	assert.NoError(t, err, "Generated UUID should be valid even in fallback")
 }

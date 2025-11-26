@@ -4,16 +4,6 @@ components:
       additionalProperties: false
       description: The links to other resources that are related to this resource.
       properties:
-        ManagerProvidingService:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
-          description: The link to the manager that is providing this Redfish service.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource of type `Manager` that represents the manager providing this Redfish service.
-          x-versionAdded: v1_15_0
-        Oem:
-          $ref: Resource.yaml#/components/schemas/Resource_Oem
-          description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions.  All values for properties contained in this object shall conform to the Redfish Specification-described requirements.
         Sessions:
           $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
           description: The link to a collection of sessions.
@@ -52,12 +42,6 @@ components:
           $ref: '#/components/schemas/ServiceRoot_v1_19_0_Links'
           description: The links to other resources that are related to this resource.
           x-longDescription: This property shall contain links to resources that are related to but are not contained by, or subordinate to, this resource.
-        Managers:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
-          description: The link to a collection of managers.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource collection
-            of type `ManagerCollection`.
         Name:
           $ref: Resource.yaml#/components/schemas/Resource_Name
           readOnly: true

@@ -476,12 +476,6 @@ type ResourceStatus_State struct {
 
 // ServiceRootLinks The links to other resources that are related to this resource.
 type ServiceRootLinks struct {
-	// ManagerProvidingService A reference to a resource.
-	ManagerProvidingService *OdataV4IdRef `json:"ManagerProvidingService,omitempty"`
-
-	// Oem The OEM extension.
-	Oem *ResourceOem `json:"Oem,omitempty"`
-
 	// Sessions A reference to a resource.
 	Sessions OdataV4IdRef `json:"Sessions"`
 }
@@ -503,9 +497,6 @@ type ServiceRootServiceRoot struct {
 
 	// Links The links to other resources that are related to this resource.
 	Links ServiceRootLinks `json:"Links"`
-
-	// Managers A reference to a resource.
-	Managers *OdataV4IdRef `json:"Managers,omitempty"`
 
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`

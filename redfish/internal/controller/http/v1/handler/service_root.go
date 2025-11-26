@@ -46,6 +46,8 @@ var (
 	metadataXML    string
 	metadataLoaded bool
 	metadataMutex  sync.Mutex
+	cachedUUID     string
+	uuidMutex      sync.Mutex
 )
 
 // loadMetadata loads embedded metadata.xml with XML validation.
@@ -154,26 +156,30 @@ func loadOrCreateUUID(appName string) (string, error) {
 // generateServiceUUID generates or retrieves the service instance UUID.
 // Per Redfish specification, this UUID should be consistent across service restarts.
 // Priority order:
-// 1. REDFISH_UUID environment variable (allows admin override)
+// 1. Cached UUID in memory (for process lifetime)
 // 2. Persisted UUID from config file
 // 3. Newly generated UUID (saved to config file for future use)
 func generateServiceUUID() string {
-	// 1. Check environment variable override
-	if envUUID := os.Getenv("REDFISH_UUID"); envUUID != "" {
-		if _, parseErr := uuid.Parse(envUUID); parseErr == nil {
-			return envUUID
-		}
+	uuidMutex.Lock()
+	defer uuidMutex.Unlock()
 
-		log.Warnf("Invalid REDFISH_UUID environment variable, ignoring")
+	// Return cached UUID if available
+	if cachedUUID != "" {
+		return cachedUUID
 	}
 
-	// 2. Load or create persistent UUID
+	// Load or create persistent UUID
 	serviceUUID, err := loadOrCreateUUID("dmt-redfish-service")
 	if err != nil {
 		log.Warnf("Failed to load/create persistent UUID: %v, generating temporary UUID", err)
-		// Fallback to temporary UUID for this session
-		return uuid.New().String()
+		// Fallback to temporary UUID for this session (but cache it)
+		cachedUUID = uuid.New().String()
+
+		return cachedUUID
 	}
+
+	// Cache the UUID for this process lifetime
+	cachedUUID = serviceUUID
 
 	return serviceUUID
 }

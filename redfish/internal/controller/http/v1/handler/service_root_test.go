@@ -19,8 +19,7 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 )
 
-// resetMetadataState safely resets the global metadata state for test isolation.
-// This must be called within a synchronized context to avoid race conditions.
+// resetMetadataState resets global metadata state for test isolation.
 func resetMetadataState() {
 	metadataMutex.Lock()
 	defer metadataMutex.Unlock()
@@ -29,7 +28,7 @@ func resetMetadataState() {
 	metadataLoaded = false
 }
 
-// setupMetadataTestRouter creates and configures a test router with the metadata endpoint.
+// setupMetadataTestRouter creates a test router with metadata endpoint.
 func setupMetadataTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
@@ -43,41 +42,34 @@ func setupMetadataTestRouter() *gin.Engine {
 func TestGetRedfishV1MetadataReturnsODataXML(t *testing.T) {
 	t.Parallel()
 
-	// Reset global state for test isolation
 	t.Cleanup(func() {
 		resetMetadataState()
 	})
 
 	gin.SetMode(gin.TestMode)
 
-	// Setup
 	router := setupMetadataTestRouter()
 
-	// Execute request
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
 	require.NoError(t, err)
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	// Assert status and headers
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/xml", w.Header().Get("Content-Type"))
 	assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
 
 	body := w.Body.String()
 
-	// Verify valid XML by parsing it (if body is not empty)
 	if body != "" {
 		assert.NoError(t, xml.Unmarshal([]byte(body), new(interface{})), "response should be valid XML")
 
-		// Assert XML declaration and root element
 		assert.True(t, strings.HasPrefix(body, `<?xml version="1.0" encoding="UTF-8"?>`))
 		assert.Contains(t, body, `<edmx:Edmx`)
 		assert.Contains(t, body, `xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx"`)
 		assert.Contains(t, body, `Version="4.0"`)
 
-		// Assert required DMTF Redfish schema references (auto-discovered from YAML files)
 		requiredSchemas := []string{
 			"ActionInfo_v1.xml",
 			"ComputerSystemCollection_v1.xml",
@@ -91,13 +83,10 @@ func TestGetRedfishV1MetadataReturnsODataXML(t *testing.T) {
 			assert.Contains(t, body, schema, "metadata should reference %s schema", schema)
 		}
 
-		// Assert EntityContainer structure
 		assert.Contains(t, body, `<edmx:DataServices>`)
 		assert.Contains(t, body, `<Schema`)
 		assert.Contains(t, body, `<EntityContainer Name="Service"`)
 		assert.Contains(t, body, `Extends="ServiceRoot.v1_19_0.ServiceContainer"`)
-
-		// Verify substantial content
 		assert.Greater(t, len(body), 1000, "metadata should contain substantial content")
 	}
 }
@@ -105,7 +94,6 @@ func TestGetRedfishV1MetadataReturnsODataXML(t *testing.T) {
 func TestGetRedfishV1MetadataServeValidResponse(t *testing.T) {
 	t.Parallel()
 
-	// Reset global state for test isolation
 	t.Cleanup(func() {
 		resetMetadataState()
 	})
@@ -118,7 +106,6 @@ func TestGetRedfishV1MetadataServeValidResponse(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	// Verify it's valid XML if response body is not empty
 	body := w.Body.String()
 	if body != "" {
 		var doc interface{}
@@ -131,7 +118,6 @@ func TestGetRedfishV1MetadataServeValidResponse(t *testing.T) {
 func TestGetRedfishV1MetadataConcurrentRequests(t *testing.T) {
 	t.Parallel()
 
-	// Reset global state for test isolation
 	t.Cleanup(func() {
 		resetMetadataState()
 	})
@@ -140,7 +126,6 @@ func TestGetRedfishV1MetadataConcurrentRequests(t *testing.T) {
 
 	router := setupMetadataTestRouter()
 
-	// Execute multiple concurrent requests
 	const numRequests = 10
 
 	results := make(chan int, numRequests)
@@ -155,51 +140,37 @@ func TestGetRedfishV1MetadataConcurrentRequests(t *testing.T) {
 		}()
 	}
 
-	// Verify all requests succeeded
 	for i := 0; i < numRequests; i++ {
 		assert.Equal(t, http.StatusOK, <-results)
 	}
 }
 
-// TestLoadMetadata tests the metadata loading behavior through the public endpoint.
-// Since loadMetadata is internal, we test it indirectly through GetRedfishV1Metadata.
+//nolint:paralleltest // Cannot run in parallel due to shared global metadata state
 func TestLoadMetadata(t *testing.T) {
-	t.Parallel()
-
 	t.Run("metadata endpoint loads and caches metadata", func(t *testing.T) {
-		t.Parallel()
 		resetMetadataState()
-
 		gin.SetMode(gin.TestMode)
 
-		// Setup router
 		router := setupMetadataTestRouter()
 
-		// First request
 		req1, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
 		require.NoError(t, err)
 
 		w1 := httptest.NewRecorder()
 		router.ServeHTTP(w1, req1)
 
-		// Second request - should be identical (cached)
 		req2, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/redfish/v1/$metadata", http.NoBody)
 		require.NoError(t, err)
 
 		w2 := httptest.NewRecorder()
 		router.ServeHTTP(w2, req2)
 
-		// Both should have same status
 		assert.Equal(t, w1.Code, w2.Code)
-
-		// Both should have same response body (caching works)
 		assert.Equal(t, w1.Body.String(), w2.Body.String())
 	})
 
 	t.Run("metadata endpoint sets correct headers", func(t *testing.T) {
-		t.Parallel()
 		resetMetadataState()
-
 		gin.SetMode(gin.TestMode)
 
 		router := setupMetadataTestRouter()
@@ -210,7 +181,6 @@ func TestLoadMetadata(t *testing.T) {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
-		// Verify headers are set correctly
 		assert.Equal(t, "application/xml", w.Header().Get("Content-Type"))
 		assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
 	})
@@ -701,10 +671,10 @@ func TestGetRedfishV1ServiceRootResponseStructure(t *testing.T) {
 	assert.Equal(t, "/redfish/v1/Systems", *serviceRoot.Systems.OdataId)
 }
 
-// TestGenerateServiceUUID tests the UUID generation with different scenarios
-//
-//nolint:tparallel // Cannot use t.Parallel() because some subtests use t.Setenv()
+// TestGenerateServiceUUID tests the UUID generation
 func TestGenerateServiceUUID(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns valid UUID format", func(t *testing.T) {
 		t.Parallel()
 
@@ -722,28 +692,8 @@ func TestGenerateServiceUUID(t *testing.T) {
 		uuid1 := generateServiceUUID()
 		uuid2 := generateServiceUUID()
 
-		// Should be the same UUID (loaded from same file)
+		// Should be the same UUID (file persistence still active)
 		assert.Equal(t, uuid1, uuid2, "UUID should be consistent across calls")
-	})
-
-	t.Run("respects REDFISH_UUID environment variable", func(t *testing.T) {
-		testUUID := "12345678-1234-1234-1234-123456789abc"
-		t.Setenv("REDFISH_UUID", testUUID)
-
-		generatedUUID := generateServiceUUID()
-
-		assert.Equal(t, testUUID, generatedUUID, "should use UUID from environment variable")
-	})
-
-	t.Run("ignores invalid REDFISH_UUID environment variable", func(t *testing.T) {
-		t.Setenv("REDFISH_UUID", "not-a-valid-uuid")
-
-		generatedUUID := generateServiceUUID()
-
-		// Should fallback to file-based UUID, not use the invalid env var
-		_, err := uuid.Parse(generatedUUID)
-		assert.NoError(t, err, "should generate valid UUID despite invalid env var")
-		assert.NotEqual(t, "not-a-valid-uuid", generatedUUID)
 	})
 }
 

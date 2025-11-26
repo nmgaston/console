@@ -524,6 +524,168 @@ paths:
 		assert.Len(t, services, 1)
 		assert.Equal(t, "Systems", services[0].Name)
 	})
+
+	t.Run("extracts both collection and member paths", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems:
+    get:
+      summary: Get Systems collection
+  /redfish/v1/Systems/{ComputerSystemId}:
+    get:
+      summary: Get specific system
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("ignores deeply nested parametrized paths", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems/{ComputerSystemId}/Storage/{StorageId}:
+    get:
+      summary: Should be ignored
+  /redfish/v1/Systems:
+    get:
+      summary: Should be extracted
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("handles multiple HTTP methods on same path", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems:
+    get:
+      summary: Get Systems collection
+    post:
+      summary: Create system (hypothetical)
+  /redfish/v1/Systems/{ComputerSystemId}:
+    get:
+      summary: Get specific system
+    patch:
+      summary: Update system
+    delete:
+      summary: Delete system
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("handles empty paths object", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths: {}
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+	})
+
+	t.Run("handles missing paths key", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+info:
+  title: Test API
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+	})
+
+	t.Run("prioritizes collection path over member path", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems/{ComputerSystemId}:
+    get:
+      summary: Member path listed first
+  /redfish/v1/Systems:
+    get:
+      summary: Collection path listed second
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+		assert.Equal(t, "Singleton", services[0].Kind)
+	})
+
+	t.Run("handles paths with trailing slashes", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems/:
+    get:
+      summary: Collection with trailing slash
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		// Should still work or return default
+		assert.Len(t, services, 1)
+	})
+
+	t.Run("case sensitivity in paths", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/systems:
+    get:
+      summary: Lowercase systems
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		// Should return default since path doesn't match expected pattern
+		assert.Len(t, services, 1)
+	})
 }
 
 // TestGetDefaultServices tests the default services fallback

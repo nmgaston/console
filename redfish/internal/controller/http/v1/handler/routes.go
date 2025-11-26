@@ -27,6 +27,7 @@ type RedfishServer struct {
 	ComputerSystemUC *usecase.ComputerSystemUseCase
 	Config           *dmtconfig.Config
 	Logger           logger.Interface
+	Services         []ODataService // Cached OData services loaded from OpenAPI spec
 }
 
 // Ensure RedfishServer implements generated.ServerInterface

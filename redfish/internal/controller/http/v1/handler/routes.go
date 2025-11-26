@@ -48,6 +48,11 @@ func Int64Ptr(i int64) *int64 {
 	return &i
 }
 
+// BoolPtr creates a pointer to a bool value.
+func BoolPtr(b bool) *bool {
+	return &b
+}
+
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st

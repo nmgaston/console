@@ -6,11 +6,14 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/labstack/gommon/log"
 	"gopkg.in/yaml.v2"
 
@@ -43,6 +46,8 @@ var (
 	metadataXML    string
 	metadataLoaded bool
 	metadataMutex  sync.Mutex
+	cachedUUID     string
+	uuidMutex      sync.Mutex
 )
 
 // loadMetadata loads embedded metadata.xml with XML validation.
@@ -94,6 +99,92 @@ func validateMetadataXML(xmlData string) error {
 	return nil
 }
 
+const uuidFileName = "service_uuid"
+
+// getUUIDStoragePath returns the OS-agnostic path for storing the service UUID.
+// Works across Linux, Windows, and macOS using the user config directory.
+func getUUIDStoragePath(appName string) (string, error) {
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user config directory: %w", err)
+	}
+
+	dir := filepath.Join(base, appName)
+
+	const dirPermissions = 0o755
+
+	if err := os.MkdirAll(dir, dirPermissions); err != nil {
+		return "", fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	return filepath.Join(dir, uuidFileName), nil
+}
+
+// loadOrCreateUUID loads an existing UUID from file or creates a new one.
+// This ensures the UUID persists across service restarts.
+func loadOrCreateUUID(appName string) (string, error) {
+	file, err := getUUIDStoragePath(appName)
+	if err != nil {
+		return "", err
+	}
+
+	// Try to read existing UUID
+	if data, err := os.ReadFile(file); err == nil {
+		storedUUID := string(data)
+		// Validate it's a proper UUID
+		if _, err := uuid.Parse(storedUUID); err == nil {
+			return storedUUID, nil
+		}
+
+		log.Warnf("Invalid UUID in storage file, generating new one")
+	}
+
+	// Create new UUID
+	newUUID := uuid.New().String()
+
+	const filePermissions = 0o600
+
+	// Save to file
+	if err := os.WriteFile(file, []byte(newUUID), filePermissions); err != nil {
+		log.Warnf("Failed to save UUID to file: %v", err)
+		// Continue with the generated UUID even if save fails
+	}
+
+	return newUUID, nil
+}
+
+// generateServiceUUID generates or retrieves the service instance UUID.
+// Per Redfish specification, this UUID should be consistent across service restarts.
+// Priority order:
+// 1. Cached UUID in memory (for process lifetime)
+// 2. Persisted UUID from config file
+// 3. Newly generated UUID (saved to config file for future use)
+func generateServiceUUID() string {
+	uuidMutex.Lock()
+	defer uuidMutex.Unlock()
+
+	// Return cached UUID if available
+	if cachedUUID != "" {
+		return cachedUUID
+	}
+
+	// Load or create persistent UUID
+	serviceUUID, err := loadOrCreateUUID("dmt-redfish-service")
+	if err != nil {
+		log.Warnf("Failed to load/create persistent UUID: %v, generating temporary UUID", err)
+		// Fallback to temporary UUID for this session (but cache it)
+		cachedUUID = uuid.New().String()
+
+		return cachedUUID
+	}
+
+	// Cache the UUID for this process lifetime
+	cachedUUID = serviceUUID
+
+	return serviceUUID
+}
+
+// GetRedfishV1 returns the service root
 // ExtractServicesFromOpenAPIData parses the embedded OpenAPI spec data and extracts all top-level Redfish services
 // Automatically discovers services from /redfish/v1/* paths in the spec
 func ExtractServicesFromOpenAPIData(data []byte) ([]ODataService, error) {
@@ -171,7 +262,12 @@ func GetDefaultServices() []ODataService {
 
 // Path: GET /redfish/v1
 // Spec: Redfish ServiceRoot.v1_19_0
+// This is the entry point for the Redfish API, providing links to all available resources.
+// Per Redfish specification, this endpoint must be accessible without authentication.
 func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
+	// Set Redfish-compliant headers
+	SetRedfishHeaders(c)
+
 	serviceRoot := generated.ServiceRootServiceRoot{
 		OdataContext:   StringPtr(odataContextServiceRoot),
 		OdataId:        StringPtr(odataIDServiceRoot),
@@ -179,10 +275,22 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 		Id:             serviceRootID,
 		Name:           serviceRootName,
 		RedfishVersion: StringPtr(redfishVersion),
+		UUID:           StringPtr(generateServiceUUID()),
+		Product:        StringPtr("Device Management Toolkit - Redfish Service"),
+		Vendor:         StringPtr("Device Management Toolkit"),
+		Links: generated.ServiceRootLinks{
+			Sessions: generated.OdataV4IdRef{
+				OdataId: StringPtr("/redfish/v1/SessionService/Sessions"),
+			},
+		},
 		Systems: &generated.OdataV4IdRef{
 			OdataId: StringPtr("/redfish/v1/Systems"),
 		},
+		Registries: &generated.OdataV4IdRef{
+			OdataId: StringPtr("/redfish/v1/Registries"),
+		},
 	}
+
 	c.JSON(http.StatusOK, serviceRoot)
 }
 

@@ -474,6 +474,12 @@ type ResourceStatus_State struct {
 	union json.RawMessage
 }
 
+// ServiceRootLinks The links to other resources that are related to this resource.
+type ServiceRootLinks struct {
+	// Sessions A reference to a resource.
+	Sessions OdataV4IdRef `json:"Sessions"`
+}
+
 // ServiceRootServiceRoot The `ServiceRoot` schema describes the root of the Redfish service, located at the '/redfish/v1' URI.  All other resources accessible through the Redfish interface on this device are linked directly or indirectly from the service root.
 type ServiceRootServiceRoot struct {
 	// OdataContext The OData description of a payload.
@@ -483,29 +489,35 @@ type ServiceRootServiceRoot struct {
 	OdataId *OdataV4Id `json:"@odata.id,omitempty"`
 
 	// OdataType The type of a resource.
-	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
-
-	// Chassis A reference to a resource.
-	Chassis     *OdataV4IdRef                       `json:"Chassis,omitempty"`
+	OdataType   *OdataV4Type                        `json:"@odata.type,omitempty"`
 	Description *ServiceRootServiceRoot_Description `json:"Description,omitempty"`
 
 	// Id The unique identifier for this resource within the collection of similar resources.
 	Id ResourceId `json:"Id"`
 
-	// Managers A reference to a resource.
-	Managers *OdataV4IdRef `json:"Managers,omitempty"`
+	// Links The links to other resources that are related to this resource.
+	Links ServiceRootLinks `json:"Links"`
 
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`
 
+	// Product The product associated with this Redfish service.
+	Product *string `json:"Product"`
+
 	// RedfishVersion The version of the Redfish service.
 	RedfishVersion *string `json:"RedfishVersion,omitempty"`
+
+	// Registries A reference to a resource.
+	Registries *OdataV4IdRef `json:"Registries,omitempty"`
 
 	// Systems A reference to a resource.
 	Systems *OdataV4IdRef `json:"Systems,omitempty"`
 
 	// UUID Unique identifier for a service instance.  When SSDP is used, this value contains the same UUID returned in an HTTP `200 OK` response from an SSDP `M-SEARCH` request during discovery.
 	UUID *string `json:"UUID"`
+
+	// Vendor The vendor or manufacturer associated with this Redfish service.
+	Vendor *string `json:"Vendor"`
 }
 
 // ServiceRootServiceRootDescription1 defines model for .

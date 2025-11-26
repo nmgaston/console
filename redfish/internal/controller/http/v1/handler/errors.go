@@ -185,6 +185,7 @@ func mapSeverityToResourceHealth(severity string) string {
 func SetRedfishHeaders(c *gin.Context) {
 	c.Header(headerContentType, contentTypeJSON)
 	c.Header(headerODataVersion, odataVersion)
+	c.Header("Cache-Control", "no-cache")
 }
 
 // createErrorResponse creates a Redfish error response using registry lookup.

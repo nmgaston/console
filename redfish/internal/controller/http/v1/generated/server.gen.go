@@ -32,6 +32,9 @@ type ServerInterface interface {
 
 	// (POST /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset)
 	PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, computerSystemId string)
+
+	// (GET /redfish/v1/odata)
+	GetRedfishV1Odata(c *gin.Context)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -136,6 +139,19 @@ func (siw *ServerInterfaceWrapper) PostRedfishV1SystemsComputerSystemIdActionsCo
 	siw.Handler.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c, computerSystemId)
 }
 
+// GetRedfishV1Odata operation middleware
+func (siw *ServerInterfaceWrapper) GetRedfishV1Odata(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRedfishV1Odata(c)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -168,6 +184,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/redfish/v1/Systems", wrapper.GetRedfishV1Systems)
 	router.GET(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId", wrapper.GetRedfishV1SystemsComputerSystemId)
 	router.POST(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId/Actions/ComputerSystem.Reset", wrapper.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset)
+	router.GET(options.BaseURL+"/redfish/v1/odata", wrapper.GetRedfishV1Odata)
 }
 
 type GetRedfishV1RequestObject struct {
@@ -323,6 +340,49 @@ func (response PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetdef
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type GetRedfishV1OdataRequestObject struct {
+}
+
+type GetRedfishV1OdataResponseObject interface {
+	VisitGetRedfishV1OdataResponse(w http.ResponseWriter) error
+}
+
+type GetRedfishV1Odata200JSONResponse struct {
+	// OdataContext The OData description of a payload.
+	OdataContext *OdataV4Context `json:"@odata.context,omitempty"`
+
+	// Value The list of services provided by the Redfish service.
+	Value []struct {
+		// Kind Type of resource.  Value is `Singleton` for all cases defined by Redfish.
+		Kind *string `json:"kind,omitempty"`
+
+		// Name User-friendly resource name of the resource.
+		Name *string `json:"name,omitempty"`
+
+		// Url Relative URL for the top-level resource.
+		Url *string `json:"url,omitempty"`
+	} `json:"value"`
+}
+
+func (response GetRedfishV1Odata200JSONResponse) VisitGetRedfishV1OdataResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetRedfishV1OdatadefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response GetRedfishV1OdatadefaultJSONResponse) VisitGetRedfishV1OdataResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
@@ -340,6 +400,9 @@ type StrictServerInterface interface {
 
 	// (POST /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset)
 	PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(ctx context.Context, request PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetRequestObject) (PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponseObject, error)
+
+	// (GET /redfish/v1/odata)
+	GetRedfishV1Odata(ctx context.Context, request GetRedfishV1OdataRequestObject) (GetRedfishV1OdataResponseObject, error)
 }
 
 type StrictHandlerFunc = strictgin.StrictGinHandlerFunc
@@ -484,6 +547,31 @@ func (sh *strictHandler) PostRedfishV1SystemsComputerSystemIdActionsComputerSyst
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponseObject); ok {
 		if err := validResponse.VisitPostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRedfishV1Odata operation middleware
+func (sh *strictHandler) GetRedfishV1Odata(ctx *gin.Context) {
+	var request GetRedfishV1OdataRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRedfishV1Odata(ctx, request.(GetRedfishV1OdataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRedfishV1Odata")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetRedfishV1OdataResponseObject); ok {
+		if err := validResponse.VisitGetRedfishV1OdataResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

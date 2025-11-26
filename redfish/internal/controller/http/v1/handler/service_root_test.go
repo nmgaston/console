@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
@@ -158,7 +159,9 @@ func TestGetRedfishV1MetadataConcurrentRequests(t *testing.T) {
 // TestLoadMetadata tests the metadata loading behavior through the public endpoint.
 // Since loadMetadata is internal, we test it indirectly through GetRedfishV1Metadata.
 func TestLoadMetadata(t *testing.T) {
+	t.Parallel()
 	t.Run("metadata endpoint loads and caches metadata", func(t *testing.T) {
+		t.Parallel()
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
@@ -188,6 +191,7 @@ func TestLoadMetadata(t *testing.T) {
 	})
 
 	t.Run("metadata endpoint sets correct headers", func(t *testing.T) {
+		t.Parallel()
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
@@ -210,7 +214,9 @@ func TestLoadMetadata(t *testing.T) {
 // Direct validation testing is not possible since validateMetadataXML is private.
 // Instead, we verify that the endpoint returns valid XML responses.
 func TestValidateMetadataXML(t *testing.T) {
+	t.Parallel()
 	t.Run("endpoint returns valid XML response", func(t *testing.T) {
+		t.Parallel()
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
@@ -241,8 +247,8 @@ func TestValidateMetadataXML(t *testing.T) {
 // TestLoadMetadataIntegration tests the metadata endpoint integration.
 func TestLoadMetadataIntegration(t *testing.T) {
 	t.Parallel()
-
 	t.Run("metadata endpoint returns consistent results", func(t *testing.T) {
+		t.Parallel()
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
@@ -269,6 +275,7 @@ func TestLoadMetadataIntegration(t *testing.T) {
 	})
 
 	t.Run("metadata endpoint response has proper structure", func(t *testing.T) {
+		t.Parallel()
 		resetMetadataState()
 
 		gin.SetMode(gin.TestMode)
@@ -298,4 +305,397 @@ func TestLoadMetadataIntegration(t *testing.T) {
 			assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
 		}
 	})
+}
+
+// TestGetRedfishV1Odata tests the OData endpoint basic functionality
+func TestGetRedfishV1Odata(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "4.0", w.Header().Get("OData-Version"))
+	assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
+	assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
+}
+
+// TestGetRedfishV1OdataResponseStructure validates OData response format
+func TestGetRedfishV1OdataResponseStructure(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	var response map[string]interface{}
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	// Verify context
+	assert.Equal(t, "/redfish/v1/$metadata#ServiceRoot.ServiceRoot", response["@odata.context"])
+
+	// Verify value array exists
+	valueArray, ok := response["value"].([]interface{})
+	assert.True(t, ok, "value should be an array")
+	assert.Greater(t, len(valueArray), 0, "value array should not be empty")
+
+	// Verify service structure
+	for _, item := range valueArray {
+		service, ok := item.(map[string]interface{})
+		assert.True(t, ok)
+		assert.NotNil(t, service["name"])
+		assert.NotNil(t, service["kind"])
+		assert.NotNil(t, service["url"])
+		assert.Equal(t, "Singleton", service["kind"])
+	}
+}
+
+// TestGetRedfishV1OdataRequiredServices validates Systems service is present
+func TestGetRedfishV1OdataRequiredServices(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	var response map[string]interface{}
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	valueArray, ok := response["value"].([]interface{})
+	require.True(t, ok, "value should be an array")
+
+	// Find Systems service
+	var foundSystems bool
+
+	var systemsURL string
+
+	for _, item := range valueArray {
+		service, ok := item.(map[string]interface{})
+		require.True(t, ok, "item should be a map")
+
+		name, ok := service["name"].(string)
+		require.True(t, ok, "name should be a string")
+
+		if name == "Systems" {
+			foundSystems = true
+			systemsURL, _ = service["url"].(string)
+
+			break
+		}
+	}
+
+	assert.True(t, foundSystems, "Systems service should be present")
+	assert.Equal(t, "/redfish/v1/Systems", systemsURL)
+}
+
+// TestGetRedfishV1OdataNoAuthentication validates endpoint is public
+func TestGetRedfishV1OdataNoAuthentication(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// TestGetRedfishV1OdataConcurrentRequests validates thread safety
+func TestGetRedfishV1OdataConcurrentRequests(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	const numRequests = 10
+
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		go func() {
+			req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			results <- w.Code
+		}()
+	}
+
+	for i := 0; i < numRequests; i++ {
+		code := <-results
+		assert.Equal(t, http.StatusOK, code)
+	}
+}
+
+// BenchmarkGetRedfishV1Odata measures OData endpoint performance
+func BenchmarkGetRedfishV1Odata(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	server := &RedfishServer{}
+	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+	}
+}
+
+// TestExtractServicesFromOpenAPIData tests the service extraction from OpenAPI spec
+func TestExtractServicesFromOpenAPIData(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid OpenAPI spec with Systems service", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems:
+    get:
+      summary: Get Systems collection
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "Singleton", services[0].Kind)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("returns default when no valid services found", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems/{ComputerSystemId}:
+    get:
+      summary: Parametrized path (should be ignored)
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("handles invalid YAML gracefully", func(t *testing.T) {
+		t.Parallel()
+
+		invalidYAML := []byte(`invalid yaml content`)
+
+		services, err := ExtractServicesFromOpenAPIData(invalidYAML)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+	})
+
+	t.Run("extracts both collection and member paths", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems:
+    get:
+      summary: Get Systems collection
+  /redfish/v1/Systems/{ComputerSystemId}:
+    get:
+      summary: Get specific system
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("ignores deeply nested parametrized paths", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems/{ComputerSystemId}/Storage/{StorageId}:
+    get:
+      summary: Should be ignored
+  /redfish/v1/Systems:
+    get:
+      summary: Should be extracted
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("handles multiple HTTP methods on same path", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems:
+    get:
+      summary: Get Systems collection
+    post:
+      summary: Create system (hypothetical)
+  /redfish/v1/Systems/{ComputerSystemId}:
+    get:
+      summary: Get specific system
+    patch:
+      summary: Update system
+    delete:
+      summary: Delete system
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+	})
+
+	t.Run("handles empty paths object", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths: {}
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+	})
+
+	t.Run("handles missing paths key", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+info:
+  title: Test API
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+	})
+
+	t.Run("prioritizes collection path over member path", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems/{ComputerSystemId}:
+    get:
+      summary: Member path listed first
+  /redfish/v1/Systems:
+    get:
+      summary: Collection path listed second
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		assert.Len(t, services, 1)
+		assert.Equal(t, "Systems", services[0].Name)
+		assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
+		assert.Equal(t, "Singleton", services[0].Kind)
+	})
+
+	t.Run("handles paths with trailing slashes", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/Systems/:
+    get:
+      summary: Collection with trailing slash
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		// Should still work or return default
+		assert.Len(t, services, 1)
+	})
+
+	t.Run("case sensitivity in paths", func(t *testing.T) {
+		t.Parallel()
+
+		yamlData := []byte(`
+openapi: 3.0.0
+paths:
+  /redfish/v1/systems:
+    get:
+      summary: Lowercase systems
+`)
+
+		services, err := ExtractServicesFromOpenAPIData(yamlData)
+
+		require.NoError(t, err)
+		// Should return default since path doesn't match expected pattern
+		assert.Len(t, services, 1)
+	})
+}
+
+// TestGetDefaultServices tests the default services fallback
+func TestGetDefaultServices(t *testing.T) {
+	t.Parallel()
+
+	services := GetDefaultServices()
+
+	assert.Len(t, services, 1)
+	assert.Equal(t, "Systems", services[0].Name)
+	assert.Equal(t, "Singleton", services[0].Kind)
+	assert.Equal(t, "/redfish/v1/Systems", services[0].URL)
 }

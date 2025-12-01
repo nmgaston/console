@@ -77,8 +77,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                ""
+              ]
             }
           },
           "response": []
@@ -141,8 +147,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/$metadata",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "$metadata"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "$metadata"
+              ]
             }
           },
           "response": []
@@ -175,8 +187,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/redfish/v1/$metadata",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "$metadata"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "$metadata"
+              ]
             }
           },
           "response": []
@@ -211,8 +229,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/redfish/v1/$metadata",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "$metadata"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "$metadata"
+              ]
             }
           },
           "response": []
@@ -249,8 +273,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/redfish/v1/$metadata",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "$metadata"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "$metadata"
+              ]
             }
           },
           "response": []
@@ -313,8 +343,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems"
+              ]
             }
           },
           "response": []
@@ -356,8 +392,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
             }
           },
           "response": []
@@ -403,8 +446,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/invalid-system-id-12345",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "invalid-system-id-12345"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "invalid-system-id-12345"
+              ]
             }
           },
           "response": []
@@ -451,8 +501,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
             }
           },
           "response": []
@@ -500,8 +557,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -544,8 +610,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -557,6 +632,9 @@
               "listen": "test",
               "script": {
                 "exec": [
+                  "// Critical test: Validates that ForceRestart is preserved as a specific",
+                  "// reset type and not converted to generic PowerStateOff before reaching WSMAN",
+                  "",
                   "pm.test('Status code is 202 Accepted or 409 Conflict', function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([202, 409]);",
                   "});",
@@ -564,7 +642,37 @@
                   "pm.test('OData-Version header is 4.0', function () {",
                   "    var odataVersion = pm.response.headers.get('OData-Version');",
                   "    pm.expect(odataVersion).to.equal('4.0');",
-                  "});"
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 202) {",
+                  "    pm.test('Response is valid Redfish Task', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('@odata.type');",
+                  "        pm.expect(jsonData['@odata.type']).to.include('Task');",
+                  "    });",
+                  "",
+                  "    pm.test('Task completed successfully', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('TaskState');",
+                  "        pm.expect(jsonData.TaskState).to.equal('Completed');",
+                  "    });",
+                  "",
+                  "    pm.test('Task status is OK', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('TaskStatus');",
+                  "        pm.expect(jsonData.TaskStatus).to.equal('OK');",
+                  "    });",
+                  "",
+                  "    pm.test('Location header points to task resource', function () {",
+                  "        var location = pm.response.headers.get('Location');",
+                  "        pm.expect(location).to.include('/redfish/v1/TaskService/Tasks/');",
+                  "    });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -588,8 +696,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -632,8 +749,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -645,6 +771,9 @@
               "listen": "test",
               "script": {
                 "exec": [
+                  "// Critical test: Validates that PowerCycle is preserved as a specific",
+                  "// reset type and not converted to generic PowerStateOff before reaching WSMAN",
+                  "",
                   "pm.test('Status code is 202 Accepted or 409 Conflict', function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([202, 409]);",
                   "});",
@@ -652,7 +781,37 @@
                   "pm.test('OData-Version header is 4.0', function () {",
                   "    var odataVersion = pm.response.headers.get('OData-Version');",
                   "    pm.expect(odataVersion).to.equal('4.0');",
-                  "});"
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 202) {",
+                  "    pm.test('Response is valid Redfish Task', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('@odata.type');",
+                  "        pm.expect(jsonData['@odata.type']).to.include('Task');",
+                  "    });",
+                  "",
+                  "    pm.test('Task completed successfully', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('TaskState');",
+                  "        pm.expect(jsonData.TaskState).to.equal('Completed');",
+                  "    });",
+                  "",
+                  "    pm.test('Task status is OK', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('TaskStatus');",
+                  "        pm.expect(jsonData.TaskStatus).to.equal('OK');",
+                  "    });",
+                  "",
+                  "    pm.test('Location header points to task resource', function () {",
+                  "        var location = pm.response.headers.get('Location');",
+                  "        pm.expect(location).to.include('/redfish/v1/TaskService/Tasks/');",
+                  "    });",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -676,8 +835,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -731,8 +899,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -786,8 +963,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -841,8 +1027,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/invalid-system-id/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "invalid-system-id", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "invalid-system-id",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -885,8 +1080,17 @@
             },
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}/Actions/ComputerSystem.Reset",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems", "{{system_id}}", "Actions", "ComputerSystem.Reset"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}",
+                "Actions",
+                "ComputerSystem.Reset"
+              ]
             }
           },
           "response": []
@@ -941,8 +1145,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems"
+              ]
             }
           },
           "response": []
@@ -987,8 +1197,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/Systems",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "Systems"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems"
+              ]
             }
           },
           "response": []
@@ -1031,8 +1247,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                ""
+              ]
             }
           },
           "response": []
@@ -1062,8 +1284,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/redfish/v1/InvalidEndpoint",
-              "host": ["{{base_url}}"],
-              "path": ["redfish", "v1", "InvalidEndpoint"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "InvalidEndpoint"
+              ]
             }
           },
           "response": []

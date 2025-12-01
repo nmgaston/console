@@ -11,5 +11,5 @@ import (
 type ComputerSystemRepository interface {
 	GetAll(ctx context.Context) ([]string, error)
 	GetByID(ctx context.Context, systemID string) (*redfishv1.ComputerSystem, error)
-	UpdatePowerState(ctx context.Context, systemID string, state redfishv1.PowerState) error
+	UpdatePowerState(ctx context.Context, systemID string, resetType redfishv1.PowerState) error
 }

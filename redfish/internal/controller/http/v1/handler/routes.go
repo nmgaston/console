@@ -2,14 +2,6 @@
 package v1
 
 import (
-	"errors"
-	"fmt"
-	"net/http"
-	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/labstack/gommon/log"
-
 	dmtconfig "github.com/device-management-toolkit/console/config"
 	"github.com/device-management-toolkit/console/pkg/logger"
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
@@ -64,98 +56,4 @@ func BoolPtr(b bool) *bool {
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
-}
-
-// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset handles the reset action for a computer system
-//
-//nolint:revive // Method name is generated from OpenAPI spec and cannot be changed
-func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, computerSystemID string) {
-	var req generated.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		MalformedJSONError(c)
-
-		return
-	}
-
-	if req.ResetType == nil || *req.ResetType == "" {
-		PropertyMissingError(c, "ResetType")
-
-		return
-	}
-
-	log.Infof("Received reset request for ComputerSystem %s with ResetType %s", computerSystemID, *req.ResetType)
-
-	//nolint:godox // TODO comment is intentional - provides implementation guidance
-	// TODO: Add authorization check for 403 Forbidden
-	// Example implementation (requires JWT middleware to store user claims in context):
-	//
-	// userRole, exists := c.Get("user_role")
-	// if !exists || userRole == "read-only" {
-	//     ForbiddenError(c)
-	//     return
-	// }
-	//
-	// More sophisticated example with permission-based checks:
-	// permissions, exists := c.Get("user_permissions")
-	// if !exists {
-	//     ForbiddenError(c)
-	//     return
-	// }
-	// permList := permissions.([]string)
-	// if !contains(permList, "system:reset") {
-	//     ForbiddenError(c)
-	//     return
-	// }
-	err := s.ComputerSystemUC.SetPowerState(c.Request.Context(), computerSystemID, *req.ResetType)
-	if err != nil {
-		switch {
-		case errors.Is(err, usecase.ErrSystemNotFound):
-			NotFoundError(c, "System", computerSystemID)
-		case errors.Is(err, usecase.ErrInvalidResetType):
-			BadRequestError(c, fmt.Sprintf("Invalid reset type: %s", string(*req.ResetType)))
-		case errors.Is(err, usecase.ErrPowerStateConflict):
-			PowerStateConflictError(c, string(*req.ResetType))
-		case errors.Is(err, usecase.ErrUnsupportedPowerState):
-			BadRequestError(c, fmt.Sprintf("Unsupported power state: %s", string(*req.ResetType)))
-		default:
-			InternalServerError(c, err)
-		}
-
-		return
-	}
-
-	// Generate dynamic Task response
-	taskID := fmt.Sprintf("%d", time.Now().UnixNano())
-	now := time.Now().UTC().Format(time.RFC3339)
-
-	// Get success message from registry
-	successMsg, err := registryMgr.LookupMessage("Base", "Success")
-	if err != nil {
-		// Fallback if registry lookup fails
-		InternalServerError(c, err)
-
-		return
-	}
-
-	task := map[string]interface{}{
-		"@odata.context": odataContextTask,
-		"@odata.id":      taskServiceTasks + taskID,
-		"@odata.type":    odataTypeTask,
-		"EndTime":        now,
-		"Id":             taskID,
-		"Messages": []map[string]interface{}{
-			{
-				"Message":   successMsg.Message,
-				"MessageId": msgIDBaseSuccess,
-				"Severity":  string(generated.OK),
-			},
-		},
-		"Name":       taskName,
-		"StartTime":  now,
-		"TaskState":  taskStateCompleted,
-		"TaskStatus": string(generated.OK),
-	}
-	c.Header(headerLocation, taskServiceTasks+taskID)
-	c.JSON(http.StatusAccepted, task)
 }

@@ -109,6 +109,132 @@ paths:
           description: Error condition
       security:
       - BasicAuth: []
+  /redfish/v1/Systems/{ComputerSystemId}/Oem/Intel/PowerState:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Intel OEM power state information
+                properties:
+                  '@odata.type':
+                    description: The type of a resource.
+                    readOnly: true
+                    type: string
+                  '@odata.id':
+                    description: The unique identifier for a resource.
+                    readOnly: true
+                    type: string
+                  Id:
+                    description: The identifier for this resource.
+                    readOnly: true
+                    type: string
+                  Name:
+                    description: The name of the resource.
+                    readOnly: true
+                    type: string
+                  Description:
+                    description: The description of this resource.
+                    readOnly: true
+                    type: string
+                  PowerState:
+                    description: The current power state of the system.
+                    readOnly: true
+                    type: string
+                  RequestedPowerState:
+                    description: The requested power state of the system.
+                    readOnly: true
+                    type: string
+                required:
+                - '@odata.id'
+                - '@odata.type'
+                - Id
+                - Name
+                type: object
+          description: Intel OEM power state information
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
+  /redfish/v1/Systems/{ComputerSystemId}/Oem/Intel/PowerCapabilities:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Intel OEM power capabilities information
+                properties:
+                  '@odata.type':
+                    description: The type of a resource.
+                    readOnly: true
+                    type: string
+                  '@odata.id':
+                    description: The unique identifier for a resource.
+                    readOnly: true
+                    type: string
+                  Id:
+                    description: The identifier for this resource.
+                    readOnly: true
+                    type: string
+                  Name:
+                    description: The name of the resource.
+                    readOnly: true
+                    type: string
+                  Description:
+                    description: The description of this resource.
+                    readOnly: true
+                    type: string
+                  PowerLimitingEnabled:
+                    description: Whether power limiting is enabled.
+                    readOnly: true
+                    type: boolean
+                  MaxPowerConsumptionWatts:
+                    description: Maximum power consumption in watts.
+                    readOnly: true
+                    type: number
+                  MinPowerConsumptionWatts:
+                    description: Minimum power consumption in watts.
+                    readOnly: true
+                    type: number
+                  PowerCapLimitWatts:
+                    description: Power cap limit in watts.
+                    readOnly: true
+                    type: number
+                required:
+                - '@odata.id'
+                - '@odata.type'
+                - Id
+                - Name
+                type: object
+          description: Intel OEM power capabilities information
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
   /redfish/v1/odata:
     get:
       responses:
@@ -494,6 +620,43 @@ components:
           type: string
           x-longDescription: This property shall contain the serial number for the
             system.
+        UUID:
+          description: The UUID for this system.
+          oneOf:
+          - $ref: '#/components/schemas/Resource_UUID'
+          - enum:
+            - null
+          readOnly: true
+          x-longDescription: This property shall contain the universally unique identifier
+            number for this system.  RFC4122 describes methods to create this value.  The
+            value should be considered to be opaque.  Client software should only
+            treat the overall value as a UUID and should not interpret any subfields
+            within the UUID.  If the system supports SMBIOS, the property value should
+            follow the SMBIOS 2.6 and later recommendation for converting the SMBIOS
+            16-byte UUID structure into the Redfish canonical `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+            string format, so that the property value matches the byte order presented
+            by current OS APIs, such as WMI and dmidecode.  For additional property
+            requirements, see the corresponding definition in the Redfish Data Model
+            Specification.
+        HostName:
+          description: The DNS host name, without any domain information.
+          nullable: true
+          readOnly: false
+          type: string
+          x-longDescription: This property shall contain the host name for this system,
+            as reported by the operating system or hypervisor.  A service running
+            in the host operating system typically reports this value to the manager.  Modifying
+            this property may modify the `HostName` in one or more `EthernetInterface`
+            resources contained in this system.
+        BiosVersion:
+          description: The version of the system BIOS or primary system firmware.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the version string of the
+            currently installed and running BIOS for x86 systems.  For other systems,
+            the property may contain a version string that represents the primary
+            system firmware.
         Status:
           $ref: '#/components/schemas/Resource_Status'
           description: The status and health of the resource and its subordinate or
@@ -506,6 +669,12 @@ components:
           readOnly: true
           x-longDescription: An enumeration that indicates the kind of system that
             this resource represents.
+        Oem:
+          $ref: '#/components/schemas/Resource_Oem'
+          description: The OEM extension property.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties that this object contains shall conform to the Redfish
+            Specification-described requirements.
       required:
       - '@odata.id'
       - '@odata.type'
@@ -523,12 +692,14 @@ components:
       properties:
         ResetType:
           $ref: '#/components/schemas/Resource_ResetType'
-          description: The type of reset.
-          x-longDescription: This parameter shall contain the type of reset.  The
-            service can accept a request without the parameter and perform an implementation-specific
-            default reset.  Services should include the `@Redfish.AllowableValues`
-            annotation for this parameter to ensure compatibility with clients, even
-            when `ActionInfo` has been implemented.
+          description: The type of reset. GracefulShutdown and GracefulRestart map
+            to IPS_PowerManagementService.RequestOSPowerSavingStateChange.
+          x-longDescription: This parameter shall contain the type of reset. For Intel
+            AMT systems, GracefulShutdown and GracefulRestart values map to IPS_PowerManagementService.RequestOSPowerSavingStateChange
+            method. The service can accept a request without the parameter and perform
+            an implementation-specific default reset. Services should include the
+            `@Redfish.AllowableValues` annotation for this parameter to ensure compatibility
+            with clients, even when `ActionInfo` has been implemented.
       type: object
       x-longDescription: This action shall reset the system represented by the resource.  For
         systems that implement ACPI Power Button functionality, the `PushPowerButton`
@@ -1539,13 +1710,6 @@ components:
             that cannot be conveyed with other properties defined for the Placement
             object.
           x-versionAdded: v1_7_0
-        FacilityName:
-          description: The name of the facility.
-          nullable: true
-          readOnly: false
-          type: string
-          x-longDescription: This property shall contain the name of the facility.
-          x-versionAdded: v1_23_0
         Rack:
           description: The name of a rack location within a row.
           nullable: true
@@ -1560,9 +1724,8 @@ components:
           nullable: true
           readOnly: false
           type: integer
-          x-longDescription: The vertical location of the item in the rack, at the
-            lowest point of the unit.  Rack offset units shall be measured from bottom
-            to top, starting with 0.
+          x-longDescription: The vertical location of the item in the rack.  Rack
+            offset units shall be measured from bottom to top, starting with 0.
           x-versionAdded: v1_3_0
         RackOffsetUnits:
           description: The type of rack units in use.
@@ -1574,14 +1737,6 @@ components:
           x-longDescription: This property shall contain a RackUnit enumeration literal
             that indicates the type of rack units in use.
           x-versionAdded: v1_3_0
-        Room:
-          description: The name or number of the room.
-          nullable: true
-          readOnly: false
-          type: string
-          x-longDescription: This property shall contain the name or number of the
-            room.
-          x-versionAdded: v1_23_0
         Row:
           description: The name of the row.
           nullable: true

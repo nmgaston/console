@@ -3,6 +3,7 @@ package v1
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 )
 
 const (
+	powerStateUnknown = "Unknown"
 	// Systems-specific OData metadata constants
 	systemsOdataContextCollection = "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection"
 	systemsOdataIDCollection      = "/redfish/v1/Systems"
@@ -125,4 +127,90 @@ func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, comp
 	}
 
 	c.JSON(http.StatusOK, system)
+}
+
+// GetRedfishV1SystemsComputerSystemIdOemIntelPowerState handles GET requests for Intel OEM power state
+//
+//nolint:revive // Method name must match generated OpenAPI interface
+func (s *RedfishServer) GetRedfishV1SystemsComputerSystemIdOemIntelPowerState(c *gin.Context, computerSystemID string) {
+	ctx := c.Request.Context()
+
+	if computerSystemID == "" {
+		BadRequestError(c, "Computer system ID is required")
+
+		return
+	}
+
+	// Get the system to verify it exists
+	system, err := s.ComputerSystemUC.GetComputerSystem(ctx, computerSystemID)
+	if err != nil {
+		s.handleGetSystemError(c, err, computerSystemID)
+
+		return
+	}
+
+	// Create Intel OEM PowerState response
+	powerStateResponse := map[string]interface{}{
+		"@odata.type":         "#Intel.v1_0_0.PowerState",
+		"@odata.id":           fmt.Sprintf("/redfish/v1/Systems/%s/Oem/Intel/PowerState", computerSystemID),
+		"Id":                  "PowerState",
+		"Name":                "Intel Power State",
+		"Description":         "Intel-specific Power State Information",
+		"PowerState":          getPowerStateString(system.PowerState),
+		"RequestedPowerState": getPowerStateString(system.PowerState),
+	}
+
+	c.JSON(http.StatusOK, powerStateResponse)
+}
+
+// GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities handles GET requests for Intel OEM power capabilities
+//
+//nolint:revive // Method name must match generated OpenAPI interface
+func (s *RedfishServer) GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities(c *gin.Context, computerSystemID string) {
+	ctx := c.Request.Context()
+
+	if computerSystemID == "" {
+		BadRequestError(c, "Computer system ID is required")
+
+		return
+	}
+
+	// Get the system to verify it exists
+	_, err := s.ComputerSystemUC.GetComputerSystem(ctx, computerSystemID)
+	if err != nil {
+		s.handleGetSystemError(c, err, computerSystemID)
+
+		return
+	}
+
+	// Create Intel OEM PowerCapabilities response
+	powerCapabilitiesResponse := map[string]interface{}{
+		"@odata.type":              "#Intel.v1_0_0.PowerCapabilities",
+		"@odata.id":                fmt.Sprintf("/redfish/v1/Systems/%s/Oem/Intel/PowerCapabilities", computerSystemID),
+		"Id":                       "PowerCapabilities",
+		"Name":                     "Intel Power Capabilities",
+		"Description":              "Intel-specific Power Management Capabilities",
+		"PowerLimitingEnabled":     true,
+		"MaxPowerConsumptionWatts": 250,
+		"MinPowerConsumptionWatts": 15,
+		"PowerCapLimitWatts":       200,
+	}
+
+	c.JSON(http.StatusOK, powerCapabilitiesResponse)
+}
+
+// getPowerStateString converts power state union type to string for Intel OEM endpoints
+func getPowerStateString(powerState *generated.ComputerSystemComputerSystem_PowerState) string {
+	if powerState == nil {
+		return powerStateUnknown
+	}
+
+	// Try to extract the power state from the union type
+	// The union type contains a ResourcePowerState that can be converted to string
+	if resourcePowerState, err := powerState.AsResourcePowerState(); err == nil {
+		return string(resourcePowerState)
+	}
+
+	// Fallback for unknown power states
+	return powerStateUnknown
 }

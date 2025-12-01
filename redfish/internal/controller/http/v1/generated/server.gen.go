@@ -33,6 +33,12 @@ type ServerInterface interface {
 	// (POST /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset)
 	PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, computerSystemId string)
 
+	// (GET /redfish/v1/Systems/{ComputerSystemId}/Oem/Intel/PowerCapabilities)
+	GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities(c *gin.Context, computerSystemId string)
+
+	// (GET /redfish/v1/Systems/{ComputerSystemId}/Oem/Intel/PowerState)
+	GetRedfishV1SystemsComputerSystemIdOemIntelPowerState(c *gin.Context, computerSystemId string)
+
 	// (GET /redfish/v1/odata)
 	GetRedfishV1Odata(c *gin.Context)
 }
@@ -139,6 +145,58 @@ func (siw *ServerInterfaceWrapper) PostRedfishV1SystemsComputerSystemIdActionsCo
 	siw.Handler.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c, computerSystemId)
 }
 
+// GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities operation middleware
+func (siw *ServerInterfaceWrapper) GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "ComputerSystemId" -------------
+	var computerSystemId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ComputerSystemId", c.Param("ComputerSystemId"), &computerSystemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter ComputerSystemId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities(c, computerSystemId)
+}
+
+// GetRedfishV1SystemsComputerSystemIdOemIntelPowerState operation middleware
+func (siw *ServerInterfaceWrapper) GetRedfishV1SystemsComputerSystemIdOemIntelPowerState(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "ComputerSystemId" -------------
+	var computerSystemId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ComputerSystemId", c.Param("ComputerSystemId"), &computerSystemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter ComputerSystemId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRedfishV1SystemsComputerSystemIdOemIntelPowerState(c, computerSystemId)
+}
+
 // GetRedfishV1Odata operation middleware
 func (siw *ServerInterfaceWrapper) GetRedfishV1Odata(c *gin.Context) {
 
@@ -184,6 +242,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/redfish/v1/Systems", wrapper.GetRedfishV1Systems)
 	router.GET(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId", wrapper.GetRedfishV1SystemsComputerSystemId)
 	router.POST(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId/Actions/ComputerSystem.Reset", wrapper.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset)
+	router.GET(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId/Oem/Intel/PowerCapabilities", wrapper.GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities)
+	router.GET(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId/Oem/Intel/PowerState", wrapper.GetRedfishV1SystemsComputerSystemIdOemIntelPowerState)
 	router.GET(options.BaseURL+"/redfish/v1/odata", wrapper.GetRedfishV1Odata)
 }
 
@@ -340,6 +400,112 @@ func (response PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetdef
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesRequestObject struct {
+	ComputerSystemId string `json:"ComputerSystemId"`
+}
+
+type GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesResponseObject interface {
+	VisitGetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesResponse(w http.ResponseWriter) error
+}
+
+type GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities200JSONResponse struct {
+	// OdataId The unique identifier for a resource.
+	OdataId *string `json:"@odata.id,omitempty"`
+
+	// OdataType The type of a resource.
+	OdataType *string `json:"@odata.type,omitempty"`
+
+	// Description The description of this resource.
+	Description *string `json:"Description,omitempty"`
+
+	// Id The identifier for this resource.
+	Id *string `json:"Id,omitempty"`
+
+	// MaxPowerConsumptionWatts Maximum power consumption in watts.
+	MaxPowerConsumptionWatts *float32 `json:"MaxPowerConsumptionWatts,omitempty"`
+
+	// MinPowerConsumptionWatts Minimum power consumption in watts.
+	MinPowerConsumptionWatts *float32 `json:"MinPowerConsumptionWatts,omitempty"`
+
+	// Name The name of the resource.
+	Name *string `json:"Name,omitempty"`
+
+	// PowerCapLimitWatts Power cap limit in watts.
+	PowerCapLimitWatts *float32 `json:"PowerCapLimitWatts,omitempty"`
+
+	// PowerLimitingEnabled Whether power limiting is enabled.
+	PowerLimitingEnabled *bool `json:"PowerLimitingEnabled,omitempty"`
+}
+
+func (response GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities200JSONResponse) VisitGetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesdefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesdefaultJSONResponse) VisitGetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetRedfishV1SystemsComputerSystemIdOemIntelPowerStateRequestObject struct {
+	ComputerSystemId string `json:"ComputerSystemId"`
+}
+
+type GetRedfishV1SystemsComputerSystemIdOemIntelPowerStateResponseObject interface {
+	VisitGetRedfishV1SystemsComputerSystemIdOemIntelPowerStateResponse(w http.ResponseWriter) error
+}
+
+type GetRedfishV1SystemsComputerSystemIdOemIntelPowerState200JSONResponse struct {
+	// OdataId The unique identifier for a resource.
+	OdataId *string `json:"@odata.id,omitempty"`
+
+	// OdataType The type of a resource.
+	OdataType *string `json:"@odata.type,omitempty"`
+
+	// Description The description of this resource.
+	Description *string `json:"Description,omitempty"`
+
+	// Id The identifier for this resource.
+	Id *string `json:"Id,omitempty"`
+
+	// Name The name of the resource.
+	Name *string `json:"Name,omitempty"`
+
+	// PowerState The current power state of the system.
+	PowerState *string `json:"PowerState,omitempty"`
+
+	// RequestedPowerState The requested power state of the system.
+	RequestedPowerState *string `json:"RequestedPowerState,omitempty"`
+}
+
+func (response GetRedfishV1SystemsComputerSystemIdOemIntelPowerState200JSONResponse) VisitGetRedfishV1SystemsComputerSystemIdOemIntelPowerStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetRedfishV1SystemsComputerSystemIdOemIntelPowerStatedefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response GetRedfishV1SystemsComputerSystemIdOemIntelPowerStatedefaultJSONResponse) VisitGetRedfishV1SystemsComputerSystemIdOemIntelPowerStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 type GetRedfishV1OdataRequestObject struct {
 }
 
@@ -400,6 +566,12 @@ type StrictServerInterface interface {
 
 	// (POST /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset)
 	PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(ctx context.Context, request PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetRequestObject) (PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponseObject, error)
+
+	// (GET /redfish/v1/Systems/{ComputerSystemId}/Oem/Intel/PowerCapabilities)
+	GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities(ctx context.Context, request GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesRequestObject) (GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesResponseObject, error)
+
+	// (GET /redfish/v1/Systems/{ComputerSystemId}/Oem/Intel/PowerState)
+	GetRedfishV1SystemsComputerSystemIdOemIntelPowerState(ctx context.Context, request GetRedfishV1SystemsComputerSystemIdOemIntelPowerStateRequestObject) (GetRedfishV1SystemsComputerSystemIdOemIntelPowerStateResponseObject, error)
 
 	// (GET /redfish/v1/odata)
 	GetRedfishV1Odata(ctx context.Context, request GetRedfishV1OdataRequestObject) (GetRedfishV1OdataResponseObject, error)
@@ -547,6 +719,60 @@ func (sh *strictHandler) PostRedfishV1SystemsComputerSystemIdActionsComputerSyst
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponseObject); ok {
 		if err := validResponse.VisitPostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities operation middleware
+func (sh *strictHandler) GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities(ctx *gin.Context, computerSystemId string) {
+	var request GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesRequestObject
+
+	request.ComputerSystemId = computerSystemId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities(ctx, request.(GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilities")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesResponseObject); ok {
+		if err := validResponse.VisitGetRedfishV1SystemsComputerSystemIdOemIntelPowerCapabilitiesResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRedfishV1SystemsComputerSystemIdOemIntelPowerState operation middleware
+func (sh *strictHandler) GetRedfishV1SystemsComputerSystemIdOemIntelPowerState(ctx *gin.Context, computerSystemId string) {
+	var request GetRedfishV1SystemsComputerSystemIdOemIntelPowerStateRequestObject
+
+	request.ComputerSystemId = computerSystemId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRedfishV1SystemsComputerSystemIdOemIntelPowerState(ctx, request.(GetRedfishV1SystemsComputerSystemIdOemIntelPowerStateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRedfishV1SystemsComputerSystemIdOemIntelPowerState")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetRedfishV1SystemsComputerSystemIdOemIntelPowerStateResponseObject); ok {
+		if err := validResponse.VisitGetRedfishV1SystemsComputerSystemIdOemIntelPowerStateResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

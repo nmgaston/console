@@ -143,6 +143,128 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+  /redfish/v1/Systems/{ComputerSystemId}/Oem/Intel/PowerState:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Intel OEM power state information
+                properties:
+                  '@odata.type':
+                    description: The type of a resource.
+                    readOnly: true
+                    type: string
+                  '@odata.id':
+                    description: The unique identifier for a resource.
+                    readOnly: true
+                    type: string
+                  Id:
+                    description: The identifier for this resource.
+                    readOnly: true
+                    type: string
+                  Name:
+                    description: The name of the resource.
+                    readOnly: true
+                    type: string
+                  Description:
+                    description: The description of this resource.
+                    readOnly: true
+                    type: string
+                  PowerState:
+                    description: The current power state of the system.
+                    readOnly: true
+                    type: string
+                  RequestedPowerState:
+                    description: The requested power state of the system.
+                    readOnly: true
+                    type: string
+                required:
+                - '@odata.id'
+                - '@odata.type'
+                - Id
+                - Name
+                type: object
+          description: Intel OEM power state information
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
+  /redfish/v1/Systems/{ComputerSystemId}/Oem/Intel/PowerCapabilities:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Intel OEM power capabilities information
+                properties:
+                  '@odata.type':
+                    description: The type of a resource.
+                    readOnly: true
+                    type: string
+                  '@odata.id':
+                    description: The unique identifier for a resource.
+                    readOnly: true
+                    type: string
+                  Id:
+                    description: The identifier for this resource.
+                    readOnly: true
+                    type: string
+                  Name:
+                    description: The name of the resource.
+                    readOnly: true
+                    type: string
+                  Description:
+                    description: The description of this resource.
+                    readOnly: true
+                    type: string
+                  PowerLimitingEnabled:
+                    description: Whether power limiting is enabled.
+                    readOnly: true
+                    type: boolean
+                  MaxPowerConsumptionWatts:
+                    description: Maximum power consumption in watts.
+                    readOnly: true
+                    type: number
+                  MinPowerConsumptionWatts:
+                    description: Minimum power consumption in watts.
+                    readOnly: true
+                    type: number
+                  PowerCapLimitWatts:
+                    description: Power cap limit in watts.
+                    readOnly: true
+                    type: number
+                required:
+                - '@odata.id'
+                - '@odata.type'
+                - Id
+                - Name
+                type: object
+          description: Intel OEM power capabilities information
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    parameters:
+    - description: The value of the Id property of the ComputerSystem resource
+      in: path
+      name: ComputerSystemId
+      required: true
+      schema:
+        type: string
   /redfish/v1/odata:
     get:
       responses:

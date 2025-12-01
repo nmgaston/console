@@ -209,8 +209,14 @@ type ComputerSystemComputerSystem struct {
 	OdataId *OdataV4Id `json:"@odata.id,omitempty"`
 
 	// OdataType The type of a resource.
-	OdataType   *OdataV4Type                              `json:"@odata.type,omitempty"`
+	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
+
+	// BiosVersion The version of the system BIOS or primary system firmware.
+	BiosVersion *string                                   `json:"BiosVersion"`
 	Description *ComputerSystemComputerSystem_Description `json:"Description,omitempty"`
+
+	// HostName The DNS host name, without any domain information.
+	HostName *string `json:"HostName"`
 
 	// Id The unique identifier for this resource within the collection of similar resources.
 	Id ResourceId `json:"Id"`
@@ -224,6 +230,9 @@ type ComputerSystemComputerSystem struct {
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`
 
+	// Oem The OEM extension.
+	Oem *ResourceOem `json:"Oem,omitempty"`
+
 	// PowerState The current power state of the system.
 	PowerState *ComputerSystemComputerSystem_PowerState `json:"PowerState,omitempty"`
 
@@ -233,6 +242,9 @@ type ComputerSystemComputerSystem struct {
 	// Status The status and health of a resource and its children.
 	Status     *ResourceStatus           `json:"Status,omitempty"`
 	SystemType *ComputerSystemSystemType `json:"SystemType,omitempty"`
+
+	// UUID The UUID for this system.
+	UUID *ComputerSystemComputerSystem_UUID `json:"UUID,omitempty"`
 }
 
 // ComputerSystemComputerSystemDescription1 defines model for .
@@ -248,6 +260,14 @@ type ComputerSystemComputerSystemPowerState1 = interface{}
 
 // ComputerSystemComputerSystem_PowerState The current power state of the system.
 type ComputerSystemComputerSystem_PowerState struct {
+	union json.RawMessage
+}
+
+// ComputerSystemComputerSystemUUID1 defines model for .
+type ComputerSystemComputerSystemUUID1 = interface{}
+
+// ComputerSystemComputerSystem_UUID The UUID for this system.
+type ComputerSystemComputerSystem_UUID struct {
 	union json.RawMessage
 }
 
@@ -473,6 +493,9 @@ type ResourceStatusState1 = interface{}
 type ResourceStatus_State struct {
 	union json.RawMessage
 }
+
+// ResourceUUID defines model for Resource_UUID.
+type ResourceUUID = string
 
 // ServiceRootLinks The links to other resources that are related to this resource.
 type ServiceRootLinks struct {
@@ -799,6 +822,68 @@ func (t ComputerSystemComputerSystem_PowerState) MarshalJSON() ([]byte, error) {
 }
 
 func (t *ComputerSystemComputerSystem_PowerState) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsResourceUUID returns the union data inside the ComputerSystemComputerSystem_UUID as a ResourceUUID
+func (t ComputerSystemComputerSystem_UUID) AsResourceUUID() (ResourceUUID, error) {
+	var body ResourceUUID
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResourceUUID overwrites any union data inside the ComputerSystemComputerSystem_UUID as the provided ResourceUUID
+func (t *ComputerSystemComputerSystem_UUID) FromResourceUUID(v ResourceUUID) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResourceUUID performs a merge with any union data inside the ComputerSystemComputerSystem_UUID, using the provided ResourceUUID
+func (t *ComputerSystemComputerSystem_UUID) MergeResourceUUID(v ResourceUUID) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemComputerSystemUUID1 returns the union data inside the ComputerSystemComputerSystem_UUID as a ComputerSystemComputerSystemUUID1
+func (t ComputerSystemComputerSystem_UUID) AsComputerSystemComputerSystemUUID1() (ComputerSystemComputerSystemUUID1, error) {
+	var body ComputerSystemComputerSystemUUID1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemComputerSystemUUID1 overwrites any union data inside the ComputerSystemComputerSystem_UUID as the provided ComputerSystemComputerSystemUUID1
+func (t *ComputerSystemComputerSystem_UUID) FromComputerSystemComputerSystemUUID1(v ComputerSystemComputerSystemUUID1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemComputerSystemUUID1 performs a merge with any union data inside the ComputerSystemComputerSystem_UUID, using the provided ComputerSystemComputerSystemUUID1
+func (t *ComputerSystemComputerSystem_UUID) MergeComputerSystemComputerSystemUUID1(v ComputerSystemComputerSystemUUID1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemComputerSystem_UUID) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemComputerSystem_UUID) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

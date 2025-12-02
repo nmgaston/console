@@ -212,6 +212,9 @@ type ComputerSystemComputerSystem struct {
 	OdataType   *OdataV4Type                              `json:"@odata.type,omitempty"`
 	Description *ComputerSystemComputerSystem_Description `json:"Description,omitempty"`
 
+	// HostName The DNS host name, without any domain information.
+	HostName *string `json:"HostName"`
+
 	// Id The unique identifier for this resource within the collection of similar resources.
 	Id ResourceId `json:"Id"`
 

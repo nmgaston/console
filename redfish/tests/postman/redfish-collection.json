@@ -84,6 +84,465 @@
           "response": []
         },
         {
+          "name": "Service Root - Verify Required Properties",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Service root has required Redfish properties', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('RedfishVersion');",
+                  "    pm.expect(jsonData).to.have.property('UUID');",
+                  "    pm.expect(jsonData).to.have.property('Id');",
+                  "    pm.expect(jsonData).to.have.property('Name');",
+                  "});",
+                  "",
+                  "pm.test('Service root has required service links', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Systems');",
+                  "    pm.expect(jsonData.Systems).to.have.property('@odata.id');",
+                  "});",
+                  "",
+                  "pm.test('@odata.type indicates ServiceRoot', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData['@odata.type']).to.include('ServiceRoot');",
+                  "});",
+                  "",
+                  "pm.test('@odata.id points to service root', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    // Accept both /redfish/v1 and /redfish/v1/",
+                  "    pm.expect(jsonData['@odata.id']).to.be.oneOf(['/redfish/v1', '/redfish/v1/']);",
+                  "});",
+                  "",
+                  "pm.test('RedfishVersion is valid', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.RedfishVersion).to.be.a('string');",
+                  "    pm.expect(jsonData.RedfishVersion).to.match(/^\\d+\\.\\d+\\.\\d+$/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Service Root - Links Format Validation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Systems link is properly formatted', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.Systems).to.be.an('object');",
+                  "    pm.expect(jsonData.Systems['@odata.id']).to.equal('/redfish/v1/Systems');",
+                  "});",
+                  "",
+                  "pm.test('All resource links use @odata.id format', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    ",
+                  "    // Check Systems link",
+                  "    if (jsonData.Systems) {",
+                  "        pm.expect(jsonData.Systems).to.have.property('@odata.id');",
+                  "        pm.expect(jsonData.Systems['@odata.id']).to.include('/redfish/v1/');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('@odata.context points to metadata', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData['@odata.context']).to.include('$metadata');",
+                  "    pm.expect(jsonData['@odata.context']).to.include('ServiceRoot');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Service Root - HTTP Headers Validation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is present and valid', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has appropriate caching headers', function () {",
+                  "    // Service root should be cacheable",
+                  "    var cacheControl = pm.response.headers.get('Cache-Control');",
+                  "    // If cache headers are present, verify they're reasonable",
+                  "    if (cacheControl) {",
+                  "        pm.expect(cacheControl).to.be.a('string');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Service Root - No Trailing Slash",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or redirect', function () {",
+                  "    // Should either return 200 directly or redirect to trailing slash",
+                  "    pm.expect([200, 301, 302, 307, 308]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Response is valid JSON when 200', function () {",
+                  "        pm.response.to.be.json;",
+                  "    });",
+                  "    ",
+                  "    pm.test('Has OData properties when 200', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('@odata.id');",
+                  "    });",
+                  "}",
+                  "",
+                  "if ([301, 302, 307, 308].includes(pm.response.code)) {",
+                  "    pm.test('Redirect location includes trailing slash', function () {",
+                  "        var location = pm.response.headers.get('Location');",
+                  "        pm.expect(location).to.include('/redfish/v1/');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Service Root - POST Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('POST to service root returns 405', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Error response is valid JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header still present on error', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Service Root - PUT Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('PUT to service root returns 405', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Error response is valid JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('Error message indicates method not allowed', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Service Root - DELETE Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('DELETE to service root returns 405', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Error response is valid JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('Error message indicates method not allowed', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Service Root - PATCH Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('PATCH to service root returns 405', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Error response is valid JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('Error message indicates method not allowed', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", ""]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get OData Metadata Document",
           "event": [
             {

@@ -428,6 +428,206 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "OData Endpoint - POST Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 405 Method Not Allowed', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/odata",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "odata"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OData Endpoint - PUT Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 405 Method Not Allowed', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/odata",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "odata"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OData Endpoint - DELETE Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 405 Method Not Allowed', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/odata",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "odata"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OData Endpoint - PATCH Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 405 Method Not Allowed', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/odata",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "odata"]
+            }
+          },
+          "response": []
         }
       ]
     },

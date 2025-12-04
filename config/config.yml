@@ -4,6 +4,9 @@ app:
   version: DEVELOPMENT
   encryption_key: ""
   allow_insecure_ciphers: false
+  # Optional: Set a fixed UUID for this Redfish service instance
+  # If not set, a persistent UUID will be auto-generated and stored in ~/.config/dmt-redfish-service/service_uuid
+  # environment_uuid: ""
 http:
   host: localhost
   port: "8181"

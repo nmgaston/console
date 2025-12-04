@@ -13,6 +13,11 @@ components:
           $ref: odata-v4.yaml#/components/schemas/odata-v4_id
         '@odata.type':
           $ref: odata-v4.yaml#/components/schemas/odata-v4_type
+        Boot:
+          $ref: '#/components/schemas/ComputerSystem_v1_26_0_Boot'
+          description: The boot settings for this system.
+          x-longDescription: This property shall contain the boot settings for this
+            system.
         Description:
           oneOf:
           - $ref: Resource.yaml#/components/schemas/Resource_Description
@@ -79,6 +84,138 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_v1_26_0_Boot:
+      additionalProperties: false
+      description: The boot settings for this system.
+      properties:
+        BootSourceOverrideEnabled:
+          description: The state of the boot source override feature.
+          oneOf:
+          - $ref: '#/components/schemas/ComputerSystem_v1_26_0_BootSourceOverrideEnabled'
+          - enum:
+            - null
+          readOnly: false
+          x-longDescription: This property shall contain the boot source override
+            enabled state for this system. The value `Disabled` shall indicate that
+            the override is not active and the system shall boot normally. The value
+            `Once` shall indicate that a single boot will boot from the override
+            target, and then the system shall boot normally on subsequent boots.
+            The value `Continuous` shall indicate that every boot will boot from
+            the override target until this property is no longer `Continuous`.
+        BootSourceOverrideMode:
+          description: The BIOS boot mode to use when the system boots from the BootSourceOverrideTarget
+            boot source.
+          oneOf:
+          - $ref: '#/components/schemas/ComputerSystem_v1_26_0_BootSourceOverrideMode'
+          - enum:
+            - null
+          readOnly: false
+          x-longDescription: This property shall contain the BIOS boot mode type
+            to use when booting from the boot source specified in the BootSourceOverrideTarget
+            property.
+        BootSourceOverrideTarget:
+          description: The current boot source to use at the next boot instead of
+            the normal boot device, if BootSourceOverrideEnabled is `true`.
+          oneOf:
+          - $ref: '#/components/schemas/ComputerSystem_v1_26_0_BootSourceOverrideTarget'
+          - enum:
+            - null
+          readOnly: false
+          x-longDescription: This property shall contain the source to boot the system
+            from, overriding the normal boot order. The `@Redfish.AllowableValues`
+            annotation specifies the valid values for this property. `UefiTarget`
+            indicates to boot from the UEFI device path found in `UefiTargetBootSourceOverride`.
+            `UefiBootNext` indicates to boot from the UEFI `BootOptionReference`
+            found in `BootNext`. Virtual devices for a target should take precedence
+            over physical devices. Systems may attempt to boot from multiple devices
+            that share a target identifier. This property may not reference removable
+            media for virtual instances of a `ComputerSystem`.
+        UefiTargetBootSourceOverride:
+          description: The UEFI device path of the device from which to boot when
+            BootSourceOverrideTarget is `UefiTarget`.
+          nullable: true
+          readOnly: false
+          type: string
+          x-longDescription: This property shall contain the UEFI device path of
+            the override boot target. Changes to this property do not alter the BIOS
+            persistent boot order configuration.
+      type: object
+      x-longDescription: This object shall contain properties that describe boot
+        settings for a system.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_v1_26_0_BootSourceOverrideEnabled:
+      enum:
+      - Disabled
+      - Once
+      - Continuous
+      type: string
+      x-enumDescriptions:
+        Continuous: The system boots to the target specified in the BootSourceOverrideTarget
+          property until this property is `Disabled`.
+        Disabled: The system boots normally.
+        Once: On its next boot cycle, the system boots one time to the boot source
+          override target. Then, the BootSourceOverrideEnabled value is reset to
+          `Disabled`.
+      x-enumLongDescriptions:
+        Continuous: This value shall indicate that every boot uses the value of BootSourceOverrideTarget
+          until this property is no longer `Continuous`.
+        Disabled: This value shall indicate that the override is not active and the
+          system shall boot from the target specified by the boot order.
+        Once: This value shall indicate that a single boot uses the value of BootSourceOverrideTarget,
+          and then the BootSourceOverrideEnabled value is reset to `Disabled`.
+    ComputerSystem_v1_26_0_BootSourceOverrideMode:
+      enum:
+      - Legacy
+      - UEFI
+      type: string
+      x-enumDescriptions:
+        Legacy: The system boots in non-UEFI boot mode to the boot source override
+          target.
+        UEFI: The system boots in UEFI boot mode to the boot source override target.
+    ComputerSystem_v1_26_0_BootSourceOverrideTarget:
+      enum:
+      - None
+      - Pxe
+      - Floppy
+      - Cd
+      - Usb
+      - Hdd
+      - BiosSetup
+      - Utilities
+      - Diags
+      - UefiShell
+      - UefiTarget
+      - SDCard
+      - UefiHttp
+      - RemoteDrive
+      - UefiBootNext
+      - Recovery
+      type: string
+      x-enumDescriptions:
+        BiosSetup: Boot to the BIOS setup utility.
+        Cd: Boot from the CD or DVD.
+        Diags: Boot to the manufacturer's diagnostics program.
+        Floppy: Boot from the floppy disk drive.
+        Hdd: Boot from a hard drive.
+        None: Boot from the normal boot device.
+        Pxe: Boot from the Pre-boot eXecution Environment (PXE).
+        Recovery: Boot to a system-designated recovery process or image.
+        RemoteDrive: Boot from a remote drive, such as an iSCSI target.
+        SDCard: Boot from an SD card.
+        UefiBootNext: Boot to the UEFI device specified in the BootNext property.
+        UefiHttp: Boot from a UEFI HTTP network location.
+        UefiShell: Boot to the UEFI Shell.
+        UefiTarget: Boot to the UEFI device specified in the UefiTargetBootSourceOverride
+          property.
+        Usb: Boot from a system UEFI-compliant USB device.
+        Utilities: Boot to the manufacturer's utilities program or programs.
+      x-enumLongDescriptions:
+        BiosSetup: This value shall indicate that the system boots to the BIOS setup
+          utility or UEFI human interface infrastructure.
+        UefiTarget: This value shall indicate that the system boots to the UEFI device
+          specified in the UefiTargetBootSourceOverride property.
     ComputerSystem_v1_26_0_ResetRequestBody:
       additionalProperties: false
       description: This action resets the system.

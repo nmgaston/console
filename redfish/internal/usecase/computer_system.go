@@ -65,40 +65,31 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		}
 	}
 
-	// Convert to string pointers for optional fields
-	var manufacturer, model, serialNumber *string
-	if system.Manufacturer != "" {
-		manufacturer = &system.Manufacturer
-	}
-
-	if system.Model != "" {
-		model = &system.Model
-	}
-
-	if system.SerialNumber != "" {
-		serialNumber = &system.SerialNumber
-	}
+	// Convert to string pointers for optional fields (using helper function to reduce allocations)
+	manufacturer := stringPtrIfNotEmpty(system.Manufacturer)
+	model := stringPtrIfNotEmpty(system.Model)
+	serialNumber := stringPtrIfNotEmpty(system.SerialNumber)
+	description := stringPtrIfNotEmpty(system.Description)
+	hostName := stringPtrIfNotEmpty(system.HostName)
 
 	// Create system type
 	systemType := generated.ComputerSystemSystemType("Physical")
 
 	// Create OData fields following the reference pattern
 	odataContext := generated.OdataV4Context("/redfish/v1/$metadata#ComputerSystem.ComputerSystem")
-	odataType := generated.OdataV4Type("#ComputerSystem.v1_22_0.ComputerSystem")
+	odataType := generated.OdataV4Type("#ComputerSystem.v1_26_0.ComputerSystem")
 	odataID := fmt.Sprintf("/redfish/v1/Systems/%s", systemID)
 
 	// Build Status if present
-	var status *generated.ResourceStatus
+	status := uc.convertStatusToGenerated(system.Status)
 
-	if system.Status != nil {
-		health := generated.ResourceStatus_Health{}
-		_ = health.FromResourceStatusHealth1(system.Status.Health)
-		state := generated.ResourceStatus_State{}
-		_ = state.FromResourceStatusState1(system.Status.State)
-
-		status = &generated.ResourceStatus{
-			State:  &state,
-			Health: &health,
+	// Convert Description to union type if present
+	var descriptionUnion *generated.ComputerSystemComputerSystem_Description
+	if description != nil {
+		descriptionUnion = &generated.ComputerSystemComputerSystem_Description{}
+		if err := descriptionUnion.FromResourceDescription(*description); err != nil {
+			// Log error but continue - don't fail the entire request for Description conversion issues
+			descriptionUnion = nil
 		}
 	}
 
@@ -108,6 +99,8 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		OdataType:    &odataType,
 		Id:           systemID,
 		Name:         system.Name,
+		Description:  descriptionUnion,
+		HostName:     hostName,
 		Manufacturer: manufacturer,
 		Model:        model,
 		SerialNumber: serialNumber,
@@ -153,6 +146,15 @@ func StringPtr(s string) *string {
 	return &s
 }
 
+// stringPtrIfNotEmpty returns a pointer to the string if it's not empty, otherwise nil.
+func stringPtrIfNotEmpty(s string) *string {
+	if s != "" {
+		return &s
+	}
+
+	return nil
+}
+
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
@@ -186,4 +188,100 @@ func convertToEntityResetType(resetType generated.ResourceResetType) redfishv1.P
 	default:
 		return redfishv1.PowerStateOff
 	}
+}
+
+// convertStatusToGenerated converts entity Status to generated ResourceStatus.
+func (uc *ComputerSystemUseCase) convertStatusToGenerated(status *redfishv1.Status) *generated.ResourceStatus {
+	if status == nil {
+		return nil
+	}
+
+	var healthPtr *generated.ResourceStatus_Health
+
+	var statePtr *generated.ResourceStatus_State
+
+	// Convert Health if present
+
+	if status.Health != "" {
+		healthPtr = uc.convertHealthToGenerated(status.Health)
+	}
+
+	// Convert State if present
+	if status.State != "" {
+		statePtr = uc.convertStateToGenerated(status.State)
+	}
+
+	// Only create Status if we have at least one field
+	if healthPtr != nil || statePtr != nil {
+		return &generated.ResourceStatus{
+			Health: healthPtr,
+			State:  statePtr,
+		}
+	}
+
+	return nil
+}
+
+// convertHealthToGenerated converts Health string to generated ResourceStatus_Health.
+func (uc *ComputerSystemUseCase) convertHealthToGenerated(health string) *generated.ResourceStatus_Health {
+	var healthEnum generated.ResourceHealth
+
+	switch health {
+	case "OK":
+		healthEnum = generated.OK
+	case "Warning":
+		healthEnum = generated.Warning
+	case "Critical":
+		healthEnum = generated.Critical
+	default:
+		return nil // Don't create health if unknown value
+	}
+
+	healthObj := generated.ResourceStatus_Health{}
+	if err := healthObj.FromResourceHealth(healthEnum); err == nil {
+		return &healthObj
+	}
+
+	return nil
+}
+
+// convertStateToGenerated converts State string to generated ResourceStatus_State.
+func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generated.ResourceStatus_State {
+	var stateEnum generated.ResourceState
+
+	switch state {
+	case "Enabled":
+		stateEnum = generated.Enabled
+	case "Disabled":
+		stateEnum = generated.Disabled
+	case "StandbyOffline":
+		stateEnum = generated.StandbyOffline
+	case "StandbySpare":
+		stateEnum = generated.StandbySpare
+	case "InTest":
+		stateEnum = generated.InTest
+	case "Starting":
+		stateEnum = generated.Starting
+	case "Absent":
+		stateEnum = generated.Absent
+	case "UnavailableOffline":
+		stateEnum = generated.UnavailableOffline
+	case "Deferring":
+		stateEnum = generated.Deferring
+	case "Quiesced":
+		stateEnum = generated.Quiesced
+	case "Updating":
+		stateEnum = generated.Updating
+	case "Degraded":
+		stateEnum = generated.Degraded
+	default:
+		return nil // Don't create state if unknown value
+	}
+
+	stateObj := generated.ResourceStatus_State{}
+	if err := stateObj.FromResourceState(stateEnum); err == nil {
+		return &stateObj
+	}
+
+	return nil
 }

@@ -35,9 +35,8 @@ type (
 		EnvironmentUUID      string `yaml:"environment_uuid" env:"APP_ENV_UUID"`
 	} // HTTP -.
 		CommonName           string `yaml:"common_name" env:"APP_COMMON_NAME"`
-	}
-
-	// HTTP -.
+		EnvironmentUUID      string `yaml:"environment_uuid" env:"APP_ENV_UUID"`
+	} // HTTP -.
 	HTTP struct {
 		Host           string   `env-required:"true" yaml:"host" env:"HTTP_HOST"`
 		Port           string   `env-required:"true" yaml:"port" env:"HTTP_PORT"`

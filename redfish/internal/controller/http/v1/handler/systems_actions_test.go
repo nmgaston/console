@@ -144,6 +144,12 @@ func TestPostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset_Success(
 			initialState:  redfishv1.PowerStateOn,
 			expectedState: redfishv1.PowerStateOff,
 		},
+		{
+			name:          "PowerCycle from On",
+			resetType:     generated.ResourceResetTypePowerCycle,
+			initialState:  redfishv1.PowerStateOn,
+			expectedState: redfishv1.PowerStateOff,
+		},
 	}
 
 	for _, tc := range testCases {

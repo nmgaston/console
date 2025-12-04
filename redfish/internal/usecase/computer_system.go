@@ -141,11 +141,11 @@ func (uc *ComputerSystemUseCase) SetPowerState(ctx context.Context, id string, r
 		return ErrInvalidResetType
 	}
 
-	// Convert generated reset type to entity power state
-	powerState := convertToEntityPowerState(resetType)
+	// Convert generated reset type to entity reset type
+	entityResetType := convertToEntityResetType(resetType)
 
 	// Set the power state
-	return uc.Repo.UpdatePowerState(ctx, id, powerState)
+	return uc.Repo.UpdatePowerState(ctx, id, entityResetType)
 }
 
 // StringPtr creates a pointer to a string value.
@@ -158,22 +158,23 @@ func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSys
 	return &st
 }
 
-// convertToEntityPowerState converts from generated reset type to entity power state.
-func convertToEntityPowerState(resetType generated.ResourceResetType) redfishv1.PowerState {
-	// This is a simplified mapping - in a real implementation,
-	// you would handle all the reset types properly
+// convertToEntityResetType converts from generated reset type to entity reset type.
+func convertToEntityResetType(resetType generated.ResourceResetType) redfishv1.PowerState {
 	switch resetType {
 	case generated.ResourceResetTypeOn,
 		generated.ResourceResetTypeForceOn:
 		return redfishv1.PowerStateOn
-	case generated.ResourceResetTypeForceOff,
-		generated.ResourceResetTypeGracefulShutdown:
+	case generated.ResourceResetTypeForceOff:
+		return redfishv1.ResetTypeForceOff
+	case generated.ResourceResetTypeGracefulShutdown:
 		return redfishv1.PowerStateOff
-	case generated.ResourceResetTypeForceRestart,
-		generated.ResourceResetTypeGracefulRestart,
-		generated.ResourceResetTypePowerCycle,
+	case generated.ResourceResetTypeForceRestart:
+		return redfishv1.ResetTypeForceRestart
+	case generated.ResourceResetTypeGracefulRestart:
+		return redfishv1.PowerStateOff // Map to generic Off since no specific constant
+	case generated.ResourceResetTypePowerCycle,
 		generated.ResourceResetTypeFullPowerCycle:
-		return redfishv1.PowerStateOff // Will cycle to On
+		return redfishv1.ResetTypePowerCycle
 	case generated.ResourceResetTypeNmi,
 		generated.ResourceResetTypePushPowerButton:
 		return redfishv1.PowerStateOn

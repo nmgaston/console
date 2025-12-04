@@ -80,9 +80,9 @@ func (r *WsmanComputerSystemRepo) extractHardwareInfo(ctx context.Context, syste
 	return "", "", ""
 }
 
-// mapRedfishPowerStateToAction converts Redfish PowerState to WSMAN power action.
-func (r *WsmanComputerSystemRepo) mapRedfishPowerStateToAction(state redfishv1.PowerState) (int, error) {
-	switch state {
+// mapRedfishResetTypeToAction converts Redfish reset type to WSMAN power action.
+func (r *WsmanComputerSystemRepo) mapRedfishResetTypeToAction(resetType redfishv1.PowerState) (int, error) {
+	switch resetType {
 	case redfishv1.PowerStateOn:
 		return devices.CIMPMSPowerOn, nil // Power On = 2
 	case redfishv1.PowerStateOff:
@@ -174,20 +174,24 @@ func (r *WsmanComputerSystemRepo) GetByID(ctx context.Context, systemID string) 
 }
 
 // UpdatePowerState sends a power action command to the specified system via WSMAN.
-func (r *WsmanComputerSystemRepo) UpdatePowerState(ctx context.Context, systemID string, state redfishv1.PowerState) error {
-	// First, get the current power state
+func (r *WsmanComputerSystemRepo) UpdatePowerState(ctx context.Context, systemID string, resetType redfishv1.PowerState) error {
+	// Get the current power state for logging and validation
 	currentSystem, err := r.GetByID(ctx, systemID)
 	if err != nil {
 		return err
 	}
 
-	// Check if the requested state matches the current state
-	if currentSystem.PowerState == state {
-		return ErrPowerStateConflict
+	// For certain reset types like PowerCycle and ForceRestart, we don't check current state
+	// because they are valid operations regardless of current power state
+	if resetType != redfishv1.ResetTypePowerCycle && resetType != redfishv1.ResetTypeForceRestart {
+		// Check if the requested state matches the current state
+		if currentSystem.PowerState == resetType {
+			return ErrPowerStateConflict
+		}
 	}
 
-	// Map Redfish power state to WSMAN action
-	action, err := r.mapRedfishPowerStateToAction(state)
+	// Map Redfish reset type to WSMAN action
+	action, err := r.mapRedfishResetTypeToAction(resetType)
 	if err != nil {
 		return err
 	}

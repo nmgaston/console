@@ -52,9 +52,21 @@ func (r *TestComputerSystemRepository) GetByID(_ context.Context, systemID strin
 	return nil, usecase.ErrSystemNotFound
 }
 
-func (r *TestComputerSystemRepository) UpdatePowerState(_ context.Context, systemID string, state redfishv1.PowerState) error {
+func (r *TestComputerSystemRepository) UpdatePowerState(_ context.Context, systemID string, resetType redfishv1.PowerState) error {
 	if system, exists := r.systems[systemID]; exists {
-		system.PowerState = state
+		// Convert reset types to final power state for testing
+		switch resetType {
+		case redfishv1.ResetTypeOn: // Covers both ResetTypeOn and PowerStateOn (same value "On")
+			system.PowerState = redfishv1.PowerStateOn
+		case redfishv1.ResetTypeForceOff:
+			system.PowerState = redfishv1.PowerStateOff
+		case redfishv1.PowerStateOff:
+			system.PowerState = redfishv1.PowerStateOff
+		case redfishv1.ResetTypeForceRestart, redfishv1.ResetTypePowerCycle:
+			// These reset types cycle power, for test purposes we set to Off
+			// (in reality the system would restart)
+			system.PowerState = redfishv1.PowerStateOff
+		}
 
 		return nil
 	}

@@ -90,7 +90,7 @@ $(GENERATED_SERVER): $(MERGED_OPENAPI)
 	oapi-codegen -generate gin,strict-server -o $(GENERATED_SERVER) -package generated $(MERGED_OPENAPI)
 	@echo "✅ Generated server code: $(GENERATED_SERVER)"
 
-rf-deps: rf-check-tools ### Install dependencies and required tools for Redfish API
+rf-deps: ### Install dependencies and required tools for Redfish API
 	$(call check_ubuntu)
 	@echo "🔧 Installing and verifying all dependencies..."
 	@$(MAKE) rf-install-missing-tools

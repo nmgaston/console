@@ -70,5 +70,4 @@ type Management interface {
 	GetIPSScreenSettingData() (screensetting.Response, error)
 	GetIPSKVMRedirectionSettingData() (kvmredirection.Response, error)
 	SetIPSKVMRedirectionSettingData(data *kvmredirection.KVMRedirectionSettingsRequest) (kvmredirection.Response, error)
-	DeleteCertificate(instanceID string) error
 }

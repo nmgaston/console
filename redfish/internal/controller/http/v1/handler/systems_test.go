@@ -535,31 +535,8 @@ func validateSystemActionsResponseTest(t *testing.T, w *httptest.ResponseRecorde
 	assert.NotNil(t, resetAction.Title, "Reset action title should not be nil")
 	assert.Equal(t, "Reset", *resetAction.Title)
 
-	// Validate ResetType@Redfish.AllowableValues
-	assert.NotNil(t, resetAction.ResetTypeRedfishAllowableValues, "AllowableValues should not be nil")
-	allowableValues := *resetAction.ResetTypeRedfishAllowableValues
-	assert.GreaterOrEqual(t, len(allowableValues), 8, "Should have at least 8 allowable reset types")
-
-	// Verify specific reset types are present
-	resetTypesMap := make(map[generated.ResourceResetType]bool)
-	for _, resetType := range allowableValues {
-		resetTypesMap[resetType] = true
-	}
-
-	expectedResetTypes := []generated.ResourceResetType{
-		generated.ResourceResetTypeOn,
-		generated.ResourceResetTypeForceOff,
-		generated.ResourceResetTypeForceRestart,
-		generated.ResourceResetTypeGracefulRestart,
-		generated.ResourceResetTypeGracefulShutdown,
-		generated.ResourceResetTypePushPowerButton,
-		generated.ResourceResetTypeNmi,
-		generated.ResourceResetTypePowerCycle,
-	}
-
-	for _, expectedType := range expectedResetTypes {
-		assert.True(t, resetTypesMap[expectedType], "Expected reset type %s should be present", expectedType)
-	}
+	// Note: ResetType@Redfish.AllowableValues are now provided through ActionInfo endpoint
+	// as per DMTF specification, not embedded in the Reset action itself
 }
 
 // Validation functions for system by ID tests (reusing shared validation)

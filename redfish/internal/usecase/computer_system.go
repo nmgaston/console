@@ -334,28 +334,14 @@ func (uc *ComputerSystemUseCase) createActionsStruct(systemID string) *generated
 	target := fmt.Sprintf("/redfish/v1/Systems/%s/Actions/ComputerSystem.Reset", systemID)
 	title := "Reset"
 
-	// Define the allowable reset types
-	allowableResetTypes := []generated.ResourceResetType{
-		generated.ResourceResetTypeOn,
-		generated.ResourceResetTypeForceOff,
-		generated.ResourceResetTypeForceRestart,
-		generated.ResourceResetTypeGracefulRestart,
-		generated.ResourceResetTypeGracefulShutdown,
-		generated.ResourceResetTypePushPowerButton,
-		generated.ResourceResetTypeNmi,
-		generated.ResourceResetTypePowerCycle,
-	}
-
 	// Create the ComputerSystem.Reset action
 	resetAction := &generated.ComputerSystemReset{
-		Target:                          &target,
-		Title:                           &title,
-		ResetTypeRedfishAllowableValues: &allowableResetTypes,
+		Target: &target,
+		Title:  &title,
 	}
 
 	// Create and return the Actions structure
 	return &generated.ComputerSystemActions{
 		HashComputerSystemReset: resetAction,
-		Oem:                     nil, // OEM actions can be added here if needed
 	}
 }

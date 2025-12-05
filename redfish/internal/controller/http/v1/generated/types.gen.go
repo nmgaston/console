@@ -204,9 +204,6 @@ type ComputerSystemCollectionComputerSystemCollection_Description struct {
 type ComputerSystemActions struct {
 	// HashComputerSystemReset This action resets the system.
 	HashComputerSystemReset *ComputerSystemReset `json:"#ComputerSystem.Reset,omitempty"`
-
-	// Oem The available OEM-specific actions for this resource.
-	Oem *ComputerSystemOemActions `json:"Oem,omitempty"`
 }
 
 // ComputerSystemComputerSystem The `ComputerSystem` schema represents a computer or system instance and the software-visible resources, or items within the data plane, such as memory, CPU, and other devices that it can access.  Details of those resources or subsystems are also linked through this resource.
@@ -266,14 +263,8 @@ type ComputerSystemComputerSystem_PowerState struct {
 	union json.RawMessage
 }
 
-// ComputerSystemOemActions The available OEM-specific actions for this resource.
-type ComputerSystemOemActions map[string]interface{}
-
 // ComputerSystemReset This action resets the system.
 type ComputerSystemReset struct {
-	// ResetTypeRedfishAllowableValues The supported values for the ResetType parameter.
-	ResetTypeRedfishAllowableValues *[]ResourceResetType `json:"ResetType@Redfish.AllowableValues,omitempty"`
-
 	// Target Link to invoke action
 	Target *string `json:"target,omitempty"`
 

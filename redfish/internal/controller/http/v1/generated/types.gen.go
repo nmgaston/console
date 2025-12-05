@@ -200,6 +200,12 @@ type ComputerSystemCollectionComputerSystemCollection_Description struct {
 	union json.RawMessage
 }
 
+// ComputerSystemActions The available actions for this resource.
+type ComputerSystemActions struct {
+	// HashComputerSystemReset This action resets the system.
+	HashComputerSystemReset *ComputerSystemReset `json:"#ComputerSystem.Reset,omitempty"`
+}
+
 // ComputerSystemComputerSystem The `ComputerSystem` schema represents a computer or system instance and the software-visible resources, or items within the data plane, such as memory, CPU, and other devices that it can access.  Details of those resources or subsystems are also linked through this resource.
 type ComputerSystemComputerSystem struct {
 	// OdataContext The OData description of a payload.
@@ -209,7 +215,10 @@ type ComputerSystemComputerSystem struct {
 	OdataId *OdataV4Id `json:"@odata.id,omitempty"`
 
 	// OdataType The type of a resource.
-	OdataType   *OdataV4Type                              `json:"@odata.type,omitempty"`
+	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
+
+	// Actions The available actions for this resource.
+	Actions     *ComputerSystemActions                    `json:"Actions,omitempty"`
 	Description *ComputerSystemComputerSystem_Description `json:"Description,omitempty"`
 
 	// HostName The DNS host name, without any domain information.
@@ -252,6 +261,15 @@ type ComputerSystemComputerSystemPowerState1 = interface{}
 // ComputerSystemComputerSystem_PowerState The current power state of the system.
 type ComputerSystemComputerSystem_PowerState struct {
 	union json.RawMessage
+}
+
+// ComputerSystemReset This action resets the system.
+type ComputerSystemReset struct {
+	// Target Link to invoke action
+	Target *string `json:"target,omitempty"`
+
+	// Title Friendly action name
+	Title *string `json:"title,omitempty"`
 }
 
 // ComputerSystemResetRequestBody This action resets the system.

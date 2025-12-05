@@ -1,5 +1,16 @@
 components:
   schemas:
+    ComputerSystem_v1_26_0_Actions:
+      additionalProperties: false
+      description: The available actions for this resource.
+      properties:
+        '#ComputerSystem.Reset':
+          $ref: '#/components/schemas/ComputerSystem_v1_26_0_Reset'
+      type: object
+      x-longDescription: This type shall contain the available actions for this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     ComputerSystem_v1_26_0_ComputerSystem:
       additionalProperties: false
       description: The `ComputerSystem` schema represents a computer or system instance
@@ -13,12 +24,27 @@ components:
           $ref: odata-v4.yaml#/components/schemas/odata-v4_id
         '@odata.type':
           $ref: odata-v4.yaml#/components/schemas/odata-v4_type
+        Actions:
+          $ref: '#/components/schemas/ComputerSystem_v1_26_0_Actions'
+          description: The available actions for this resource.
+          x-longDescription: This property shall contain the available actions for
+            this resource.
         Description:
           oneOf:
           - $ref: Resource.yaml#/components/schemas/Resource_Description
           - enum:
             - null
           readOnly: true
+        HostName:
+          description: The DNS host name, without any domain information.
+          nullable: true
+          readOnly: false
+          type: string
+          x-longDescription: This property shall contain the host name for this system,
+            as reported by the operating system or hypervisor.  A service running
+            in the host operating system typically reports this value to the manager.  Modifying
+            this property may modify the `HostName` in one or more `EthernetInterface`
+            resources contained in this system.
         Id:
           $ref: Resource.yaml#/components/schemas/Resource_Id
           readOnly: true
@@ -56,16 +82,6 @@ components:
           type: string
           x-longDescription: This property shall contain the serial number for the
             system.
-        HostName:
-          description: The DNS host name, without any domain information.
-          nullable: true
-          readOnly: false
-          type: string
-          x-longDescription: This property shall contain the host name for this system,
-            as reported by the operating system or hypervisor.  A service running
-            in the host operating system typically reports this value to the manager.  Modifying
-            this property may modify the `HostName` in one or more `EthernetInterface`
-            resources contained in this system.
         Status:
           $ref: Resource.yaml#/components/schemas/Resource_Status
           description: The status and health of the resource and its subordinate or
@@ -89,12 +105,32 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_v1_26_0_Reset:
+      additionalProperties: false
+      description: This action resets the system.
+      properties:
+        target:
+          description: Link to invoke action
+          format: uri-reference
+          type: string
+        title:
+          description: Friendly action name
+          type: string
+      type: object
+      x-longDescription: This action shall reset the system represented by the resource.  For
+        systems that implement ACPI Power Button functionality, the `PushPowerButton`
+        value shall perform or emulate an ACPI Power Button Push, and the `ForceOff`
+        value shall perform an ACPI Power Button Override, commonly known as a four-second
+        hold of the power button.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     ComputerSystem_v1_26_0_ResetRequestBody:
       additionalProperties: false
       description: This action resets the system.
       properties:
         ResetType:
-          $ref: Resource.yaml#/components/schemas/Resource_ResetType
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_ResetType
           description: The type of reset.
           x-longDescription: This parameter shall contain the type of reset.  The
             service can accept a request without the parameter and perform an implementation-specific

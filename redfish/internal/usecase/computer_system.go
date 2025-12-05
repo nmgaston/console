@@ -131,6 +131,9 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		}
 	}
 
+	// Create Actions for this system using the generated Actions type
+	actions := uc.createActionsStruct(systemID)
+
 	result := generated.ComputerSystemComputerSystem{
 		OdataContext: &odataContext,
 		OdataId:      &odataID,
@@ -145,6 +148,7 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		PowerState:   powerState,
 		SystemType:   &systemType,
 		Status:       status,
+		Actions:      actions,
 	}
 
 	return &result, nil
@@ -322,4 +326,22 @@ func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generate
 	}
 
 	return nil
+}
+
+// createActionsStruct builds the Actions property using generated types.
+func (uc *ComputerSystemUseCase) createActionsStruct(systemID string) *generated.ComputerSystemActions {
+	// Create the target URI for the Reset action
+	target := fmt.Sprintf("/redfish/v1/Systems/%s/Actions/ComputerSystem.Reset", systemID)
+	title := "Reset"
+
+	// Create the ComputerSystem.Reset action
+	resetAction := &generated.ComputerSystemReset{
+		Target: &target,
+		Title:  &title,
+	}
+
+	// Create and return the Actions structure
+	return &generated.ComputerSystemActions{
+		HashComputerSystemReset: resetAction,
+	}
 }

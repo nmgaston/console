@@ -108,6 +108,7 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 	model := stringPtrIfNotEmpty(system.Model)
 	serialNumber := stringPtrIfNotEmpty(system.SerialNumber)
 	description := stringPtrIfNotEmpty(system.Description)
+	biosVersion := stringPtrIfNotEmpty(system.BiosVersion)
 	hostName := stringPtrIfNotEmpty(system.HostName)
 
 	// Create system type
@@ -141,6 +142,7 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		Id:           systemID,
 		Name:         system.Name,
 		Description:  descriptionUnion,
+		BiosVersion:  biosVersion,
 		HostName:     hostName,
 		Manufacturer: manufacturer,
 		Model:        model,

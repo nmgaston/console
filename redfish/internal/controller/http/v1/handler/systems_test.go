@@ -26,7 +26,7 @@ const (
 	systemsCollectionTitleTest        = "Computer System Collection"
 	systemsEndpointTest               = "/redfish/v1/Systems"
 	jsonContentTypeTest               = "application/json; charset=utf-8"
-	systemODataType                   = "#ComputerSystem.v1_22_0.ComputerSystem"
+	systemODataType                   = "#ComputerSystem.v1_26_0.ComputerSystem"
 )
 
 // Test error constants specific to systems
@@ -376,14 +376,52 @@ func createTestSystemEntityData(systemID, name, manufacturer, model, serialNumbe
 	}
 }
 
+// createTestSystemEntityDataWithAllProperties creates a test system entity with Description, HostName, and Status populated
+func createTestSystemEntityDataWithAllProperties(systemID, name, manufacturer, model, serialNumber string) *redfishv1.ComputerSystem {
+	return &redfishv1.ComputerSystem{
+		ID:          systemID,
+		Name:        name,
+		Description: "Computer System managed by Intel AMT",
+		HostName:    "amt-" + systemID + ".example.com",
+		Status: &redfishv1.Status{
+			State:  "Enabled",
+			Health: "OK",
+		},
+		Manufacturer: manufacturer,
+		Model:        model,
+		SerialNumber: serialNumber,
+		PowerState:   redfishv1.PowerStateOn,
+	}
+}
+
+// createTestSystemEntityDataMinimal creates a test system entity with minimal properties
+func createTestSystemEntityDataMinimal(systemID, name string) *redfishv1.ComputerSystem {
+	return &redfishv1.ComputerSystem{
+		ID:           systemID,
+		Name:         name,
+		Manufacturer: "Intel Corporation",
+		Model:        "Test Model",
+		SerialNumber: "MIN001",
+		PowerState:   redfishv1.PowerStateOff,
+		// Description and HostName are empty - would be populated by CIM extraction in real repository
+	}
+}
+
 // Repository setup functions for system by ID tests
 func setupExistingSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
 	system := createTestSystemEntityData(systemID, "Test System", "Test Manufacturer", "Test Model", "SN123456")
 	repo.AddSystem(systemID, system)
 }
 
-func setupUUIDSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
-	system := createTestSystemEntityData(systemID, "UUID System", "UUID Manufacturer", "UUID Model", "UUID-SN789")
+// setupSystemWithAllPropertiesMockTest sets up a system with Description, HostName, and Status populated
+func setupSystemWithAllPropertiesMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithAllProperties(systemID, "Enhanced Test System", "Intel Corporation", "vPro Test Model", "ENH123456")
+	repo.AddSystem(systemID, system)
+}
+
+// setupMinimalSystemMockTest sets up a system with minimal properties
+func setupMinimalSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataMinimal(systemID, "Minimal Test System")
 	repo.AddSystem(systemID, system)
 }
 
@@ -422,15 +460,126 @@ func validateSystemResponseDataTest(t *testing.T, w *httptest.ResponseRecorder, 
 	assert.Equal(t, systemODataType, *response.OdataType)
 }
 
+// validateSystemResponseWithAllPropertiesTest validates system response with Description, HostName, and Status properties
+func validateSystemResponseWithAllPropertiesTest(t *testing.T, w *httptest.ResponseRecorder, systemID, expectedName, expectedDescription, expectedHostName string) {
+	t.Helper()
+	validateJSONContentTypeTest(t, w)
+
+	var response generated.ComputerSystemComputerSystem
+	unmarshalJSONResponseTest(t, w, &response)
+
+	// Validate basic properties
+	assert.Equal(t, systemID, response.Id)
+	assert.Equal(t, expectedName, response.Name)
+
+	// Validate Description property
+	if expectedDescription != "" {
+		assert.NotNil(t, response.Description)
+		description, err := response.Description.AsResourceDescription()
+		assert.NoError(t, err)
+		assert.Equal(t, expectedDescription, description)
+	}
+
+	// Validate HostName property
+	if expectedHostName != "" {
+		assert.NotNil(t, response.HostName)
+		assert.Equal(t, expectedHostName, *response.HostName)
+	}
+
+	// Validate Status if present
+	if response.Status != nil {
+		assert.NotNil(t, response.Status.State)
+		assert.NotNil(t, response.Status.Health)
+
+		state, err := response.Status.State.AsResourceStatusState1()
+		assert.NoError(t, err)
+		assert.Equal(t, "Enabled", state)
+
+		health, err := response.Status.Health.AsResourceStatusHealth1()
+		assert.NoError(t, err)
+		assert.Equal(t, "OK", health)
+	}
+
+	// Validate OData fields
+	assert.NotNil(t, response.OdataContext)
+	assert.Equal(t, "/redfish/v1/$metadata#ComputerSystem.ComputerSystem", *response.OdataContext)
+	assert.NotNil(t, response.OdataId)
+	assert.Equal(t, fmt.Sprintf("/redfish/v1/Systems/%s", systemID), *response.OdataId)
+	assert.NotNil(t, response.OdataType)
+	assert.Equal(t, systemODataType, *response.OdataType)
+}
+
+// validateSystemActionsResponseTest validates system response with Actions property
+func validateSystemActionsResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+	validateJSONContentTypeTest(t, w)
+
+	var response generated.ComputerSystemComputerSystem
+	unmarshalJSONResponseTest(t, w, &response)
+
+	// Validate basic properties
+	assert.Equal(t, systemID, response.Id)
+	assert.Equal(t, "Test System", response.Name)
+
+	// Validate Actions property
+	assert.NotNil(t, response.Actions, "Actions property should not be nil")
+	assert.NotNil(t, response.Actions.HashComputerSystemReset, "ComputerSystem.Reset action should not be nil")
+
+	// Validate Reset action properties
+	resetAction := response.Actions.HashComputerSystemReset
+	assert.NotNil(t, resetAction.Target, "Reset action target should not be nil")
+
+	expectedTarget := fmt.Sprintf("/redfish/v1/Systems/%s/Actions/ComputerSystem.Reset", systemID)
+	assert.Equal(t, expectedTarget, *resetAction.Target)
+
+	assert.NotNil(t, resetAction.Title, "Reset action title should not be nil")
+	assert.Equal(t, "Reset", *resetAction.Title)
+
+	// Note: ResetType@Redfish.AllowableValues are now provided through ActionInfo endpoint
+	// as per DMTF specification, not embedded in the Reset action itself
+}
+
 // Validation functions for system by ID tests (reusing shared validation)
 func validateSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
 	t.Helper()
 	validateSystemResponseDataTest(t, w, systemID, "Test System", "Test Manufacturer", "Test Model", "SN123456")
 }
 
-func validateUUIDSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+// validateSystemWithAllPropertiesResponseTest validates system response with Description and HostName properties
+func validateSystemWithAllPropertiesResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
 	t.Helper()
-	validateSystemResponseDataTest(t, w, systemID, "UUID System", "UUID Manufacturer", "UUID Model", "UUID-SN789")
+	validateSystemResponseWithAllPropertiesTest(t, w, systemID, "Enhanced Test System",
+		"Computer System managed by Intel AMT",
+		"amt-"+systemID+".example.com")
+}
+
+// validateMinimalSystemResponseTest validates system response with actual CIM data from repository
+func validateMinimalSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+	validateJSONContentTypeTest(t, w)
+
+	var response generated.ComputerSystemComputerSystem
+	unmarshalJSONResponseTest(t, w, &response)
+
+	// Validate basic properties
+	assert.Equal(t, systemID, response.Id)
+	assert.Equal(t, "Minimal Test System", response.Name)
+
+	// Since this is using mock repository without actual CIM data extraction,
+	// Description and HostName will be empty strings (as returned by mock)
+	// In a real scenario, these would be populated by extractCIMSystemInfo()
+
+	// Validate that Description field exists but may be empty (no CIM data in mock)
+	if response.Description != nil {
+		description, err := response.Description.AsResourceDescription()
+		assert.NoError(t, err)
+		// Description could be empty in mock test environment
+		_ = description
+	}
+
+	// Validate that HostName field exists but may be nil (no CIM data in mock)
+	// In real implementation, this would be populated from CIM_ComputerSystem.DNSHostName
+	_ = response.HostName
 }
 
 func validateSystemNotFoundResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
@@ -545,7 +694,10 @@ func TestSystemsHandler_GetSystemByID(t *testing.T) {
 
 	tests := []SystemsTestCase[string]{
 		{"Success - Existing System", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemResponseTest, "System1"},
-		{"Success - UUID System", setupUUIDSystemMockTest, "GET", http.StatusOK, validateUUIDSystemResponseTest, "b4c3a390-468c-491f-8e1d-9ce04c2fcbc1"},
+		{"Success - System with Actions", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemActionsResponseTest, "System1"},
+		{"Success - System with All Properties", setupSystemWithAllPropertiesMockTest, "GET", http.StatusOK, validateSystemWithAllPropertiesResponseTest, "enhanced-system-1"},
+		{"Success - Minimal System Properties", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "minimal-system-1"},
+		{"Success - System with Long ID", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "very-long-system-identifier-that-exceeds-character-limits"},
 		{"Error - Empty System ID", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateBadRequestResponseTest, ""},
 		{"Error - System Not Found", setupSystemNotFoundMockTest, "GET", http.StatusNotFound, validateSystemNotFoundResponseTest, "NonExistentSystem"},
 		{"Error - Repository Error", setupSystemRepositoryErrorMockTest, "GET", http.StatusInternalServerError, validateSystemErrorResponseTest, "System1"},

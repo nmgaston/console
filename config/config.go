@@ -31,9 +31,8 @@ type (
 		Version              string `env-required:"true"`
 		EncryptionKey        string `yaml:"encryption_key" env:"APP_ENCRYPTION_KEY"`
 		AllowInsecureCiphers bool   `yaml:"allow_insecure_ciphers" env:"APP_ALLOW_INSECURE_CIPHERS"`
-	}
-
-	// HTTP -.
+		EnvironmentUUID      string `yaml:"environment_uuid" env:"APP_ENV_UUID"`
+	} // HTTP -.
 	HTTP struct {
 		Host           string   `env-required:"true" yaml:"host" env:"HTTP_HOST"`
 		Port           string   `env-required:"true" yaml:"port" env:"HTTP_PORT"`

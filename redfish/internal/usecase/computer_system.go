@@ -21,6 +21,44 @@ var (
 	ErrInvalidResetType = errors.New("invalid reset type")
 )
 
+// OData and schema constants for ComputerSystem.
+const (
+	// ComputerSystemODataType represents the OData type for ComputerSystem.
+	ComputerSystemODataType = "#ComputerSystem.v1_26_0.ComputerSystem"
+
+	// ComputerSystemODataContext represents the OData context for ComputerSystem.
+	ComputerSystemODataContext = "/redfish/v1/$metadata#ComputerSystem.ComputerSystem"
+
+	// RedfishSystemsBasePath represents the base path for Systems collection.
+	RedfishSystemsBasePath = "/redfish/v1/Systems"
+
+	// Default system type.
+	DefaultSystemType = "Physical"
+)
+
+// Resource Health constants.
+const (
+	HealthOK       = "OK"
+	HealthWarning  = "Warning"
+	HealthCritical = "Critical"
+)
+
+// Resource State constants.
+const (
+	StateEnabled            = "Enabled"
+	StateDisabled           = "Disabled"
+	StateStandbyOffline     = "StandbyOffline"
+	StateStandbySpare       = "StandbySpare"
+	StateInTest             = "InTest"
+	StateStarting           = "Starting"
+	StateAbsent             = "Absent"
+	StateUnavailableOffline = "UnavailableOffline"
+	StateDeferring          = "Deferring"
+	StateQuiesced           = "Quiesced"
+	StateUpdating           = "Updating"
+	StateDegraded           = "Degraded"
+)
+
 // ComputerSystemUseCase provides business logic for ComputerSystem entities.
 type ComputerSystemUseCase struct {
 	Repo ComputerSystemRepository
@@ -65,42 +103,36 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		}
 	}
 
-	// Convert to string pointers for optional fields
-	var manufacturer, model, serialNumber *string
-	if system.Manufacturer != "" {
-		manufacturer = &system.Manufacturer
-	}
-
-	if system.Model != "" {
-		model = &system.Model
-	}
-
-	if system.SerialNumber != "" {
-		serialNumber = &system.SerialNumber
-	}
+	// Convert to string pointers for optional fields (using helper function to reduce allocations)
+	manufacturer := stringPtrIfNotEmpty(system.Manufacturer)
+	model := stringPtrIfNotEmpty(system.Model)
+	serialNumber := stringPtrIfNotEmpty(system.SerialNumber)
+	description := stringPtrIfNotEmpty(system.Description)
+	hostName := stringPtrIfNotEmpty(system.HostName)
 
 	// Create system type
-	systemType := generated.ComputerSystemSystemType("Physical")
+	systemType := generated.ComputerSystemSystemType(DefaultSystemType)
 
 	// Create OData fields following the reference pattern
-	odataContext := generated.OdataV4Context("/redfish/v1/$metadata#ComputerSystem.ComputerSystem")
-	odataType := generated.OdataV4Type("#ComputerSystem.v1_22_0.ComputerSystem")
-	odataID := fmt.Sprintf("/redfish/v1/Systems/%s", systemID)
+	odataContext := generated.OdataV4Context(ComputerSystemODataContext)
+	odataType := generated.OdataV4Type(ComputerSystemODataType)
+	odataID := fmt.Sprintf("%s/%s", RedfishSystemsBasePath, systemID)
 
 	// Build Status if present
-	var status *generated.ResourceStatus
+	status := uc.convertStatusToGenerated(system.Status)
 
-	if system.Status != nil {
-		health := generated.ResourceStatus_Health{}
-		_ = health.FromResourceStatusHealth1(system.Status.Health)
-		state := generated.ResourceStatus_State{}
-		_ = state.FromResourceStatusState1(system.Status.State)
-
-		status = &generated.ResourceStatus{
-			State:  &state,
-			Health: &health,
+	// Convert Description to union type if present
+	var descriptionUnion *generated.ComputerSystemComputerSystem_Description
+	if description != nil {
+		descriptionUnion = &generated.ComputerSystemComputerSystem_Description{}
+		if err := descriptionUnion.FromResourceDescription(*description); err != nil {
+			// Log error but continue - don't fail the entire request for Description conversion issues
+			descriptionUnion = nil
 		}
 	}
+
+	// Create Actions for this system using the generated Actions type
+	actions := uc.createActionsStruct(systemID)
 
 	result := generated.ComputerSystemComputerSystem{
 		OdataContext: &odataContext,
@@ -108,12 +140,15 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		OdataType:    &odataType,
 		Id:           systemID,
 		Name:         system.Name,
+		Description:  descriptionUnion,
+		HostName:     hostName,
 		Manufacturer: manufacturer,
 		Model:        model,
 		SerialNumber: serialNumber,
 		PowerState:   powerState,
 		SystemType:   &systemType,
 		Status:       status,
+		Actions:      actions,
 	}
 
 	return &result, nil
@@ -153,6 +188,15 @@ func StringPtr(s string) *string {
 	return &s
 }
 
+// stringPtrIfNotEmpty returns a pointer to the string if it's not empty, otherwise nil.
+func stringPtrIfNotEmpty(s string) *string {
+	if s != "" {
+		return &s
+	}
+
+	return nil
+}
+
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
@@ -185,5 +229,119 @@ func convertToEntityResetType(resetType generated.ResourceResetType) redfishv1.P
 		return redfishv1.PowerStateOn
 	default:
 		return redfishv1.PowerStateOff
+	}
+}
+
+// convertStatusToGenerated converts entity Status to generated ResourceStatus.
+func (uc *ComputerSystemUseCase) convertStatusToGenerated(status *redfishv1.Status) *generated.ResourceStatus {
+	if status == nil {
+		return nil
+	}
+
+	var healthPtr *generated.ResourceStatus_Health
+
+	var statePtr *generated.ResourceStatus_State
+
+	// Convert Health if present
+
+	if status.Health != "" {
+		healthPtr = uc.convertHealthToGenerated(status.Health)
+	}
+
+	// Convert State if present
+	if status.State != "" {
+		statePtr = uc.convertStateToGenerated(status.State)
+	}
+
+	// Only create Status if we have at least one field
+	if healthPtr != nil || statePtr != nil {
+		return &generated.ResourceStatus{
+			Health: healthPtr,
+			State:  statePtr,
+		}
+	}
+
+	return nil
+}
+
+// convertHealthToGenerated converts Health string to generated ResourceStatus_Health.
+func (uc *ComputerSystemUseCase) convertHealthToGenerated(health string) *generated.ResourceStatus_Health {
+	var healthEnum generated.ResourceHealth
+
+	switch health {
+	case HealthOK:
+		healthEnum = generated.OK
+	case HealthWarning:
+		healthEnum = generated.Warning
+	case HealthCritical:
+		healthEnum = generated.Critical
+	default:
+		return nil // Don't create health if unknown value
+	}
+
+	healthObj := generated.ResourceStatus_Health{}
+	if err := healthObj.FromResourceHealth(healthEnum); err == nil {
+		return &healthObj
+	}
+
+	return nil
+}
+
+// convertStateToGenerated converts State string to generated ResourceStatus_State.
+func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generated.ResourceStatus_State {
+	var stateEnum generated.ResourceState
+
+	switch state {
+	case StateEnabled:
+		stateEnum = generated.Enabled
+	case StateDisabled:
+		stateEnum = generated.Disabled
+	case StateStandbyOffline:
+		stateEnum = generated.StandbyOffline
+	case StateStandbySpare:
+		stateEnum = generated.StandbySpare
+	case StateInTest:
+		stateEnum = generated.InTest
+	case StateStarting:
+		stateEnum = generated.Starting
+	case StateAbsent:
+		stateEnum = generated.Absent
+	case StateUnavailableOffline:
+		stateEnum = generated.UnavailableOffline
+	case StateDeferring:
+		stateEnum = generated.Deferring
+	case StateQuiesced:
+		stateEnum = generated.Quiesced
+	case StateUpdating:
+		stateEnum = generated.Updating
+	case StateDegraded:
+		stateEnum = generated.Degraded
+	default:
+		return nil // Don't create state if unknown value
+	}
+
+	stateObj := generated.ResourceStatus_State{}
+	if err := stateObj.FromResourceState(stateEnum); err == nil {
+		return &stateObj
+	}
+
+	return nil
+}
+
+// createActionsStruct builds the Actions property using generated types.
+func (uc *ComputerSystemUseCase) createActionsStruct(systemID string) *generated.ComputerSystemActions {
+	// Create the target URI for the Reset action
+	target := fmt.Sprintf("/redfish/v1/Systems/%s/Actions/ComputerSystem.Reset", systemID)
+	title := "Reset"
+
+	// Create the ComputerSystem.Reset action
+	resetAction := &generated.ComputerSystemReset{
+		Target: &target,
+		Title:  &title,
+	}
+
+	// Create and return the Actions structure
+	return &generated.ComputerSystemActions{
+		HashComputerSystemReset: resetAction,
 	}
 }

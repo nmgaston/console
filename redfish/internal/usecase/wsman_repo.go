@@ -226,25 +226,15 @@ func (r *WsmanComputerSystemRepo) newCIMExtractor() *CIMExtractorFramework {
 	return &CIMExtractorFramework{repo: r}
 }
 
-// extractCIMData extracts multiple CIM properties in a single call using the configured extraction framework.
-func (r *WsmanComputerSystemRepo) extractCIMData(ctx context.Context, systemID string, configs []CIMPropertyConfig) map[string]interface{} {
+// getCIMProperties extracts multiple CIM properties in a single call using the configured extraction framework.
+func (r *WsmanComputerSystemRepo) getCIMProperties(ctx context.Context, systemID string, configs []CIMPropertyConfig) map[string]interface{} {
 	extractor := r.newCIMExtractor()
 
-	return extractor.ExtractMultipleProperties(ctx, systemID, configs)
+	return extractor.extractMultipleProperties(ctx, systemID, configs)
 }
 
-// ExtractProperty extracts a single property from CIM data based on configuration.
-func (f *CIMExtractorFramework) ExtractProperty(ctx context.Context, systemID string, config CIMPropertyConfig) interface{} {
-	hwInfo, err := f.repo.usecase.GetHardwareInfo(ctx, systemID)
-	if err != nil {
-		return nil
-	}
-
-	return f.ExtractPropertyFromHardwareInfo(hwInfo, config)
-}
-
-// ExtractPropertyFromHardwareInfo extracts a single property from pre-fetched hardware info.
-func (f *CIMExtractorFramework) ExtractPropertyFromHardwareInfo(hwInfo dto.HardwareInfo, config CIMPropertyConfig) interface{} {
+// extractPropertyFromHardwareInfo extracts a single property from pre-fetched hardware info.
+func (f *CIMExtractorFramework) extractPropertyFromHardwareInfo(hwInfo dto.HardwareInfo, config CIMPropertyConfig) interface{} {
 	var response interface{}
 
 	// Select the appropriate CIM object
@@ -425,8 +415,8 @@ func (f *CIMExtractorFramework) extractFromMapResponse(response interface{}, pro
 	return nil
 }
 
-// ExtractMultipleProperties extracts multiple properties in a single call for efficiency.
-func (f *CIMExtractorFramework) ExtractMultipleProperties(ctx context.Context, systemID string, configs []CIMPropertyConfig) map[string]interface{} {
+// extractMultipleProperties extracts multiple properties in a single call for efficiency.
+func (f *CIMExtractorFramework) extractMultipleProperties(ctx context.Context, systemID string, configs []CIMPropertyConfig) map[string]interface{} {
 	results := make(map[string]interface{})
 
 	// Get hardware info only once to avoid multiple WSMAN calls
@@ -438,7 +428,7 @@ func (f *CIMExtractorFramework) ExtractMultipleProperties(ctx context.Context, s
 	}
 
 	for _, config := range configs {
-		if value := f.ExtractPropertyFromHardwareInfo(hwInfo, config); value != nil {
+		if value := f.extractPropertyFromHardwareInfo(hwInfo, config); value != nil {
 			results[config.CIMProperty] = value
 		}
 	}
@@ -600,7 +590,7 @@ func (r *WsmanComputerSystemRepo) GetByID(ctx context.Context, systemID string) 
 	redfishPowerState := r.mapCIMPowerStateToRedfish(powerState.PowerState)
 
 	// Extract CIM data using the global configuration with static transformers
-	cimData := r.extractCIMData(ctx, systemID, allCIMConfigs)
+	cimData := r.getCIMProperties(ctx, systemID, allCIMConfigs)
 
 	// Build and return the complete ComputerSystem using only CIM data
 	system := r.buildComputerSystemFromCIMData(systemID, redfishPowerState, cimData)

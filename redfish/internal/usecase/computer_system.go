@@ -21,6 +21,44 @@ var (
 	ErrInvalidResetType = errors.New("invalid reset type")
 )
 
+// OData and schema constants for ComputerSystem.
+const (
+	// ComputerSystemODataType represents the OData type for ComputerSystem.
+	ComputerSystemODataType = "#ComputerSystem.v1_26_0.ComputerSystem"
+
+	// ComputerSystemODataContext represents the OData context for ComputerSystem.
+	ComputerSystemODataContext = "/redfish/v1/$metadata#ComputerSystem.ComputerSystem"
+
+	// RedfishSystemsBasePath represents the base path for Systems collection.
+	RedfishSystemsBasePath = "/redfish/v1/Systems"
+
+	// Default system type.
+	DefaultSystemType = "Physical"
+)
+
+// Resource Health constants.
+const (
+	HealthOK       = "OK"
+	HealthWarning  = "Warning"
+	HealthCritical = "Critical"
+)
+
+// Resource State constants.
+const (
+	StateEnabled            = "Enabled"
+	StateDisabled           = "Disabled"
+	StateStandbyOffline     = "StandbyOffline"
+	StateStandbySpare       = "StandbySpare"
+	StateInTest             = "InTest"
+	StateStarting           = "Starting"
+	StateAbsent             = "Absent"
+	StateUnavailableOffline = "UnavailableOffline"
+	StateDeferring          = "Deferring"
+	StateQuiesced           = "Quiesced"
+	StateUpdating           = "Updating"
+	StateDegraded           = "Degraded"
+)
+
 // ComputerSystemUseCase provides business logic for ComputerSystem entities.
 type ComputerSystemUseCase struct {
 	Repo ComputerSystemRepository
@@ -73,12 +111,12 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 	hostName := stringPtrIfNotEmpty(system.HostName)
 
 	// Create system type
-	systemType := generated.ComputerSystemSystemType("Physical")
+	systemType := generated.ComputerSystemSystemType(DefaultSystemType)
 
 	// Create OData fields following the reference pattern
-	odataContext := generated.OdataV4Context("/redfish/v1/$metadata#ComputerSystem.ComputerSystem")
-	odataType := generated.OdataV4Type("#ComputerSystem.v1_26_0.ComputerSystem")
-	odataID := fmt.Sprintf("/redfish/v1/Systems/%s", systemID)
+	odataContext := generated.OdataV4Context(ComputerSystemODataContext)
+	odataType := generated.OdataV4Type(ComputerSystemODataType)
+	odataID := fmt.Sprintf("%s/%s", RedfishSystemsBasePath, systemID)
 
 	// Build Status if present
 	status := uc.convertStatusToGenerated(system.Status)
@@ -227,11 +265,11 @@ func (uc *ComputerSystemUseCase) convertHealthToGenerated(health string) *genera
 	var healthEnum generated.ResourceHealth
 
 	switch health {
-	case "OK":
+	case HealthOK:
 		healthEnum = generated.OK
-	case "Warning":
+	case HealthWarning:
 		healthEnum = generated.Warning
-	case "Critical":
+	case HealthCritical:
 		healthEnum = generated.Critical
 	default:
 		return nil // Don't create health if unknown value
@@ -250,29 +288,29 @@ func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generate
 	var stateEnum generated.ResourceState
 
 	switch state {
-	case "Enabled":
+	case StateEnabled:
 		stateEnum = generated.Enabled
-	case "Disabled":
+	case StateDisabled:
 		stateEnum = generated.Disabled
-	case "StandbyOffline":
+	case StateStandbyOffline:
 		stateEnum = generated.StandbyOffline
-	case "StandbySpare":
+	case StateStandbySpare:
 		stateEnum = generated.StandbySpare
-	case "InTest":
+	case StateInTest:
 		stateEnum = generated.InTest
-	case "Starting":
+	case StateStarting:
 		stateEnum = generated.Starting
-	case "Absent":
+	case StateAbsent:
 		stateEnum = generated.Absent
-	case "UnavailableOffline":
+	case StateUnavailableOffline:
 		stateEnum = generated.UnavailableOffline
-	case "Deferring":
+	case StateDeferring:
 		stateEnum = generated.Deferring
-	case "Quiesced":
+	case StateQuiesced:
 		stateEnum = generated.Quiesced
-	case "Updating":
+	case StateUpdating:
 		stateEnum = generated.Updating
-	case "Degraded":
+	case StateDegraded:
 		stateEnum = generated.Degraded
 	default:
 		return nil // Don't create state if unknown value

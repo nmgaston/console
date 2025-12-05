@@ -509,6 +509,59 @@ func validateSystemResponseWithAllPropertiesTest(t *testing.T, w *httptest.Respo
 	assert.Equal(t, systemODataType, *response.OdataType)
 }
 
+// validateSystemActionsResponseTest validates system response with Actions property
+func validateSystemActionsResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+	validateJSONContentTypeTest(t, w)
+
+	var response generated.ComputerSystemComputerSystem
+	unmarshalJSONResponseTest(t, w, &response)
+
+	// Validate basic properties
+	assert.Equal(t, systemID, response.Id)
+	assert.Equal(t, "Test System", response.Name)
+
+	// Validate Actions property
+	assert.NotNil(t, response.Actions, "Actions property should not be nil")
+	assert.NotNil(t, response.Actions.HashComputerSystemReset, "ComputerSystem.Reset action should not be nil")
+
+	// Validate Reset action properties
+	resetAction := response.Actions.HashComputerSystemReset
+	assert.NotNil(t, resetAction.Target, "Reset action target should not be nil")
+
+	expectedTarget := fmt.Sprintf("/redfish/v1/Systems/%s/Actions/ComputerSystem.Reset", systemID)
+	assert.Equal(t, expectedTarget, *resetAction.Target)
+
+	assert.NotNil(t, resetAction.Title, "Reset action title should not be nil")
+	assert.Equal(t, "Reset", *resetAction.Title)
+
+	// Validate ResetType@Redfish.AllowableValues
+	assert.NotNil(t, resetAction.ResetTypeRedfishAllowableValues, "AllowableValues should not be nil")
+	allowableValues := *resetAction.ResetTypeRedfishAllowableValues
+	assert.GreaterOrEqual(t, len(allowableValues), 8, "Should have at least 8 allowable reset types")
+
+	// Verify specific reset types are present
+	resetTypesMap := make(map[generated.ResourceResetType]bool)
+	for _, resetType := range allowableValues {
+		resetTypesMap[resetType] = true
+	}
+
+	expectedResetTypes := []generated.ResourceResetType{
+		generated.ResourceResetTypeOn,
+		generated.ResourceResetTypeForceOff,
+		generated.ResourceResetTypeForceRestart,
+		generated.ResourceResetTypeGracefulRestart,
+		generated.ResourceResetTypeGracefulShutdown,
+		generated.ResourceResetTypePushPowerButton,
+		generated.ResourceResetTypeNmi,
+		generated.ResourceResetTypePowerCycle,
+	}
+
+	for _, expectedType := range expectedResetTypes {
+		assert.True(t, resetTypesMap[expectedType], "Expected reset type %s should be present", expectedType)
+	}
+}
+
 // Validation functions for system by ID tests (reusing shared validation)
 func validateSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
 	t.Helper()
@@ -664,6 +717,7 @@ func TestSystemsHandler_GetSystemByID(t *testing.T) {
 
 	tests := []SystemsTestCase[string]{
 		{"Success - Existing System", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemResponseTest, "System1"},
+		{"Success - System with Actions", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemActionsResponseTest, "System1"},
 		{"Success - System with All Properties", setupSystemWithAllPropertiesMockTest, "GET", http.StatusOK, validateSystemWithAllPropertiesResponseTest, "enhanced-system-1"},
 		{"Success - Minimal System Properties", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "minimal-system-1"},
 		{"Success - System with Long ID", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "very-long-system-identifier-that-exceeds-character-limits"},

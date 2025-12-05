@@ -438,6 +438,22 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_Actions:
+      additionalProperties: false
+      description: The available actions for this resource.
+      properties:
+        '#ComputerSystem.Reset':
+          $ref: '#/components/schemas/ComputerSystem_Reset'
+        Oem:
+          $ref: '#/components/schemas/ComputerSystem_OemActions'
+          description: The available OEM-specific actions for this resource.
+          x-longDescription: This property shall contain the available OEM-specific
+            actions for this resource.
+      type: object
+      x-longDescription: This type shall contain the available actions for this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     ComputerSystem_ComputerSystem:
       additionalProperties: false
       description: The `ComputerSystem` schema represents a computer or system instance
@@ -451,6 +467,11 @@ components:
           $ref: '#/components/schemas/odata-v4_id'
         '@odata.type':
           $ref: '#/components/schemas/odata-v4_type'
+        Actions:
+          $ref: '#/components/schemas/ComputerSystem_Actions'
+          description: The available actions for this resource.
+          x-longDescription: This property shall contain the available actions for
+            this resource.
         Description:
           oneOf:
           - $ref: '#/components/schemas/Resource_Description'
@@ -524,6 +545,44 @@ components:
       type: object
       x-longDescription: This resource shall represent a computing system in the Redfish
         Specification.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_OemActions:
+      additionalProperties: true
+      description: The available OEM-specific actions for this resource.
+      properties: {}
+      type: object
+      x-longDescription: This type shall contain the available OEM-specific actions
+        for this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_Reset:
+      additionalProperties: false
+      description: This action resets the system.
+      properties:
+        target:
+          description: Link to invoke action
+          format: uri-reference
+          type: string
+        title:
+          description: Friendly action name
+          type: string
+        ResetType@Redfish.AllowableValues:
+          description: The supported values for the ResetType parameter.
+          items:
+            $ref: '#/components/schemas/Resource_ResetType'
+          readOnly: true
+          type: array
+          x-longDescription: This property shall contain the supported values for
+            the ResetType parameter.
+      type: object
+      x-longDescription: This action shall reset the system represented by the resource.  For
+        systems that implement ACPI Power Button functionality, the `PushPowerButton`
+        value shall perform or emulate an ACPI Power Button Push, and the `ForceOff`
+        value shall perform an ACPI Power Button Override, commonly known as a four-second
+        hold of the power button.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.

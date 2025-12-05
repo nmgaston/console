@@ -56,6 +56,16 @@ components:
           type: string
           x-longDescription: This property shall contain the serial number for the
             system.
+        HostName:
+          description: The DNS host name, without any domain information.
+          nullable: true
+          readOnly: false
+          type: string
+          x-longDescription: This property shall contain the host name for this system,
+            as reported by the operating system or hypervisor.  A service running
+            in the host operating system typically reports this value to the manager.  Modifying
+            this property may modify the `HostName` in one or more `EthernetInterface`
+            resources contained in this system.
         Status:
           $ref: Resource.yaml#/components/schemas/Resource_Status
           description: The status and health of the resource and its subordinate or

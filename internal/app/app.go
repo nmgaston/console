@@ -27,10 +27,10 @@ var Version = "DEVELOPMENT"
 
 // Run creates objects via constructors.
 func Run(cfg *config.Config) {
-	log := logger.New(cfg.Log.Level)
+	log := logger.New(cfg.Level)
 	cfg.Version = Version
 	log.Info("app - Run - version: " + cfg.Version)
-	log.Info("app - Run - log level: " + cfg.Log.Level)
+	log.Info("app - Run - log level: " + cfg.Level)
 	// route standard and Gin logs through our JSON logger
 	logger.SetupStdLog(log)
 	logger.SetupGin(log)

@@ -33,7 +33,8 @@ func SetLogger(logger interface {
 	Info(message string, args ...interface{})
 	Warn(message string, args ...interface{})
 	Error(message interface{}, args ...interface{})
-}) {
+},
+) {
 	pkgLogger = logger
 }
 

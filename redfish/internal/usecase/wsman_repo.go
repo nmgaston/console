@@ -62,6 +62,9 @@ const (
 
 	// Maximum items to process in arrays to prevent hangs.
 	maxArrayItems = 10
+
+	// CIM property name constants.
+	cimPropertyVersion = "Version"
 )
 
 var (
@@ -303,14 +306,13 @@ func (f *CIMExtractorFramework) extractFromSpecificTypes(response interface{}, c
 				return chassisResp.Model
 			case "SerialNumber":
 				return chassisResp.SerialNumber
-			case "Version":
+			case cimPropertyVersion:
 				return chassisResp.Version
 			}
 		}
 	case CIMObjectBIOSElement:
 		if biosResp, ok := response.(bios.BiosElement); ok {
-			switch config.CIMProperty {
-			case "Version":
+			if config.CIMProperty == cimPropertyVersion {
 				return biosResp.Version
 			}
 		}

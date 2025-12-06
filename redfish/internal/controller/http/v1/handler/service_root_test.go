@@ -23,9 +23,9 @@ import (
 type testLogger struct{}
 
 func (l *testLogger) Debug(message interface{}, args ...interface{}) {}
-func (l *testLogger) Info(message string, args ...interface{})          {}
-func (l *testLogger) Warn(message string, args ...interface{})          {}
-func (l *testLogger) Error(message interface{}, args ...interface{})    {}
+func (l *testLogger) Info(message string, args ...interface{})       {}
+func (l *testLogger) Warn(message string, args ...interface{})       {}
+func (l *testLogger) Error(message interface{}, args ...interface{}) {}
 
 // resetMetadataState resets global metadata state for test isolation.
 func resetMetadataState() {

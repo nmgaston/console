@@ -470,7 +470,7 @@ func writeField(buf io.Writer, field string) error {
 	// Check for potential overflow
 	var fieldLen uint8
 	if len(field) <= math.MaxUint8 {
-		fieldLen = uint8(len(field)) //nolint:gosec // G115: Overflow validated by preceding check
+		fieldLen = uint8(len(field))
 	} else {
 		return ErrLengthLimit
 	}
@@ -608,7 +608,7 @@ func writeLength(buf *bytes.Buffer, challenge *client.AuthChallenge, response st
 		return ErrLengthLimit // If total length is too large, throws an error and stops here
 	}
 
-	length := uint32(totalLength) //nolint:gosec // G115: Overflow validated by preceding check
+	length := uint32(totalLength)
 
 	return binary.Write(buf, binary.LittleEndian, length)
 }
@@ -652,8 +652,8 @@ func generateEmptyAuth(challenge *client.AuthChallenge, authURL string) []byte {
 	lenAuthURL := uint8(0)
 
 	// If challenge has values that will cause overflow, stop them here
-	lenChallengeUsername = uint8(len(challenge.Username)) //nolint:gosec // G115: Overflow validated by preceding check
-	lenAuthURL = uint8(len(authURL))                      //nolint:gosec // G115: Overflow validated by preceding check
+	lenChallengeUsername = uint8(len(challenge.Username))
+	lenAuthURL = uint8(len(authURL))
 
 	emptyAuth := emptyAuth{
 		usernameLength: lenChallengeUsername, // Use calculated safe value

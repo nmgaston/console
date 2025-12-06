@@ -218,7 +218,10 @@ type ComputerSystemComputerSystem struct {
 	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
 
 	// Actions The available actions for this resource.
-	Actions     *ComputerSystemActions                    `json:"Actions,omitempty"`
+	Actions *ComputerSystemActions `json:"Actions,omitempty"`
+
+	// BiosVersion The version of the system BIOS or primary system firmware.
+	BiosVersion *string                                   `json:"BiosVersion"`
 	Description *ComputerSystemComputerSystem_Description `json:"Description,omitempty"`
 
 	// HostName The DNS host name, without any domain information.

@@ -19,6 +19,14 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 )
 
+// testLogger is a no-op logger for testing
+type testLogger struct{}
+
+func (l *testLogger) Debug(message interface{}, args ...interface{}) {}
+func (l *testLogger) Info(message string, args ...interface{})          {}
+func (l *testLogger) Warn(message string, args ...interface{})          {}
+func (l *testLogger) Error(message interface{}, args ...interface{})    {}
+
 // resetMetadataState resets global metadata state for test isolation.
 func resetMetadataState() {
 	metadataMutex.Lock()
@@ -26,6 +34,9 @@ func resetMetadataState() {
 
 	metadataXML = ""
 	metadataLoaded = false
+
+	// Initialize test logger to prevent nil pointer panics
+	SetLogger(&testLogger{})
 }
 
 // setupMetadataTestRouter creates a test router with metadata endpoint.

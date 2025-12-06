@@ -22,10 +22,10 @@ import (
 // testLogger is a no-op logger for testing
 type testLogger struct{}
 
-func (l *testLogger) Debug(message interface{}, args ...interface{}) {}
-func (l *testLogger) Info(message string, args ...interface{})       {}
-func (l *testLogger) Warn(message string, args ...interface{})       {}
-func (l *testLogger) Error(message interface{}, args ...interface{}) {}
+func (l *testLogger) Debug(_ interface{}, _ ...interface{}) {}
+func (l *testLogger) Info(_ string, _ ...interface{})       {}
+func (l *testLogger) Warn(_ string, _ ...interface{})       {}
+func (l *testLogger) Error(_ interface{}, _ ...interface{}) {}
 
 // resetMetadataState resets global metadata state for test isolation.
 func resetMetadataState() {

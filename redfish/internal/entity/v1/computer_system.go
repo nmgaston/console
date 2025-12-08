@@ -5,6 +5,9 @@ package redfish
 type ComputerSystem struct {
 	ID           string     `json:"Id"`
 	Name         string     `json:"Name"`
+	Description  string     `json:"Description,omitempty"`
+	BiosVersion  string     `json:"BiosVersion,omitempty"`
+	HostName     string     `json:"HostName,omitempty"`
 	SystemType   SystemType `json:"SystemType"`
 	Manufacturer string     `json:"Manufacturer"`
 	Model        string     `json:"Model"`

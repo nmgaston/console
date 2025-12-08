@@ -3,14 +3,7 @@ components:
     ServiceRoot_v1_19_0_Links:
       additionalProperties: false
       description: The links to other resources that are related to this resource.
-      properties:
-        Sessions:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
-          description: The link to a collection of sessions.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource collection of type `SessionCollection`.
-      required:
-      - Sessions
+      properties: {}
       type: object
       x-longDescription: This Redfish Specification-described type shall contain links to resources that are related to but are not contained by, or subordinate to, this resource.
       x-patternProperties:
@@ -41,6 +34,7 @@ components:
         Links:
           $ref: '#/components/schemas/ServiceRoot_v1_19_0_Links'
           description: The links to other resources that are related to this resource.
+          nullable: true
           x-longDescription: This property shall contain links to resources that are related to but are not contained by, or subordinate to, this resource.
         Name:
           $ref: Resource.yaml#/components/schemas/Resource_Name
@@ -61,12 +55,6 @@ components:
           x-longDescription: This property shall represent the Redfish protocol version,
             as specified in the 'Protocol version' clause of the Redfish Specification,
             to which this service conforms.
-        Registries:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
-          description: The link to a collection of registries.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource collection
-            of type `MessageRegistryFileCollection`.
         Systems:
           $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
           description: The link to a collection of systems.
@@ -98,7 +86,6 @@ components:
             the vendor name shall not be included in the `Product` property value.
           x-versionAdded: v1_5_0
       required:
-      - Links
       - '@odata.id'
       - '@odata.type'
       - Id

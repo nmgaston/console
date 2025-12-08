@@ -233,53 +233,11 @@ type ComputerSystemCollectionComputerSystemCollection_Description struct {
 	union json.RawMessage
 }
 
-// ComputerSystemBoot The boot settings for this system.
-type ComputerSystemBoot struct {
-	// BootSourceOverrideEnabled The state of the boot source override feature.
-	BootSourceOverrideEnabled *ComputerSystemBoot_BootSourceOverrideEnabled `json:"BootSourceOverrideEnabled,omitempty"`
-
-	// BootSourceOverrideMode The BIOS boot mode to use when the system boots from the BootSourceOverrideTarget boot source.
-	BootSourceOverrideMode *ComputerSystemBoot_BootSourceOverrideMode `json:"BootSourceOverrideMode,omitempty"`
-
-	// BootSourceOverrideTarget The current boot source to use at the next boot instead of the normal boot device, if BootSourceOverrideEnabled is `true`.
-	BootSourceOverrideTarget *ComputerSystemBoot_BootSourceOverrideTarget `json:"BootSourceOverrideTarget,omitempty"`
-
-	// UefiTargetBootSourceOverride The UEFI device path of the device from which to boot when BootSourceOverrideTarget is `UefiTarget`.
-	UefiTargetBootSourceOverride *string `json:"UefiTargetBootSourceOverride"`
+// ComputerSystemActions The available actions for this resource.
+type ComputerSystemActions struct {
+	// HashComputerSystemReset This action resets the system.
+	HashComputerSystemReset *ComputerSystemReset `json:"#ComputerSystem.Reset,omitempty"`
 }
-
-// ComputerSystemBootBootSourceOverrideEnabled1 defines model for .
-type ComputerSystemBootBootSourceOverrideEnabled1 = interface{}
-
-// ComputerSystemBoot_BootSourceOverrideEnabled The state of the boot source override feature.
-type ComputerSystemBoot_BootSourceOverrideEnabled struct {
-	union json.RawMessage
-}
-
-// ComputerSystemBootBootSourceOverrideMode1 defines model for .
-type ComputerSystemBootBootSourceOverrideMode1 = interface{}
-
-// ComputerSystemBoot_BootSourceOverrideMode The BIOS boot mode to use when the system boots from the BootSourceOverrideTarget boot source.
-type ComputerSystemBoot_BootSourceOverrideMode struct {
-	union json.RawMessage
-}
-
-// ComputerSystemBootBootSourceOverrideTarget1 defines model for .
-type ComputerSystemBootBootSourceOverrideTarget1 = interface{}
-
-// ComputerSystemBoot_BootSourceOverrideTarget The current boot source to use at the next boot instead of the normal boot device, if BootSourceOverrideEnabled is `true`.
-type ComputerSystemBoot_BootSourceOverrideTarget struct {
-	union json.RawMessage
-}
-
-// ComputerSystemBootSourceOverrideEnabled defines model for ComputerSystem_BootSourceOverrideEnabled.
-type ComputerSystemBootSourceOverrideEnabled string
-
-// ComputerSystemBootSourceOverrideMode defines model for ComputerSystem_BootSourceOverrideMode.
-type ComputerSystemBootSourceOverrideMode string
-
-// ComputerSystemBootSourceOverrideTarget defines model for ComputerSystem_BootSourceOverrideTarget.
-type ComputerSystemBootSourceOverrideTarget string
 
 // ComputerSystemComputerSystem The `ComputerSystem` schema represents a computer or system instance and the software-visible resources, or items within the data plane, such as memory, CPU, and other devices that it can access.  Details of those resources or subsystems are also linked through this resource.
 type ComputerSystemComputerSystem struct {
@@ -292,9 +250,15 @@ type ComputerSystemComputerSystem struct {
 	// OdataType The type of a resource.
 	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
 
-	// Boot The boot settings for this system.
-	Boot        *ComputerSystemBoot                       `json:"Boot,omitempty"`
+	// Actions The available actions for this resource.
+	Actions *ComputerSystemActions `json:"Actions,omitempty"`
+
+	// BiosVersion The version of the system BIOS or primary system firmware.
+	BiosVersion *string                                   `json:"BiosVersion"`
 	Description *ComputerSystemComputerSystem_Description `json:"Description,omitempty"`
+
+	// HostName The DNS host name, without any domain information.
+	HostName *string `json:"HostName"`
 
 	// Id The unique identifier for this resource within the collection of similar resources.
 	Id ResourceId `json:"Id"`
@@ -333,6 +297,15 @@ type ComputerSystemComputerSystemPowerState1 = interface{}
 // ComputerSystemComputerSystem_PowerState The current power state of the system.
 type ComputerSystemComputerSystem_PowerState struct {
 	union json.RawMessage
+}
+
+// ComputerSystemReset This action resets the system.
+type ComputerSystemReset struct {
+	// Target Link to invoke action
+	Target *string `json:"target,omitempty"`
+
+	// Title Friendly action name
+	Title *string `json:"title,omitempty"`
 }
 
 // ComputerSystemResetRequestBody This action resets the system.
@@ -559,10 +532,7 @@ type ResourceStatus_State struct {
 }
 
 // ServiceRootLinks The links to other resources that are related to this resource.
-type ServiceRootLinks struct {
-	// Sessions A reference to a resource.
-	Sessions OdataV4IdRef `json:"Sessions"`
-}
+type ServiceRootLinks = map[string]interface{}
 
 // ServiceRootServiceRoot The `ServiceRoot` schema describes the root of the Redfish service, located at the '/redfish/v1' URI.  All other resources accessible through the Redfish interface on this device are linked directly or indirectly from the service root.
 type ServiceRootServiceRoot struct {
@@ -580,7 +550,7 @@ type ServiceRootServiceRoot struct {
 	Id ResourceId `json:"Id"`
 
 	// Links The links to other resources that are related to this resource.
-	Links ServiceRootLinks `json:"Links"`
+	Links *ServiceRootLinks `json:"Links,omitempty"`
 
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`
@@ -590,9 +560,6 @@ type ServiceRootServiceRoot struct {
 
 	// RedfishVersion The version of the Redfish service.
 	RedfishVersion *string `json:"RedfishVersion,omitempty"`
-
-	// Registries A reference to a resource.
-	Registries *OdataV4IdRef `json:"Registries,omitempty"`
 
 	// Systems A reference to a resource.
 	Systems *OdataV4IdRef `json:"Systems,omitempty"`

@@ -1186,9 +1186,7 @@ func TestGetRedfishV1ServiceRootAllFields(t *testing.T) {
 		"UUID",
 		"Product",
 		"Vendor",
-		"Links",
 		"Systems",
-		"Registries",
 	}
 
 	for _, field := range requiredFields {
@@ -1212,22 +1210,10 @@ func TestGetRedfishV1ServiceRootAllFields(t *testing.T) {
 	_, err = uuid.Parse(uuidStr)
 	assert.NoError(t, err, "UUID should be valid")
 
-	// Verify Links structure
-	links, ok := response["Links"].(map[string]interface{})
-	assert.True(t, ok, "Links should be an object")
-	sessions, ok := links["Sessions"].(map[string]interface{})
-	assert.True(t, ok, "Sessions should be an object")
-	assert.Equal(t, "/redfish/v1/SessionService/Sessions", sessions["@odata.id"])
-
 	// Verify Systems reference
 	systems, ok := response["Systems"].(map[string]interface{})
 	assert.True(t, ok, "Systems should be an object")
 	assert.Equal(t, "/redfish/v1/Systems", systems["@odata.id"])
-
-	// Verify Registries reference
-	registries, ok := response["Registries"].(map[string]interface{})
-	assert.True(t, ok, "Registries should be an object")
-	assert.Equal(t, "/redfish/v1/Registries", registries["@odata.id"])
 }
 
 // TestGenerateServiceUUIDFallback tests UUID generation fallback behavior

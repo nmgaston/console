@@ -25,15 +25,6 @@ const (
 	StringArray ActionInfoParameterTypes = "StringArray"
 )
 
-// ComputerSystemBootSourceOverrideEnabled defines model for ComputerSystem_BootSourceOverrideEnabled.
-type ComputerSystemBootSourceOverrideEnabled string
-
-// ComputerSystemBootSourceOverrideMode defines model for ComputerSystem_BootSourceOverrideMode.
-type ComputerSystemBootSourceOverrideMode string
-
-// ComputerSystemBootSourceOverrideTarget defines model for ComputerSystem_BootSourceOverrideTarget.
-type ComputerSystemBootSourceOverrideTarget string
-
 // Defines values for ComputerSystemBootSourceOverrideEnabled.
 const (
 	ComputerSystemBootSourceOverrideEnabledContinuous ComputerSystemBootSourceOverrideEnabled = "Continuous"
@@ -242,6 +233,12 @@ type ComputerSystemCollectionComputerSystemCollection_Description struct {
 	union json.RawMessage
 }
 
+// ComputerSystemActions The available actions for this resource.
+type ComputerSystemActions struct {
+	// HashComputerSystemReset This action resets the system.
+	HashComputerSystemReset *ComputerSystemReset `json:"#ComputerSystem.Reset,omitempty"`
+}
+
 // ComputerSystemBoot The boot settings for this system.
 type ComputerSystemBoot struct {
 	// BootSourceOverrideEnabled The state of the boot source override feature.
@@ -281,6 +278,15 @@ type ComputerSystemBoot_BootSourceOverrideTarget struct {
 	union json.RawMessage
 }
 
+// ComputerSystemBootSourceOverrideEnabled defines model for ComputerSystem_BootSourceOverrideEnabled.
+type ComputerSystemBootSourceOverrideEnabled string
+
+// ComputerSystemBootSourceOverrideMode defines model for ComputerSystem_BootSourceOverrideMode.
+type ComputerSystemBootSourceOverrideMode string
+
+// ComputerSystemBootSourceOverrideTarget defines model for ComputerSystem_BootSourceOverrideTarget.
+type ComputerSystemBootSourceOverrideTarget string
+
 // ComputerSystemComputerSystem The `ComputerSystem` schema represents a computer or system instance and the software-visible resources, or items within the data plane, such as memory, CPU, and other devices that it can access.  Details of those resources or subsystems are also linked through this resource.
 type ComputerSystemComputerSystem struct {
 	// OdataContext The OData description of a payload.
@@ -292,9 +298,18 @@ type ComputerSystemComputerSystem struct {
 	// OdataType The type of a resource.
 	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
 
+	// Actions The available actions for this resource.
+	Actions *ComputerSystemActions `json:"Actions,omitempty"`
+
+	// BiosVersion The version of the system BIOS or primary system firmware.
+	BiosVersion *string `json:"BiosVersion"`
+
 	// Boot The boot settings for this system.
 	Boot        *ComputerSystemBoot                       `json:"Boot,omitempty"`
 	Description *ComputerSystemComputerSystem_Description `json:"Description,omitempty"`
+
+	// HostName The DNS host name, without any domain information.
+	HostName *string `json:"HostName"`
 
 	// Id The unique identifier for this resource within the collection of similar resources.
 	Id ResourceId `json:"Id"`
@@ -333,6 +348,15 @@ type ComputerSystemComputerSystemPowerState1 = interface{}
 // ComputerSystemComputerSystem_PowerState The current power state of the system.
 type ComputerSystemComputerSystem_PowerState struct {
 	union json.RawMessage
+}
+
+// ComputerSystemReset This action resets the system.
+type ComputerSystemReset struct {
+	// Target Link to invoke action
+	Target *string `json:"target,omitempty"`
+
+	// Title Friendly action name
+	Title *string `json:"title,omitempty"`
 }
 
 // ComputerSystemResetRequestBody This action resets the system.
@@ -559,10 +583,7 @@ type ResourceStatus_State struct {
 }
 
 // ServiceRootLinks The links to other resources that are related to this resource.
-type ServiceRootLinks struct {
-	// Sessions A reference to a resource.
-	Sessions OdataV4IdRef `json:"Sessions"`
-}
+type ServiceRootLinks = map[string]interface{}
 
 // ServiceRootServiceRoot The `ServiceRoot` schema describes the root of the Redfish service, located at the '/redfish/v1' URI.  All other resources accessible through the Redfish interface on this device are linked directly or indirectly from the service root.
 type ServiceRootServiceRoot struct {
@@ -580,7 +601,7 @@ type ServiceRootServiceRoot struct {
 	Id ResourceId `json:"Id"`
 
 	// Links The links to other resources that are related to this resource.
-	Links ServiceRootLinks `json:"Links"`
+	Links *ServiceRootLinks `json:"Links,omitempty"`
 
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`
@@ -590,9 +611,6 @@ type ServiceRootServiceRoot struct {
 
 	// RedfishVersion The version of the Redfish service.
 	RedfishVersion *string `json:"RedfishVersion,omitempty"`
-
-	// Registries A reference to a resource.
-	Registries *OdataV4IdRef `json:"Registries,omitempty"`
 
 	// Systems A reference to a resource.
 	Systems *OdataV4IdRef `json:"Systems,omitempty"`

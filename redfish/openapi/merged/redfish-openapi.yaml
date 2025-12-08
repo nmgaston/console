@@ -604,6 +604,17 @@ components:
           utility or UEFI human interface infrastructure.
         UefiTarget: This value shall indicate that the system boots to the UEFI device
           specified in the UefiTargetBootSourceOverride property.
+    ComputerSystem_Actions:
+      additionalProperties: false
+      description: The available actions for this resource.
+      properties:
+        '#ComputerSystem.Reset':
+          $ref: '#/components/schemas/ComputerSystem_Reset'
+      type: object
+      x-longDescription: This type shall contain the available actions for this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     ComputerSystem_ComputerSystem:
       additionalProperties: false
       description: The `ComputerSystem` schema represents a computer or system instance
@@ -622,12 +633,36 @@ components:
           description: The boot settings for this system.
           x-longDescription: This property shall contain the boot settings for this
             system.
+        Actions:
+          $ref: '#/components/schemas/ComputerSystem_Actions'
+          description: The available actions for this resource.
+          x-longDescription: This property shall contain the available actions for
+            this resource.
+        BiosVersion:
+          description: The version of the system BIOS or primary system firmware.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the version string of the
+            currently installed and running BIOS for x86 systems.  For other systems,
+            the property may contain a version string that represents the primary
+            system firmware.
         Description:
           oneOf:
           - $ref: '#/components/schemas/Resource_Description'
           - enum:
             - null
           readOnly: true
+        HostName:
+          description: The DNS host name, without any domain information.
+          nullable: true
+          readOnly: false
+          type: string
+          x-longDescription: This property shall contain the host name for this system,
+            as reported by the operating system or hypervisor.  A service running
+            in the host operating system typically reports this value to the manager.  Modifying
+            this property may modify the `HostName` in one or more `EthernetInterface`
+            resources contained in this system.
         Id:
           $ref: '#/components/schemas/Resource_Id'
           readOnly: true
@@ -685,6 +720,26 @@ components:
       type: object
       x-longDescription: This resource shall represent a computing system in the Redfish
         Specification.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_Reset:
+      additionalProperties: false
+      description: This action resets the system.
+      properties:
+        target:
+          description: Link to invoke action
+          format: uri-reference
+          type: string
+        title:
+          description: Friendly action name
+          type: string
+      type: object
+      x-longDescription: This action shall reset the system represented by the resource.  For
+        systems that implement ACPI Power Button functionality, the `PushPowerButton`
+        value shall perform or emulate an ACPI Power Button Push, and the `ForceOff`
+        value shall perform an ACPI Power Button Override, commonly known as a four-second
+        hold of the power button.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
@@ -2481,15 +2536,7 @@ components:
     ServiceRoot_Links:
       additionalProperties: false
       description: The links to other resources that are related to this resource.
-      properties:
-        Sessions:
-          $ref: '#/components/schemas/odata-v4_idRef'
-          description: The link to a collection of sessions.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource collection
-            of type `SessionCollection`.
-      required:
-      - Sessions
+      properties: {}
       type: object
       x-longDescription: This Redfish Specification-described type shall contain links
         to resources that are related to but are not contained by, or subordinate
@@ -2522,6 +2569,7 @@ components:
         Links:
           $ref: '#/components/schemas/ServiceRoot_Links'
           description: The links to other resources that are related to this resource.
+          nullable: true
           x-longDescription: This property shall contain links to resources that are
             related to but are not contained by, or subordinate to, this resource.
         Name:
@@ -2543,12 +2591,6 @@ components:
           x-longDescription: This property shall represent the Redfish protocol version,
             as specified in the 'Protocol version' clause of the Redfish Specification,
             to which this service conforms.
-        Registries:
-          $ref: '#/components/schemas/odata-v4_idRef'
-          description: The link to a collection of registries.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource collection
-            of type `MessageRegistryFileCollection`.
         Systems:
           $ref: '#/components/schemas/odata-v4_idRef'
           description: The link to a collection of systems.
@@ -2580,7 +2622,6 @@ components:
             the vendor name shall not be included in the `Product` property value.
           x-versionAdded: v1_5_0
       required:
-      - Links
       - '@odata.id'
       - '@odata.type'
       - Id

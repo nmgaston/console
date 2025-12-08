@@ -4,14 +4,14 @@
 # **********************************************************************
 
 # Step 1: Modules caching
-FROM golang:1.25.4-alpine@sha256:d2ede9f3341a67413127cf5366bb25bbad9b0a66e8173cae3a900ab00e84861f AS modules
+FROM golang:1.25.5-alpine@sha256:26111811bc967321e7b6f852e914d14bede324cd1accb7f81811929a6a57fea9 AS modules
 COPY go.mod go.sum /modules/
 WORKDIR /modules
 RUN apk add --no-cache git
 RUN go mod download
 
 # Step 2: Builder
-FROM golang:1.25.4-alpine@sha256:d2ede9f3341a67413127cf5366bb25bbad9b0a66e8173cae3a900ab00e84861f AS builder
+FROM golang:1.25.5-alpine@sha256:26111811bc967321e7b6f852e914d14bede324cd1accb7f81811929a6a57fea9 AS builder
 COPY --from=modules /go/pkg /go/pkg
 COPY . /app
 WORKDIR /app

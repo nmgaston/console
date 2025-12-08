@@ -502,6 +502,11 @@ components:
           type: string
           x-longDescription: This property shall contain a value that represents the
             manufacturer of the system.
+        MemorySummary:
+          $ref: '#/components/schemas/ComputerSystem_MemorySummary'
+          description: The central memory of the system in general detail.
+          x-longDescription: This property shall describe the central memory for this
+            resource.
         Model:
           description: The product name for this system, without the manufacturer
             name.
@@ -549,6 +554,70 @@ components:
       type: object
       x-longDescription: This resource shall represent a computing system in the Redfish
         Specification.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_MemoryMirroring:
+      enum:
+      - System
+      - DIMM
+      - Hybrid
+      - None
+      type: string
+      x-enumDescriptions:
+        DIMM: The system supports DIMM mirroring at the DIMM level.  Individual DIMMs
+          can be mirrored.
+        Hybrid: The system supports a hybrid mirroring at the system and DIMM levels.  Individual
+          DIMMs can be mirrored.
+        None: The system does not support DIMM mirroring.
+        System: The system supports DIMM mirroring at the system level.  Individual
+          DIMMs are not paired for mirroring in this mode.
+    ComputerSystem_MemorySummary:
+      additionalProperties: false
+      description: The memory of the system in general detail.
+      properties:
+        MemoryMirroring:
+          description: The ability and type of memory mirroring that this computer
+            system supports.
+          oneOf:
+          - $ref: '#/components/schemas/ComputerSystem_MemoryMirroring'
+          - enum:
+            - null
+          readOnly: true
+          x-longDescription: This property shall contain the ability and type of memory
+            mirroring that this computer system supports.
+          x-versionAdded: v1_1_0
+        Metrics:
+          $ref: '#/components/schemas/odata-v4_idRef'
+          description: The link to the metrics associated with all memory in this
+            system.
+          readOnly: true
+          x-longDescription: This property shall contain a link to the metrics associated
+            with all memory in this system.
+          x-versionAdded: v1_8_0
+        Status:
+          $ref: '#/components/schemas/Resource_Status'
+          deprecated: true
+          description: The status and health of the resource and its subordinate or
+            dependent resources.
+          x-deprecatedReason: This property has been deprecated in favor of the `Conditions`
+            property within `Status` in the root of this resource.
+          x-longDescription: This property shall contain any status or health properties
+            of the resource.
+          x-versionDeprecated: v1_16_0
+        TotalSystemMemoryGiB:
+          description: The total configured operating system-accessible memory (RAM),
+            measured in GiB.
+          minimum: 0
+          nullable: true
+          readOnly: true
+          type: number
+          x-longDescription: This property shall contain the amount of configured
+            system general purpose volatile (RAM) memory as measured in gibibytes.
+          x-units: GiBy
+      type: object
+      x-longDescription: This type shall contain properties that describe the central
+        memory for a system.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.

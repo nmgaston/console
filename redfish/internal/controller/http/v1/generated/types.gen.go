@@ -25,6 +25,14 @@ const (
 	StringArray ActionInfoParameterTypes = "StringArray"
 )
 
+// Defines values for ComputerSystemMemoryMirroring.
+const (
+	DIMM   ComputerSystemMemoryMirroring = "DIMM"
+	Hybrid ComputerSystemMemoryMirroring = "Hybrid"
+	None   ComputerSystemMemoryMirroring = "None"
+	System ComputerSystemMemoryMirroring = "System"
+)
+
 // Defines values for ComputerSystemSystemType.
 const (
 	Composed              ComputerSystemSystemType = "Composed"
@@ -233,6 +241,9 @@ type ComputerSystemComputerSystem struct {
 	// Manufacturer The manufacturer or OEM of this system.
 	Manufacturer *string `json:"Manufacturer"`
 
+	// MemorySummary The memory of the system in general detail.
+	MemorySummary *ComputerSystemMemorySummary `json:"MemorySummary,omitempty"`
+
 	// Model The product name for this system, without the manufacturer name.
 	Model *string `json:"Model"`
 
@@ -263,6 +274,32 @@ type ComputerSystemComputerSystemPowerState1 = interface{}
 
 // ComputerSystemComputerSystem_PowerState The current power state of the system.
 type ComputerSystemComputerSystem_PowerState struct {
+	union json.RawMessage
+}
+
+// ComputerSystemMemoryMirroring defines model for ComputerSystem_MemoryMirroring.
+type ComputerSystemMemoryMirroring string
+
+// ComputerSystemMemorySummary The memory of the system in general detail.
+type ComputerSystemMemorySummary struct {
+	// MemoryMirroring The ability and type of memory mirroring that this computer system supports.
+	MemoryMirroring *ComputerSystemMemorySummary_MemoryMirroring `json:"MemoryMirroring,omitempty"`
+
+	// Metrics A reference to a resource.
+	Metrics *OdataV4IdRef `json:"Metrics,omitempty"`
+
+	// Status The status and health of a resource and its children.
+	Status *ResourceStatus `json:"Status,omitempty"`
+
+	// TotalSystemMemoryGiB The total configured operating system-accessible memory (RAM), measured in GiB.
+	TotalSystemMemoryGiB *float32 `json:"TotalSystemMemoryGiB"`
+}
+
+// ComputerSystemMemorySummaryMemoryMirroring1 defines model for .
+type ComputerSystemMemorySummaryMemoryMirroring1 = interface{}
+
+// ComputerSystemMemorySummary_MemoryMirroring The ability and type of memory mirroring that this computer system supports.
+type ComputerSystemMemorySummary_MemoryMirroring struct {
 	union json.RawMessage
 }
 
@@ -817,6 +854,68 @@ func (t ComputerSystemComputerSystem_PowerState) MarshalJSON() ([]byte, error) {
 }
 
 func (t *ComputerSystemComputerSystem_PowerState) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemMemoryMirroring returns the union data inside the ComputerSystemMemorySummary_MemoryMirroring as a ComputerSystemMemoryMirroring
+func (t ComputerSystemMemorySummary_MemoryMirroring) AsComputerSystemMemoryMirroring() (ComputerSystemMemoryMirroring, error) {
+	var body ComputerSystemMemoryMirroring
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemMemoryMirroring overwrites any union data inside the ComputerSystemMemorySummary_MemoryMirroring as the provided ComputerSystemMemoryMirroring
+func (t *ComputerSystemMemorySummary_MemoryMirroring) FromComputerSystemMemoryMirroring(v ComputerSystemMemoryMirroring) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemMemoryMirroring performs a merge with any union data inside the ComputerSystemMemorySummary_MemoryMirroring, using the provided ComputerSystemMemoryMirroring
+func (t *ComputerSystemMemorySummary_MemoryMirroring) MergeComputerSystemMemoryMirroring(v ComputerSystemMemoryMirroring) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemMemorySummaryMemoryMirroring1 returns the union data inside the ComputerSystemMemorySummary_MemoryMirroring as a ComputerSystemMemorySummaryMemoryMirroring1
+func (t ComputerSystemMemorySummary_MemoryMirroring) AsComputerSystemMemorySummaryMemoryMirroring1() (ComputerSystemMemorySummaryMemoryMirroring1, error) {
+	var body ComputerSystemMemorySummaryMemoryMirroring1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemMemorySummaryMemoryMirroring1 overwrites any union data inside the ComputerSystemMemorySummary_MemoryMirroring as the provided ComputerSystemMemorySummaryMemoryMirroring1
+func (t *ComputerSystemMemorySummary_MemoryMirroring) FromComputerSystemMemorySummaryMemoryMirroring1(v ComputerSystemMemorySummaryMemoryMirroring1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemMemorySummaryMemoryMirroring1 performs a merge with any union data inside the ComputerSystemMemorySummary_MemoryMirroring, using the provided ComputerSystemMemorySummaryMemoryMirroring1
+func (t *ComputerSystemMemorySummary_MemoryMirroring) MergeComputerSystemMemorySummaryMemoryMirroring1(v ComputerSystemMemorySummaryMemoryMirroring1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemMemorySummary_MemoryMirroring) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemMemorySummary_MemoryMirroring) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

@@ -14,6 +14,16 @@ type MockComputerSystemRepo struct {
 	systems map[string]*redfishv1.ComputerSystem
 }
 
+const (
+	// Default test system memory in GiB.
+	testSystemMemoryGiB = 32.0
+)
+
+// float32Ptr creates a pointer to a float32 value.
+func float32Ptr(f float32) *float32 {
+	return &f
+}
+
 // NewMockComputerSystemRepo creates a new mock repository with sample test data.
 func NewMockComputerSystemRepo() *MockComputerSystemRepo {
 	repo := &MockComputerSystemRepo{
@@ -32,6 +42,13 @@ func NewMockComputerSystemRepo() *MockComputerSystemRepo {
 		Status: &redfishv1.Status{
 			State:  "Enabled",
 			Health: "OK",
+		},
+		MemorySummary: &redfishv1.ComputerSystemMemorySummary{
+			TotalSystemMemoryGiB: float32Ptr(testSystemMemoryGiB),
+			Status: &redfishv1.Status{
+				State:  "Enabled",
+				Health: "OK",
+			},
 		},
 		ODataID:   "/redfish/v1/Systems/test-system-1",
 		ODataType: "#ComputerSystem.v1_22_0.ComputerSystem",

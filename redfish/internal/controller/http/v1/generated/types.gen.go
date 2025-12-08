@@ -25,6 +25,15 @@ const (
 	StringArray ActionInfoParameterTypes = "StringArray"
 )
 
+// ComputerSystemBootSourceOverrideEnabled defines model for ComputerSystem_BootSourceOverrideEnabled.
+type ComputerSystemBootSourceOverrideEnabled string
+
+// ComputerSystemBootSourceOverrideMode defines model for ComputerSystem_BootSourceOverrideMode.
+type ComputerSystemBootSourceOverrideMode string
+
+// ComputerSystemBootSourceOverrideTarget defines model for ComputerSystem_BootSourceOverrideTarget.
+type ComputerSystemBootSourceOverrideTarget string
+
 // Defines values for ComputerSystemBootSourceOverrideEnabled.
 const (
 	ComputerSystemBootSourceOverrideEnabledContinuous ComputerSystemBootSourceOverrideEnabled = "Continuous"
@@ -271,15 +280,6 @@ type ComputerSystemBootBootSourceOverrideTarget1 = interface{}
 type ComputerSystemBoot_BootSourceOverrideTarget struct {
 	union json.RawMessage
 }
-
-// ComputerSystemBootSourceOverrideEnabled defines model for ComputerSystem_BootSourceOverrideEnabled.
-type ComputerSystemBootSourceOverrideEnabled string
-
-// ComputerSystemBootSourceOverrideMode defines model for ComputerSystem_BootSourceOverrideMode.
-type ComputerSystemBootSourceOverrideMode string
-
-// ComputerSystemBootSourceOverrideTarget defines model for ComputerSystem_BootSourceOverrideTarget.
-type ComputerSystemBootSourceOverrideTarget string
 
 // ComputerSystemComputerSystem The `ComputerSystem` schema represents a computer or system instance and the software-visible resources, or items within the data plane, such as memory, CPU, and other devices that it can access.  Details of those resources or subsystems are also linked through this resource.
 type ComputerSystemComputerSystem struct {

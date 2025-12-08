@@ -369,6 +369,7 @@ func createTestSystemEntityData(systemID, name, manufacturer, model, serialNumbe
 	return &redfishv1.ComputerSystem{
 		ID:           systemID,
 		Name:         name,
+		BiosVersion:  "1.2.3.4",
 		Manufacturer: manufacturer,
 		Model:        model,
 		SerialNumber: serialNumber,
@@ -382,6 +383,7 @@ func createTestSystemEntityDataWithAllProperties(systemID, name, manufacturer, m
 		ID:          systemID,
 		Name:        name,
 		Description: "Computer System managed by Intel AMT",
+		BiosVersion: "2.4.6.8",
 		HostName:    "amt-" + systemID + ".example.com",
 		Status: &redfishv1.Status{
 			State:  "Enabled",
@@ -454,6 +456,9 @@ func validateSystemResponseDataTest(t *testing.T, w *httptest.ResponseRecorder, 
 	assert.Equal(t, expectedModel, *response.Model)
 	assert.NotNil(t, response.SerialNumber)
 	assert.Equal(t, expectedSerial, *response.SerialNumber)
+	// Validate BiosVersion property
+	assert.NotNil(t, response.BiosVersion)
+	assert.Equal(t, "1.2.3.4", *response.BiosVersion)
 	assert.NotNil(t, response.OdataId)
 	assert.Equal(t, fmt.Sprintf("%s/%s", systemsEndpointTest, systemID), *response.OdataId)
 	assert.NotNil(t, response.OdataType)
@@ -471,6 +476,10 @@ func validateSystemResponseWithAllPropertiesTest(t *testing.T, w *httptest.Respo
 	// Validate basic properties
 	assert.Equal(t, systemID, response.Id)
 	assert.Equal(t, expectedName, response.Name)
+
+	// Validate BiosVersion property
+	assert.NotNil(t, response.BiosVersion)
+	assert.Equal(t, "2.4.6.8", *response.BiosVersion)
 
 	// Validate Description property
 	if expectedDescription != "" {

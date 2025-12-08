@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/bios"
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
 
 	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
@@ -61,6 +62,9 @@ const (
 
 	// Maximum items to process in arrays to prevent hangs.
 	maxArrayItems = 10
+
+	// CIM property name constants.
+	cimPropertyVersion = "Version"
 )
 
 var (
@@ -80,6 +84,7 @@ type CIMObjectType string
 const (
 	CIMObjectChassis               CIMObjectType = "chassis"
 	CIMObjectComputerSystemPackage CIMObjectType = "computersystem"
+	CIMObjectBIOSElement           CIMObjectType = "bioselement"
 )
 
 // PropertyExtractor defines a function signature for custom property transformation.
@@ -122,6 +127,8 @@ var allCIMConfigs = []CIMPropertyConfig{
 	// ComputerSystem properties
 	{CIMObject: CIMObjectComputerSystemPackage, CIMProperty: "Description", UseFirstItem: true},
 	{CIMObject: CIMObjectComputerSystemPackage, CIMProperty: "DNSHostName", UseFirstItem: true},
+	// BIOS properties
+	{CIMObject: CIMObjectBIOSElement, CIMProperty: "Version", UseFirstItem: true},
 	// Computer System status properties with static transformer functions
 	{CIMObject: CIMObjectComputerSystemPackage, CIMProperty: "HealthState", UseFirstItem: true, Transformer: healthStateTransformer},
 	{CIMObject: CIMObjectComputerSystemPackage, CIMProperty: "EnabledState", UseFirstItem: true, Transformer: enabledStateTransformer},
@@ -247,6 +254,10 @@ func (f *CIMExtractorFramework) extractPropertyFromHardwareInfo(hwInfo dto.Hardw
 		if hwInfo.CIMComputerSystemPackage.Response != nil {
 			response = hwInfo.CIMComputerSystemPackage.Response
 		}
+	case CIMObjectBIOSElement:
+		if hwInfo.CIMBIOSElement.Response != nil {
+			response = hwInfo.CIMBIOSElement.Response
+		}
 	default:
 		f.repo.log.Warn("Unknown CIM object type", "type", config.CIMObject, "property", config.CIMProperty)
 
@@ -295,8 +306,14 @@ func (f *CIMExtractorFramework) extractFromSpecificTypes(response interface{}, c
 				return chassisResp.Model
 			case "SerialNumber":
 				return chassisResp.SerialNumber
-			case "Version":
+			case cimPropertyVersion:
 				return chassisResp.Version
+			}
+		}
+	case CIMObjectBIOSElement:
+		if biosResp, ok := response.(bios.BiosElement); ok {
+			if config.CIMProperty == cimPropertyVersion {
+				return biosResp.Version
 			}
 		}
 	case CIMObjectComputerSystemPackage:
@@ -508,6 +525,7 @@ func (r *WsmanComputerSystemRepo) buildComputerSystemFromCIMData(systemID string
 	model, _ := cimData["Model"].(string)
 	serialNumber, _ := cimData["SerialNumber"].(string)
 	description, _ := cimData["Description"].(string)
+	biosVersion, _ := cimData["Version"].(string)
 	hostNameFromCIM, _ := cimData["DNSHostName"].(string)
 
 	// Build Status from extracted health and state data
@@ -522,6 +540,7 @@ func (r *WsmanComputerSystemRepo) buildComputerSystemFromCIMData(systemID string
 		Manufacturer: manufacturer,
 		Model:        model,
 		SerialNumber: serialNumber,
+		BiosVersion:  biosVersion,
 		SystemType:   redfishv1.SystemTypePhysical,
 		ODataID:      "/redfish/v1/Systems/" + systemID,
 		ODataType:    "#ComputerSystem.v1_26_0.ComputerSystem",

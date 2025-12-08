@@ -499,10 +499,7 @@ type ResourceStatus_State struct {
 }
 
 // ServiceRootLinks The links to other resources that are related to this resource.
-type ServiceRootLinks struct {
-	// Sessions A reference to a resource.
-	Sessions OdataV4IdRef `json:"Sessions"`
-}
+type ServiceRootLinks = map[string]interface{}
 
 // ServiceRootServiceRoot The `ServiceRoot` schema describes the root of the Redfish service, located at the '/redfish/v1' URI.  All other resources accessible through the Redfish interface on this device are linked directly or indirectly from the service root.
 type ServiceRootServiceRoot struct {
@@ -520,7 +517,7 @@ type ServiceRootServiceRoot struct {
 	Id ResourceId `json:"Id"`
 
 	// Links The links to other resources that are related to this resource.
-	Links ServiceRootLinks `json:"Links"`
+	Links *ServiceRootLinks `json:"Links,omitempty"`
 
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`
@@ -530,9 +527,6 @@ type ServiceRootServiceRoot struct {
 
 	// RedfishVersion The version of the Redfish service.
 	RedfishVersion *string `json:"RedfishVersion,omitempty"`
-
-	// Registries A reference to a resource.
-	Registries *OdataV4IdRef `json:"Registries,omitempty"`
 
 	// Systems A reference to a resource.
 	Systems *OdataV4IdRef `json:"Systems,omitempty"`

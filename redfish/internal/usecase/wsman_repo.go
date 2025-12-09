@@ -7,6 +7,7 @@ import (
 
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/bios"
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
+	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/physical"
 
 	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
@@ -31,6 +32,13 @@ const (
 	healthStateOK       = "OK"
 	healthStateWarning  = "Warning"
 	healthStateCritical = "Critical"
+
+	// CIM OperationalStatus constants for memory health mapping.
+	CIMStatusOK                  = 2  // OK
+	CIMStatusDegraded            = 3  // Degraded
+	CIMStatusError               = 6  // Error
+	CIMStatusNonRecoverableError = 7  // Non-Recoverable Error
+	CIMStatusStressed            = 10 // Stressed
 
 	// Enabled state constants.
 	enabledStateEnabled        = "Enabled"
@@ -85,6 +93,7 @@ const (
 	CIMObjectChassis               CIMObjectType = "chassis"
 	CIMObjectComputerSystemPackage CIMObjectType = "computersystem"
 	CIMObjectBIOSElement           CIMObjectType = "bioselement"
+	CIMObjectPhysicalMemory        CIMObjectType = "physicalmemory"
 )
 
 // PropertyExtractor defines a function signature for custom property transformation.
@@ -112,8 +121,10 @@ type WsmanComputerSystemRepo struct {
 
 // Forward declarations for transformer functions.
 var (
-	healthStateTransformer  PropertyExtractor
-	enabledStateTransformer PropertyExtractor
+	healthStateTransformer    PropertyExtractor
+	enabledStateTransformer   PropertyExtractor
+	memoryCapacityTransformer PropertyExtractor
+	memoryStatusTransformer   PropertyExtractor
 )
 
 // allCIMConfigs defines the complete set of CIM property configurations for computer system data extraction.
@@ -132,6 +143,9 @@ var allCIMConfigs = []CIMPropertyConfig{
 	// Computer System status properties with static transformer functions
 	{CIMObject: CIMObjectComputerSystemPackage, CIMProperty: "HealthState", UseFirstItem: true, Transformer: healthStateTransformer},
 	{CIMObject: CIMObjectComputerSystemPackage, CIMProperty: "EnabledState", UseFirstItem: true, Transformer: enabledStateTransformer},
+	// Memory properties - we extract raw arrays and process them later for aggregation
+	{CIMObject: CIMObjectPhysicalMemory, CIMProperty: "Capacity", UseFirstItem: false},
+	{CIMObject: CIMObjectPhysicalMemory, CIMProperty: "OperationalStatus", UseFirstItem: false},
 }
 
 // NewWsmanComputerSystemRepo creates a new WSMAN-backed computer system repository.
@@ -209,16 +223,56 @@ func createEnabledStateTransformer() PropertyExtractor {
 	}
 }
 
+// createMemoryCapacityTransformer creates the memory capacity transformation function.
+func createMemoryCapacityTransformer() PropertyExtractor {
+	return func(value interface{}) interface{} {
+		// This will be handled by aggregation logic in buildComputerSystemFromCIMData
+		// Just return the raw capacity values for processing
+		return value
+	}
+}
+
+// createMemoryStatusTransformer creates the memory status transformation function.
+func createMemoryStatusTransformer() PropertyExtractor {
+	return func(value interface{}) interface{} {
+		// Convert CIM operational status to Redfish health state
+		// CIM Operational Status values: 2=OK, 3=Degraded, 6=Error, etc.
+		var operationalStatus int
+
+		switch v := value.(type) {
+		case int:
+			operationalStatus = v
+		case float64:
+			operationalStatus = int(v)
+		default:
+			return nil
+		}
+
+		switch operationalStatus {
+		case CIMStatusOK:
+			return healthStateOK
+		case CIMStatusDegraded, CIMStatusStressed:
+			return healthStateWarning
+		case CIMStatusError, CIMStatusNonRecoverableError:
+			return healthStateCritical
+		default:
+			return nil
+		}
+	}
+}
+
 // initializeTransformers initializes the global transformer functions.
 func initializeTransformers() {
 	healthStateTransformer = createHealthStateTransformer()
 	enabledStateTransformer = createEnabledStateTransformer()
+	memoryCapacityTransformer = createMemoryCapacityTransformer()
+	memoryStatusTransformer = createMemoryStatusTransformer()
 }
 
 // NewWsmanComputerSystemRepo creates a new WSMAN-backed computer system repository.
 func NewWsmanComputerSystemRepo(uc *devices.UseCase, log logger.Interface) *WsmanComputerSystemRepo {
 	// Ensure transformers are initialized
-	if healthStateTransformer == nil || enabledStateTransformer == nil {
+	if healthStateTransformer == nil || enabledStateTransformer == nil || memoryCapacityTransformer == nil || memoryStatusTransformer == nil {
 		initializeTransformers()
 	}
 
@@ -257,6 +311,10 @@ func (f *CIMExtractorFramework) extractPropertyFromHardwareInfo(hwInfo dto.Hardw
 	case CIMObjectBIOSElement:
 		if hwInfo.CIMBIOSElement.Response != nil {
 			response = hwInfo.CIMBIOSElement.Response
+		}
+	case CIMObjectPhysicalMemory:
+		if hwInfo.CIMPhysicalMemory.Response != nil {
+			response = hwInfo.CIMPhysicalMemory.Response
 		}
 	default:
 		f.repo.log.Warn("Unknown CIM object type", "type", config.CIMObject, "property", config.CIMProperty)
@@ -298,34 +356,65 @@ func (f *CIMExtractorFramework) extractFromResponse(response interface{}, config
 func (f *CIMExtractorFramework) extractFromSpecificTypes(response interface{}, config CIMPropertyConfig) interface{} {
 	switch config.CIMObject {
 	case CIMObjectChassis:
-		if chassisResp, ok := response.(chassis.PackageResponse); ok {
-			switch config.CIMProperty {
-			case "Manufacturer":
-				return chassisResp.Manufacturer
-			case "Model":
-				return chassisResp.Model
-			case "SerialNumber":
-				return chassisResp.SerialNumber
-			case cimPropertyVersion:
-				return chassisResp.Version
-			}
-		}
+		return f.extractFromChassis(response, config)
 	case CIMObjectBIOSElement:
-		if biosResp, ok := response.(bios.BiosElement); ok {
-			if config.CIMProperty == cimPropertyVersion {
-				return biosResp.Version
-			}
-		}
+		return f.extractFromBIOS(response, config)
+	case CIMObjectPhysicalMemory:
+		return f.extractFromPhysicalMemory(response, config)
 	case CIMObjectComputerSystemPackage:
 		// Note: CIMObjectComputerSystemPackage doesn't have a specific struct type in the CIM messages
 		// It uses generic map structures, so it will fall back to map extraction
 		return nil
+	default:
+		return nil
+	}
+}
+
+// extractFromChassis extracts properties from chassis response.
+func (f *CIMExtractorFramework) extractFromChassis(response interface{}, config CIMPropertyConfig) interface{} {
+	if chassisResp, ok := response.(chassis.PackageResponse); ok {
+		switch config.CIMProperty {
+		case "Manufacturer":
+			return chassisResp.Manufacturer
+		case "Model":
+			return chassisResp.Model
+		case "SerialNumber":
+			return chassisResp.SerialNumber
+		case cimPropertyVersion:
+			return chassisResp.Version
+		}
 	}
 
 	return nil
 }
 
-// extractFromSingleItem extracts property from a single map item.
+// extractFromBIOS extracts properties from BIOS response.
+func (f *CIMExtractorFramework) extractFromBIOS(response interface{}, config CIMPropertyConfig) interface{} {
+	if biosResp, ok := response.(bios.BiosElement); ok {
+		if config.CIMProperty == cimPropertyVersion {
+			return biosResp.Version
+		}
+	}
+
+	return nil
+}
+
+// extractFromPhysicalMemory extracts properties from physical memory response.
+func (f *CIMExtractorFramework) extractFromPhysicalMemory(response interface{}, config CIMPropertyConfig) interface{} {
+	if memoryResp, ok := response.(physical.PhysicalMemory); ok {
+		switch config.CIMProperty {
+		case "Capacity":
+			return memoryResp.Capacity
+		case "OperationalStatus":
+			// Return first operational status for health mapping
+			if len(memoryResp.OperationalStatus) > 0 {
+				return int(memoryResp.OperationalStatus[0])
+			}
+		}
+	}
+
+	return nil
+} // extractFromSingleItem extracts property from a single map item.
 func (f *CIMExtractorFramework) extractFromSingleItem(itemMap map[string]interface{}, propertyName string) interface{} {
 	if len(itemMap) == 0 {
 		return nil
@@ -556,7 +645,151 @@ func (r *WsmanComputerSystemRepo) buildComputerSystemFromCIMData(systemID string
 		system.Name = hostNameFromCIM // Use CIM hostname as the name
 	}
 
+	// Build MemorySummary from memory data
+	memorySummary := r.buildMemorySummaryFromCIMData(cimData)
+	if memorySummary != nil {
+		system.MemorySummary = memorySummary
+	}
+
 	return system
+}
+
+// buildMemorySummaryFromCIMData creates a MemorySummary from CIM memory data.
+func (r *WsmanComputerSystemRepo) buildMemorySummaryFromCIMData(cimData map[string]interface{}) *redfishv1.ComputerSystemMemorySummary {
+	// Extract memory capacity data (array of capacity values)
+	capacityData, hasCapacity := cimData["Capacity"]
+	operationalStatusData, hasStatus := cimData["OperationalStatus"]
+
+	if !hasCapacity && !hasStatus {
+		return nil // No memory data available
+	}
+
+	var totalMemoryGiB float32
+
+	memoryHealth := healthStateOK // Default to OK
+
+	// Process capacity data to calculate total memory in GiB
+	if hasCapacity {
+		totalMemoryGiB = r.calculateTotalMemoryGiB(capacityData)
+	}
+
+	// Process operational status to determine worst health state
+	if hasStatus {
+		memoryHealth = r.calculateMemoryHealth(operationalStatusData)
+	}
+
+	// Build memory summary using internal entity type - only populate with actual data
+	memorySummary := &redfishv1.ComputerSystemMemorySummary{}
+
+	// Only set TotalSystemMemoryGiB if we have capacity data
+	if hasCapacity && totalMemoryGiB > 0 {
+		memorySummary.TotalSystemMemoryGiB = &totalMemoryGiB
+	}
+
+	// MemoryMirroring is not set as AMT doesn't provide this information
+	// It will remain empty unless we have actual mirroring data from hardware
+
+	// Add Status only if we have health information
+	if memoryHealth != "" {
+		memorySummary.Status = &redfishv1.Status{
+			Health: memoryHealth,
+			State:  enabledStateEnabled, // Memory is typically enabled if present
+		}
+	}
+
+	// Only return memorySummary if we have at least some memory data
+	if memorySummary.TotalSystemMemoryGiB == nil && memorySummary.Status == nil {
+		return nil // No memory data available
+	}
+
+	return memorySummary
+}
+
+// calculateTotalMemoryGiB sums up memory capacity from all memory modules and converts to GiB.
+func (r *WsmanComputerSystemRepo) calculateTotalMemoryGiB(capacityData interface{}) float32 {
+	var totalBytes int64
+
+	switch data := capacityData.(type) {
+	case []interface{}:
+		for _, capacity := range data {
+			switch v := capacity.(type) {
+			case int:
+				totalBytes += int64(v)
+			case float64:
+				totalBytes += int64(v)
+			}
+		}
+	case int:
+		totalBytes = int64(data)
+	case float64:
+		totalBytes = int64(data)
+	}
+
+	// Convert bytes to GiB (1 GiB = 1024^3 bytes)
+	const bytesPerGiB = 1024 * 1024 * 1024
+
+	return float32(totalBytes) / bytesPerGiB
+}
+
+// calculateMemoryHealth determines the worst health state from all memory modules.
+func (r *WsmanComputerSystemRepo) calculateMemoryHealth(statusData interface{}) string {
+	worstHealth := healthStateOK
+
+	switch data := statusData.(type) {
+	case []interface{}:
+		for _, status := range data {
+			health := r.convertOperationalStatusToHealth(status)
+			if health != "" {
+				worstHealth = r.getWorseHealth(worstHealth, health)
+			}
+		}
+	default:
+		health := r.convertOperationalStatusToHealth(statusData)
+		if health != "" {
+			worstHealth = health
+		}
+	}
+
+	return worstHealth
+}
+
+// convertOperationalStatusToHealth converts CIM operational status to Redfish health.
+func (r *WsmanComputerSystemRepo) convertOperationalStatusToHealth(status interface{}) string {
+	var operationalStatus int
+
+	switch v := status.(type) {
+	case int:
+		operationalStatus = v
+	case float64:
+		operationalStatus = int(v)
+	default:
+		return ""
+	}
+
+	switch operationalStatus {
+	case CIMStatusOK:
+		return healthStateOK
+	case CIMStatusDegraded, CIMStatusStressed:
+		return healthStateWarning
+	case CIMStatusError, CIMStatusNonRecoverableError:
+		return healthStateCritical
+	default:
+		return healthStateOK // Default to OK for unknown states
+	}
+}
+
+// getWorseHealth returns the worse of two health states.
+func (r *WsmanComputerSystemRepo) getWorseHealth(current, next string) string {
+	// Critical is worst, then Warning, then OK
+	if current == healthStateCritical || next == healthStateCritical {
+		return healthStateCritical
+	}
+
+	if current == healthStateWarning || next == healthStateWarning {
+		return healthStateWarning
+	}
+
+	return healthStateOK
 }
 
 // GetAll retrieves all computer system IDs from the WSMAN backend.

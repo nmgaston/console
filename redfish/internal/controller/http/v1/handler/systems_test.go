@@ -783,3 +783,74 @@ func TestSystemsHandler_GetSystemByID_WithLogger(t *testing.T) {
 	assert.Len(t, testLogger.ErrorCalls, 1)
 	assert.Equal(t, "Failed to retrieve computer system", testLogger.ErrorCalls[0][0])
 }
+
+// createTestSystemEntityDataWithMemory creates a test system entity with MemorySummary
+func createTestSystemEntityDataWithMemory(systemID, name, manufacturer, model, serialNumber string) *redfishv1.ComputerSystem {
+	system := createTestSystemEntityData(systemID, name, manufacturer, model, serialNumber)
+	system.MemorySummary = &redfishv1.ComputerSystemMemorySummary{
+		TotalSystemMemoryGiB: func() *float32 {
+			v := float32(16.0)
+
+			return &v
+		}(),
+		// MemoryMirroring is not set in test - only populated when AMT provides actual mirroring data
+		Status: &redfishv1.Status{
+			Health: "OK",
+			State:  "Enabled",
+		},
+	}
+
+	return system
+}
+
+// setupSystemWithMemoryMockTest sets up a system with MemorySummary populated
+func setupSystemWithMemoryMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithMemory(systemID, "Test System with Memory", "Test Manufacturer", "Test Model", "SN123456")
+	repo.AddSystem(systemID, system)
+}
+
+// validateSystemWithMemoryResponseTest validates system response includes MemorySummary
+func validateSystemWithMemoryResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+
+	validateSystemResponseDataTest(t, w, systemID, "Test System with Memory", "Test Manufacturer", "Test Model", "SN123456")
+
+	// Additional validation for MemorySummary
+	var response redfishv1.ComputerSystem
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	// Verify MemorySummary is present and correct
+	assert.NotNil(t, response.MemorySummary, "MemorySummary should be present")
+	assert.NotNil(t, response.MemorySummary.TotalSystemMemoryGiB, "TotalSystemMemoryGiB should be set")
+	assert.Equal(t, float32(16.0), *response.MemorySummary.TotalSystemMemoryGiB, "Memory should be 16.0 GiB")
+	// MemoryMirroring is not asserted as it should only be populated when AMT provides actual mirroring data
+	assert.NotNil(t, response.MemorySummary.Status, "MemorySummary Status should be set")
+	assert.Equal(t, "OK", response.MemorySummary.Status.Health, "Memory health should be OK")
+	assert.Equal(t, "Enabled", response.MemorySummary.Status.State, "Memory state should be Enabled")
+}
+
+// TestMemorySummaryInSystemResponse validates that MemorySummary is properly included
+func TestMemorySummaryInSystemResponse(t *testing.T) {
+	t.Parallel()
+
+	config := SystemsTestConfig[string]{
+		endpoint:    "/redfish/v1/Systems/{id}",
+		routerSetup: setupSystemByIDTestRouter,
+		urlBuilder: func(systemID string) string {
+			return fmt.Sprintf("%s/%s", systemsEndpointTest, systemID)
+		},
+	}
+
+	tests := []SystemsTestCase[string]{
+		{"Success - System with MemorySummary", setupSystemWithMemoryMockTest, "GET", http.StatusOK, validateSystemWithMemoryResponseTest, "System1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			runGenericSystemsTest(t, tt, config)
+		})
+	}
+}

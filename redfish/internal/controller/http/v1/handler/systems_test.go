@@ -849,11 +849,12 @@ func createTestSystemEntityDataWithProcessor(systemID, name, manufacturer, model
 	system := createTestSystemEntityData(systemID, name, manufacturer, model, serialNumber)
 	system.ProcessorSummary = &redfishv1.ComputerSystemProcessorSummary{
 		Count: intPtr(2),
-		// CoreCount, LogicalProcessorCount, Model, and ThreadingEnabled are nil
+		// CoreCount, LogicalProcessorCount, and ThreadingEnabled are nil
 		// because CIM_Processor doesn't provide these in Intel AMT WSMAN implementation
+		// Model is available from CIM_Chip.Version
 		CoreCount:             nil,
 		LogicalProcessorCount: nil,
-		Model:                 nil,
+		Model:                 stringPtr("12th Gen Intel(R) Core(TM) i5-1250P"),
 		Status: &redfishv1.Status{
 			Health:       "OK",
 			HealthRollup: "OK",
@@ -917,7 +918,7 @@ func setupSystemWithFullPropertiesMockTest(repo *TestSystemsComputerSystemReposi
 		Count:                 intPtr(4),
 		CoreCount:             nil,
 		LogicalProcessorCount: nil,
-		Model:                 nil,
+		Model:                 stringPtr("12th Gen Intel(R) Core(TM) i7-1270P"),
 		Status: &redfishv1.Status{
 			Health:       "OK",
 			HealthRollup: "OK",
@@ -951,8 +952,11 @@ func validateSystemWithProcessorResponseTest(t *testing.T, w *httptest.ResponseR
 	// These properties are nil because CIM_Processor doesn't provide them in Intel AMT WSMAN
 	assert.Nil(t, response.ProcessorSummary.CoreCount, "CoreCount should be nil (not available from CIM_Processor)")
 	assert.Nil(t, response.ProcessorSummary.LogicalProcessorCount, "LogicalProcessorCount should be nil (not available from CIM_Processor)")
-	assert.Nil(t, response.ProcessorSummary.Model, "Model should be nil (not available from CIM_Processor)")
 	assert.Nil(t, response.ProcessorSummary.ThreadingEnabled, "ThreadingEnabled should be nil (not available from CIM_Processor)")
+
+	// Model should be available from CIM_Chip.Version
+	assert.NotNil(t, response.ProcessorSummary.Model, "Model should be present from CIM_Chip.Version")
+	assert.Equal(t, "12th Gen Intel(R) Core(TM) i5-1250P", *response.ProcessorSummary.Model, "Processor model should match CIM_Chip.Version")
 
 	// Status should be available from CIM_Processor HealthState and EnabledState
 	assert.NotNil(t, response.ProcessorSummary.Status, "ProcessorSummary Status should be set")
@@ -989,6 +993,8 @@ func validateSystemWithMemoryAndProcessorResponseTest(t *testing.T, w *httptest.
 	assert.NotNil(t, response.ProcessorSummary, "ProcessorSummary should be present")
 	assert.NotNil(t, response.ProcessorSummary.Count, "Count should be set")
 	assert.Equal(t, 2, *response.ProcessorSummary.Count, "Processor count should be 2")
+	assert.NotNil(t, response.ProcessorSummary.Model, "Model should be present from CIM_Chip.Version")
+	assert.Equal(t, "12th Gen Intel(R) Core(TM) i5-1250P", *response.ProcessorSummary.Model, "Processor model should match CIM_Chip.Version")
 	assert.NotNil(t, response.ProcessorSummary.Status, "ProcessorSummary Status should be set")
 	assert.Equal(t, "OK", response.ProcessorSummary.Status.Health, "Processor health should be OK")
 	assert.Equal(t, "Enabled", response.ProcessorSummary.Status.State, "Processor state should be Enabled")
@@ -1021,6 +1027,8 @@ func validateSystemWithFullPropertiesResponseTest(t *testing.T, w *httptest.Resp
 	assert.NotNil(t, response.ProcessorSummary, "ProcessorSummary should be present")
 	assert.NotNil(t, response.ProcessorSummary.Count, "Count should be set")
 	assert.Equal(t, 4, *response.ProcessorSummary.Count, "Processor count should be 4")
+	assert.NotNil(t, response.ProcessorSummary.Model, "Model should be present from CIM_Chip.Version")
+	assert.Equal(t, "12th Gen Intel(R) Core(TM) i7-1270P", *response.ProcessorSummary.Model, "Processor model should match CIM_Chip.Version")
 	assert.NotNil(t, response.ProcessorSummary.Status, "ProcessorSummary Status should be set")
 	assert.Equal(t, "OK", response.ProcessorSummary.Status.Health, "Processor health should be OK")
 	assert.Equal(t, "Enabled", response.ProcessorSummary.Status.State, "Processor state should be Enabled")

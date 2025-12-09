@@ -138,23 +138,27 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 	// Convert MemorySummary if present
 	memorySummary := uc.convertMemorySummaryToGenerated(system.MemorySummary)
 
+	// Convert ProcessorSummary if present
+	processorSummary := uc.convertProcessorSummaryToGenerated(system.ProcessorSummary)
+
 	result := generated.ComputerSystemComputerSystem{
-		OdataContext:  &odataContext,
-		OdataId:       &odataID,
-		OdataType:     &odataType,
-		Id:            systemID,
-		Name:          system.Name,
-		Description:   descriptionUnion,
-		BiosVersion:   biosVersion,
-		HostName:      hostName,
-		Manufacturer:  manufacturer,
-		Model:         model,
-		SerialNumber:  serialNumber,
-		PowerState:    powerState,
-		SystemType:    &systemType,
-		Status:        status,
-		Actions:       actions,
-		MemorySummary: memorySummary,
+		OdataContext:     &odataContext,
+		OdataId:          &odataID,
+		OdataType:        &odataType,
+		Id:               systemID,
+		Name:             system.Name,
+		Description:      descriptionUnion,
+		BiosVersion:      biosVersion,
+		HostName:         hostName,
+		Manufacturer:     manufacturer,
+		Model:            model,
+		SerialNumber:     serialNumber,
+		PowerState:       powerState,
+		SystemType:       &systemType,
+		Status:           status,
+		Actions:          actions,
+		MemorySummary:    memorySummary,
+		ProcessorSummary: processorSummary,
 	}
 
 	return &result, nil
@@ -245,17 +249,31 @@ func (uc *ComputerSystemUseCase) convertStatusToGenerated(status *redfishv1.Stat
 	}
 
 	healthPtr := uc.convertHealthToGenerated(status.Health)
+	healthRollupPtr := uc.convertHealthToGenerated(status.HealthRollup)
 	statePtr := uc.convertStateToGenerated(status.State)
 
 	// Only create Status if we have at least one field
-	if healthPtr == nil && statePtr == nil {
+	if healthPtr == nil && healthRollupPtr == nil && statePtr == nil {
 		return nil
 	}
 
-	return &generated.ResourceStatus{
+	result := &generated.ResourceStatus{
 		Health: healthPtr,
 		State:  statePtr,
 	}
+
+	// Set HealthRollup using the same conversion as Health
+	if healthRollupPtr != nil {
+		healthEnum, err := healthRollupPtr.AsResourceHealth()
+		if err == nil {
+			healthRollup := &generated.ResourceStatus_HealthRollup{}
+			if err := healthRollup.FromResourceHealth(healthEnum); err == nil {
+				result.HealthRollup = healthRollup
+			}
+		}
+	}
+
+	return result
 }
 
 // convertHealthToGenerated converts Health string to generated ResourceStatus_Health.
@@ -388,5 +406,22 @@ func (uc *ComputerSystemUseCase) isValidMemoryMirroring(mirroring redfishv1.Memo
 		return true
 	default:
 		return false
+	}
+}
+
+// convertProcessorSummaryToGenerated converts entity ComputerSystemProcessorSummary to generated ComputerSystemProcessorSummary.
+func (uc *ComputerSystemUseCase) convertProcessorSummaryToGenerated(processorSummary *redfishv1.ComputerSystemProcessorSummary) *generated.ComputerSystemProcessorSummary {
+	if processorSummary == nil {
+		return nil
+	}
+
+	return &generated.ComputerSystemProcessorSummary{
+		Count:                   processorSummary.Count,
+		CoreCount:               processorSummary.CoreCount,
+		LogicalProcessorCount:   processorSummary.LogicalProcessorCount,
+		Model:                   processorSummary.Model,
+		Status:                  uc.convertStatusToGenerated(processorSummary.Status),
+		StatusRedfishDeprecated: processorSummary.StatusRedfishDeprecated,
+		ThreadingEnabled:        processorSummary.ThreadingEnabled,
 	}
 }

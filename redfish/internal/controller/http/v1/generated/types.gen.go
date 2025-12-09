@@ -253,6 +253,9 @@ type ComputerSystemComputerSystem struct {
 	// PowerState The current power state of the system.
 	PowerState *ComputerSystemComputerSystem_PowerState `json:"PowerState,omitempty"`
 
+	// ProcessorSummary The processor of the system in general detail.
+	ProcessorSummary *ComputerSystemProcessorSummary `json:"ProcessorSummary,omitempty"`
+
 	// SerialNumber The serial number for this system.
 	SerialNumber *string `json:"SerialNumber"`
 
@@ -301,6 +304,30 @@ type ComputerSystemMemorySummaryMemoryMirroring1 = interface{}
 // ComputerSystemMemorySummary_MemoryMirroring The ability and type of memory mirroring that this computer system supports.
 type ComputerSystemMemorySummary_MemoryMirroring struct {
 	union json.RawMessage
+}
+
+// ComputerSystemProcessorSummary The processor of the system in general detail.
+type ComputerSystemProcessorSummary struct {
+	// CoreCount The number of processor cores in the system.
+	CoreCount *int `json:"CoreCount"`
+
+	// Count The number of physical processors in the system.
+	Count *int `json:"Count"`
+
+	// LogicalProcessorCount The number of logical processors in the system.
+	LogicalProcessorCount *int `json:"LogicalProcessorCount"`
+
+	// Model The processor model for the primary or majority of processors in this system.
+	Model *string `json:"Model"`
+
+	// Status The status and health of a resource and its children.
+	Status *ResourceStatus `json:"Status,omitempty"`
+
+	// StatusRedfishDeprecated Please migrate to use Status in the individual Processor resources
+	StatusRedfishDeprecated *string `json:"Status@Redfish.Deprecated,omitempty"`
+
+	// ThreadingEnabled An indication of whether the system supports multithreading or hyperthreading on the processors.
+	ThreadingEnabled *bool `json:"ThreadingEnabled"`
 }
 
 // ComputerSystemReset This action resets the system.

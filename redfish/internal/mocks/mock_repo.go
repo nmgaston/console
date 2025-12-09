@@ -17,11 +17,24 @@ type MockComputerSystemRepo struct {
 const (
 	// Default test system memory in GiB.
 	testSystemMemoryGiB = 32.0
+
+	// Default test processor count (only value available from CIM_Processor enumeration).
+	mockProcessorCount = 2
 )
 
 // float32Ptr creates a pointer to a float32 value.
 func float32Ptr(f float32) *float32 {
 	return &f
+}
+
+// intPtr creates a pointer to an int value.
+func intPtr(i int) *int {
+	return &i
+}
+
+// stringPtr creates a pointer to a string value.
+func stringPtr(s string) *string {
+	return &s
 }
 
 // NewMockComputerSystemRepo creates a new mock repository with sample test data.
@@ -49,6 +62,21 @@ func NewMockComputerSystemRepo() *MockComputerSystemRepo {
 				State:  "Enabled",
 				Health: "OK",
 			},
+		},
+		ProcessorSummary: &redfishv1.ComputerSystemProcessorSummary{
+			Count: intPtr(mockProcessorCount),
+			// CoreCount, LogicalProcessorCount, Model, and ThreadingEnabled are nil
+			// because CIM_Processor doesn't provide these in Intel AMT WSMAN implementation
+			CoreCount:             nil,
+			LogicalProcessorCount: nil,
+			Model:                 nil,
+			Status: &redfishv1.Status{
+				State:        "Enabled",
+				Health:       "OK",
+				HealthRollup: "OK",
+			},
+			StatusRedfishDeprecated: stringPtr("Please migrate to use Status in the individual Processor resources"),
+			ThreadingEnabled:        nil,
 		},
 		ODataID:   "/redfish/v1/Systems/test-system-1",
 		ODataType: "#ComputerSystem.v1_22_0.ComputerSystem",

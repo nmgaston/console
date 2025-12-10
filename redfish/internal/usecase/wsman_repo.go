@@ -944,13 +944,14 @@ func (r *WsmanComputerSystemRepo) initializeProcessorSummary(cimData map[string]
 		processorSummary.Count = &processorCount
 	}
 
-	// CoreCount, LogicalProcessorCount, and ThreadingEnabled are set to nil
+	// CoreCount, LogicalProcessorCount, ThreadingEnabled, and Metrics are set to nil
 	// because CIM_Processor doesn't provide NumberOfCores, NumberOfLogicalProcessors,
-	// or ThreadingEnabled in the available Intel AMT WSMAN implementation.
+	// ThreadingEnabled, or processor metrics in the available Intel AMT WSMAN implementation.
 	// Only populate these if actual CIM data becomes available in the future.
 	processorSummary.CoreCount = nil
 	processorSummary.LogicalProcessorCount = nil
 	processorSummary.ThreadingEnabled = nil
+	processorSummary.Metrics = nil
 
 	return processorSummary
 }

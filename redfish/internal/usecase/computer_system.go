@@ -415,13 +415,42 @@ func (uc *ComputerSystemUseCase) convertProcessorSummaryToGenerated(processorSum
 		return nil
 	}
 
+	var metrics *generated.OdataV4IdRef
+	if processorSummary.Metrics != nil {
+		metrics = &generated.OdataV4IdRef{
+			OdataId: processorSummary.Metrics,
+		}
+	}
+
+	// Convert *int to *int64 for count fields
+	var count *int64
+
+	if processorSummary.Count != nil {
+		c := int64(*processorSummary.Count)
+		count = &c
+	}
+
+	var coreCount *int64
+
+	if processorSummary.CoreCount != nil {
+		cc := int64(*processorSummary.CoreCount)
+		coreCount = &cc
+	}
+
+	var logicalProcessorCount *int64
+
+	if processorSummary.LogicalProcessorCount != nil {
+		lpc := int64(*processorSummary.LogicalProcessorCount)
+		logicalProcessorCount = &lpc
+	}
+
 	return &generated.ComputerSystemProcessorSummary{
-		Count:                   processorSummary.Count,
-		CoreCount:               processorSummary.CoreCount,
-		LogicalProcessorCount:   processorSummary.LogicalProcessorCount,
-		Model:                   processorSummary.Model,
-		Status:                  uc.convertStatusToGenerated(processorSummary.Status),
-		StatusRedfishDeprecated: processorSummary.StatusRedfishDeprecated,
-		ThreadingEnabled:        processorSummary.ThreadingEnabled,
+		Count:                 count,
+		CoreCount:             coreCount,
+		LogicalProcessorCount: logicalProcessorCount,
+		Metrics:               metrics,
+		Model:                 processorSummary.Model,
+		Status:                uc.convertStatusToGenerated(processorSummary.Status),
+		ThreadingEnabled:      processorSummary.ThreadingEnabled,
 	}
 }

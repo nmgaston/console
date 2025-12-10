@@ -81,6 +81,7 @@ type ComputerSystemProcessorSummary struct {
 	Count                   *int    `json:"Count,omitempty"`
 	CoreCount               *int    `json:"CoreCount,omitempty"`
 	LogicalProcessorCount   *int    `json:"LogicalProcessorCount,omitempty"`
+	Metrics                 *string `json:"Metrics,omitempty"`
 	Model                   *string `json:"Model,omitempty"`
 	Status                  *Status `json:"Status,omitempty"`
 	StatusRedfishDeprecated *string `json:"Status@Redfish.Deprecated,omitempty"`

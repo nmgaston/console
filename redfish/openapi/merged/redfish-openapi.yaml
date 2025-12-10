@@ -527,6 +527,11 @@ components:
             - null
           readOnly: true
           x-longDescription: This property shall contain the power state of the system.
+        ProcessorSummary:
+          $ref: '#/components/schemas/ComputerSystem_ProcessorSummary'
+          description: The central processors of the system in general detail.
+          x-longDescription: This property shall describe the processors for this
+            resource.
         SerialNumber:
           description: The serial number for this system.
           nullable: true
@@ -618,6 +623,84 @@ components:
       type: object
       x-longDescription: This type shall contain properties that describe the central
         memory for a system.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_ProcessorSummary:
+      additionalProperties: false
+      description: The central processors of the system in general detail.
+      properties:
+        CoreCount:
+          description: The number of processor cores in the system.
+          format: int64
+          minimum: 0
+          nullable: true
+          readOnly: true
+          type: integer
+          x-longDescription: This property shall contain the total number of central
+            processor cores in the system.
+          x-versionAdded: v1_14_0
+        Count:
+          description: The number of physical processors in the system.
+          format: int64
+          minimum: 0
+          nullable: true
+          readOnly: true
+          type: integer
+          x-longDescription: This property shall contain the total number of physical
+            central processors in the system.
+        LogicalProcessorCount:
+          description: The number of logical processors in the system.
+          format: int64
+          minimum: 0
+          nullable: true
+          readOnly: true
+          type: integer
+          x-longDescription: This property shall contain the total number of logical
+            central processors in the system.
+          x-versionAdded: v1_5_0
+        Metrics:
+          $ref: '#/components/schemas/odata-v4_idRef'
+          description: The link to the metrics associated with all processors in this
+            system.
+          readOnly: true
+          x-longDescription: This property shall contain a link to the metrics associated
+            with all processors in this system.
+          x-versionAdded: v1_7_0
+        Model:
+          description: The processor model for the primary or majority of processors
+            in this system.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the processor model for the
+            central processors in the system, per the description in the Processor
+            Information - Processor Family section of the SMBIOS Specification DSP0134
+            2.8 or later.
+        Status:
+          $ref: '#/components/schemas/Resource_Status'
+          deprecated: true
+          description: The status and health of the resource and its subordinate or
+            dependent resources.
+          x-deprecatedReason: This property has been deprecated in favor of the `Conditions`
+            property within `Status` in the root of this resource.
+          x-longDescription: This property shall contain any status or health properties
+            of the resource.
+          x-versionDeprecated: v1_16_0
+        ThreadingEnabled:
+          description: An indication of whether threading is enabled on all processors
+            in this system.
+          readOnly: false
+          type: boolean
+          x-longDescription: The value of this property shall indicate that all `Processor`
+            resources in this system where the `ProcessorType` property contains `CPU`
+            have multiple threading support enabled.
+          x-versionAdded: v1_15_0
+      type: object
+      x-longDescription: This type shall contain properties that describe the central
+        processors for a system.  Processors described by this type shall be limited
+        to the processors that execute system code, and shall not include processors
+        used for offload functionality.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.

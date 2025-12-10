@@ -253,6 +253,9 @@ type ComputerSystemComputerSystem struct {
 	// PowerState The current power state of the system.
 	PowerState *ComputerSystemComputerSystem_PowerState `json:"PowerState,omitempty"`
 
+	// ProcessorSummary The central processors of the system in general detail.
+	ProcessorSummary *ComputerSystemProcessorSummary `json:"ProcessorSummary,omitempty"`
+
 	// SerialNumber The serial number for this system.
 	SerialNumber *string `json:"SerialNumber"`
 
@@ -301,6 +304,30 @@ type ComputerSystemMemorySummaryMemoryMirroring1 = interface{}
 // ComputerSystemMemorySummary_MemoryMirroring The ability and type of memory mirroring that this computer system supports.
 type ComputerSystemMemorySummary_MemoryMirroring struct {
 	union json.RawMessage
+}
+
+// ComputerSystemProcessorSummary The central processors of the system in general detail.
+type ComputerSystemProcessorSummary struct {
+	// CoreCount The number of processor cores in the system.
+	CoreCount *int64 `json:"CoreCount"`
+
+	// Count The number of physical processors in the system.
+	Count *int64 `json:"Count"`
+
+	// LogicalProcessorCount The number of logical processors in the system.
+	LogicalProcessorCount *int64 `json:"LogicalProcessorCount"`
+
+	// Metrics A reference to a resource.
+	Metrics *OdataV4IdRef `json:"Metrics,omitempty"`
+
+	// Model The processor model for the primary or majority of processors in this system.
+	Model *string `json:"Model"`
+
+	// Status The status and health of a resource and its children.
+	Status *ResourceStatus `json:"Status,omitempty"`
+
+	// ThreadingEnabled An indication of whether threading is enabled on all processors in this system.
+	ThreadingEnabled *bool `json:"ThreadingEnabled,omitempty"`
 }
 
 // ComputerSystemReset This action resets the system.

@@ -25,12 +25,45 @@ const (
 	StringArray ActionInfoParameterTypes = "StringArray"
 )
 
+// Defines values for ComputerSystemBootSourceOverrideEnabled.
+const (
+	ComputerSystemBootSourceOverrideEnabledContinuous ComputerSystemBootSourceOverrideEnabled = "Continuous"
+	ComputerSystemBootSourceOverrideEnabledDisabled   ComputerSystemBootSourceOverrideEnabled = "Disabled"
+	ComputerSystemBootSourceOverrideEnabledOnce       ComputerSystemBootSourceOverrideEnabled = "Once"
+)
+
+// Defines values for ComputerSystemBootSourceOverrideMode.
+const (
+	Legacy ComputerSystemBootSourceOverrideMode = "Legacy"
+	UEFI   ComputerSystemBootSourceOverrideMode = "UEFI"
+)
+
+// Defines values for ComputerSystemBootSourceOverrideTarget.
+const (
+	ComputerSystemBootSourceOverrideTargetBiosSetup    ComputerSystemBootSourceOverrideTarget = "BiosSetup"
+	ComputerSystemBootSourceOverrideTargetCd           ComputerSystemBootSourceOverrideTarget = "Cd"
+	ComputerSystemBootSourceOverrideTargetDiags        ComputerSystemBootSourceOverrideTarget = "Diags"
+	ComputerSystemBootSourceOverrideTargetFloppy       ComputerSystemBootSourceOverrideTarget = "Floppy"
+	ComputerSystemBootSourceOverrideTargetHdd          ComputerSystemBootSourceOverrideTarget = "Hdd"
+	ComputerSystemBootSourceOverrideTargetNone         ComputerSystemBootSourceOverrideTarget = "None"
+	ComputerSystemBootSourceOverrideTargetPxe          ComputerSystemBootSourceOverrideTarget = "Pxe"
+	ComputerSystemBootSourceOverrideTargetRecovery     ComputerSystemBootSourceOverrideTarget = "Recovery"
+	ComputerSystemBootSourceOverrideTargetRemoteDrive  ComputerSystemBootSourceOverrideTarget = "RemoteDrive"
+	ComputerSystemBootSourceOverrideTargetSDCard       ComputerSystemBootSourceOverrideTarget = "SDCard"
+	ComputerSystemBootSourceOverrideTargetUefiBootNext ComputerSystemBootSourceOverrideTarget = "UefiBootNext"
+	ComputerSystemBootSourceOverrideTargetUefiHttp     ComputerSystemBootSourceOverrideTarget = "UefiHttp"
+	ComputerSystemBootSourceOverrideTargetUefiShell    ComputerSystemBootSourceOverrideTarget = "UefiShell"
+	ComputerSystemBootSourceOverrideTargetUefiTarget   ComputerSystemBootSourceOverrideTarget = "UefiTarget"
+	ComputerSystemBootSourceOverrideTargetUsb          ComputerSystemBootSourceOverrideTarget = "Usb"
+	ComputerSystemBootSourceOverrideTargetUtilities    ComputerSystemBootSourceOverrideTarget = "Utilities"
+)
+
 // Defines values for ComputerSystemMemoryMirroring.
 const (
-	DIMM   ComputerSystemMemoryMirroring = "DIMM"
-	Hybrid ComputerSystemMemoryMirroring = "Hybrid"
-	None   ComputerSystemMemoryMirroring = "None"
-	System ComputerSystemMemoryMirroring = "System"
+	ComputerSystemMemoryMirroringDIMM   ComputerSystemMemoryMirroring = "DIMM"
+	ComputerSystemMemoryMirroringHybrid ComputerSystemMemoryMirroring = "Hybrid"
+	ComputerSystemMemoryMirroringNone   ComputerSystemMemoryMirroring = "None"
+	ComputerSystemMemoryMirroringSystem ComputerSystemMemoryMirroring = "System"
 )
 
 // Defines values for ComputerSystemSystemType.

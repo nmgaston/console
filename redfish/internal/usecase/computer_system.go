@@ -327,16 +327,30 @@ func (uc *ComputerSystemUseCase) validateBootModeField(modeField *generated.Comp
 
 // validateBootTarget validates the boot source override target.
 func validateBootTarget(target generated.ComputerSystemBootSourceOverrideTarget) error {
-	switch target {
-	case generated.BiosSetup, generated.Cd, generated.Diags, generated.Floppy,
-		generated.Hdd, generated.None, generated.Pxe, generated.Recovery,
-		generated.RemoteDrive, generated.SDCard, generated.UefiBootNext,
-		generated.UefiHttp, generated.UefiShell, generated.UefiTarget,
-		generated.Usb, generated.Utilities:
-		return nil
-	default:
-		return fmt.Errorf("%w: invalid boot target %s", ErrInvalidBootSettings, target)
+	validTargets := map[generated.ComputerSystemBootSourceOverrideTarget]bool{
+		"BiosSetup":    true,
+		"Cd":           true,
+		"Diags":        true,
+		"Floppy":       true,
+		"Hdd":          true,
+		"None":         true,
+		"Pxe":          true,
+		"Recovery":     true,
+		"RemoteDrive":  true,
+		"SDCard":       true,
+		"UefiBootNext": true,
+		"UefiHttp":     true,
+		"UefiShell":    true,
+		"UefiTarget":   true,
+		"Usb":          true,
+		"Utilities":    true,
 	}
+	
+	if validTargets[target] {
+		return nil
+	}
+	
+	return fmt.Errorf("%w: invalid boot target %s", ErrInvalidBootSettings, target)
 }
 
 // validateBootEnabled validates the boot source override enabled setting.
@@ -453,17 +467,10 @@ func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generate
 		stateEnum = generated.ResourceStateDegraded
 	default:
 		return nil // Don't create state if unknown value
-	if state == "" {
-		return nil
-	}
-
-	stateEnum := uc.mapStateStringToEnum(state)
-	if stateEnum == nil {
-		return nil
 	}
 
 	stateObj := generated.ResourceStatus_State{}
-	if err := stateObj.FromResourceState(*stateEnum); err != nil {
+	if err := stateObj.FromResourceState(stateEnum); err != nil {
 		return nil
 	}
 
@@ -473,18 +480,18 @@ func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generate
 // mapStateStringToEnum maps state string to ResourceState enum.
 func (uc *ComputerSystemUseCase) mapStateStringToEnum(state string) *generated.ResourceState {
 	stateMap := map[string]generated.ResourceState{
-		StateEnabled:            generated.Enabled,
-		StateDisabled:           generated.Disabled,
-		StateStandbyOffline:     generated.StandbyOffline,
-		StateStandbySpare:       generated.StandbySpare,
-		StateInTest:             generated.InTest,
-		StateStarting:           generated.Starting,
-		StateAbsent:             generated.Absent,
-		StateUnavailableOffline: generated.UnavailableOffline,
-		StateDeferring:          generated.Deferring,
-		StateQuiesced:           generated.Quiesced,
-		StateUpdating:           generated.Updating,
-		StateDegraded:           generated.Degraded,
+		StateEnabled:            generated.ResourceStateEnabled,
+		StateDisabled:           generated.ResourceStateDisabled,
+		StateStandbyOffline:     generated.ResourceStateStandbyOffline,
+		StateStandbySpare:       generated.ResourceStateStandbySpare,
+		StateInTest:             generated.ResourceStateInTest,
+		StateStarting:           generated.ResourceStateStarting,
+		StateAbsent:             generated.ResourceStateAbsent,
+		StateUnavailableOffline: generated.ResourceStateUnavailableOffline,
+		StateDeferring:          generated.ResourceStateDeferring,
+		StateQuiesced:           generated.ResourceStateQuiesced,
+		StateUpdating:           generated.ResourceStateUpdating,
+		StateDegraded:           generated.ResourceStateDegraded,
 	}
 
 	if stateEnum, exists := stateMap[state]; exists {

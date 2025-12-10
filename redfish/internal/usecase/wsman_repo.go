@@ -1136,17 +1136,17 @@ func (r *WsmanComputerSystemRepo) GetBootSettings(ctx context.Context, systemID 
 
 	switch {
 	case bootData.BIOSSetup:
-		_ = target.FromComputerSystemBootSourceOverrideTarget(generated.BiosSetup)
+		_ = target.FromComputerSystemBootSourceOverrideTarget("BiosSetup")
 	case bootData.UseIDER:
 		// IDER can be CD or Floppy
 		if bootData.IDERBootDevice == 1 {
-			_ = target.FromComputerSystemBootSourceOverrideTarget(generated.Cd)
+			_ = target.FromComputerSystemBootSourceOverrideTarget("Cd")
 		} else {
-			_ = target.FromComputerSystemBootSourceOverrideTarget(generated.Floppy)
+			_ = target.FromComputerSystemBootSourceOverrideTarget("Floppy")
 		}
 	default:
 		// Default or PXE boot - would need additional logic to determine exact source
-		_ = target.FromComputerSystemBootSourceOverrideTarget(generated.None)
+		_ = target.FromComputerSystemBootSourceOverrideTarget("None")
 	}
 
 	boot.BootSourceOverrideTarget = &target
@@ -1251,28 +1251,28 @@ func (r *WsmanComputerSystemRepo) applyBootTarget(boot *generated.ComputerSystem
 	}
 
 	switch target {
-	case generated.BiosSetup:
+	case "BiosSetup":
 		newBootData.BIOSSetup = true
 
 		return "", nil // Clear boot order for BIOS setup
-	case generated.Pxe:
+	case "Pxe":
 		return string(cimBoot.PXE), nil
-	case generated.Cd:
+	case "Cd":
 		newBootData.UseIDER = true
 		newBootData.IDERBootDevice = 1 // CD-ROM
 
 		return string(cimBoot.CD), nil
-	case generated.Floppy:
+	case "Floppy":
 		newBootData.UseIDER = true
 		newBootData.IDERBootDevice = 0 // Floppy
 
 		return "", nil
-	case generated.Hdd, generated.None:
+	case "Hdd", "None":
 		return "", nil // Default boot or clear override
-	case generated.Usb:
+	case "Usb":
 		return "", ErrUnsupportedBootTarget
-	case generated.Diags, generated.Recovery, generated.RemoteDrive, generated.SDCard,
-		generated.UefiBootNext, generated.UefiHttp, generated.UefiShell, generated.UefiTarget, generated.Utilities:
+	case "Diags", "Recovery", "RemoteDrive", "SDCard",
+		"UefiBootNext", "UefiHttp", "UefiShell", "UefiTarget", "Utilities":
 		return "", ErrUnsupportedBootTarget
 	default:
 		return "", ErrUnsupportedBootTarget

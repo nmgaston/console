@@ -473,6 +473,17 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_Actions:
+      additionalProperties: false
+      description: The available actions for this resource.
+      properties:
+        '#ComputerSystem.Reset':
+          $ref: '#/components/schemas/ComputerSystem_Reset'
+      type: object
+      x-longDescription: This type shall contain the available actions for this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     ComputerSystem_Boot:
       additionalProperties: false
       description: The boot settings for this system.
@@ -604,17 +615,6 @@ components:
           utility or UEFI human interface infrastructure.
         UefiTarget: This value shall indicate that the system boots to the UEFI device
           specified in the UefiTargetBootSourceOverride property.
-    ComputerSystem_Actions:
-      additionalProperties: false
-      description: The available actions for this resource.
-      properties:
-        '#ComputerSystem.Reset':
-          $ref: '#/components/schemas/ComputerSystem_Reset'
-      type: object
-      x-longDescription: This type shall contain the available actions for this resource.
-      x-patternProperties:
-        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
-          description: This property shall specify a valid odata or Redfish property.
     ComputerSystem_ComputerSystem:
       additionalProperties: false
       description: The `ComputerSystem` schema represents a computer or system instance

@@ -345,13 +345,15 @@ func validateBootTarget(target generated.ComputerSystemBootSourceOverrideTarget)
 		generated.ComputerSystemBootSourceOverrideTargetUsb:          true,
 		generated.ComputerSystemBootSourceOverrideTargetUtilities:    true,
 	}
-	
+
 	if validTargets[target] {
 		return nil
 	}
-	
+
 	return fmt.Errorf("%w: invalid boot target %s", ErrInvalidBootSettings, target)
-}// validateBootEnabled validates the boot source override enabled setting.
+}
+
+// validateBootEnabled validates the boot source override enabled setting.
 func validateBootEnabled(enabled generated.ComputerSystemBootSourceOverrideEnabled) error {
 	switch enabled {
 	case generated.ComputerSystemBootSourceOverrideEnabledContinuous,

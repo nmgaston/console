@@ -168,7 +168,7 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		PowerState:       powerState,
 		SystemType:       &systemType,
 		Status:           status,
-    Boot:             boot,
+		Boot:             boot,
 		Actions:          actions,
 		MemorySummary:    memorySummary,
 		ProcessorSummary: processorSummary,
@@ -328,22 +328,22 @@ func (uc *ComputerSystemUseCase) validateBootModeField(modeField *generated.Comp
 // validateBootTarget validates the boot source override target.
 func validateBootTarget(target generated.ComputerSystemBootSourceOverrideTarget) error {
 	validTargets := map[generated.ComputerSystemBootSourceOverrideTarget]bool{
-		"BiosSetup":    true,
-		"Cd":           true,
-		"Diags":        true,
-		"Floppy":       true,
-		"Hdd":          true,
-		"None":         true,
-		"Pxe":          true,
-		"Recovery":     true,
-		"RemoteDrive":  true,
-		"SDCard":       true,
-		"UefiBootNext": true,
-		"UefiHttp":     true,
-		"UefiShell":    true,
-		"UefiTarget":   true,
-		"Usb":          true,
-		"Utilities":    true,
+		generated.ComputerSystemBootSourceOverrideTargetBiosSetup:    true,
+		generated.ComputerSystemBootSourceOverrideTargetCd:           true,
+		generated.ComputerSystemBootSourceOverrideTargetDiags:        true,
+		generated.ComputerSystemBootSourceOverrideTargetFloppy:       true,
+		generated.ComputerSystemBootSourceOverrideTargetHdd:          true,
+		generated.ComputerSystemBootSourceOverrideTargetNone:         true,
+		generated.ComputerSystemBootSourceOverrideTargetPxe:          true,
+		generated.ComputerSystemBootSourceOverrideTargetRecovery:     true,
+		generated.ComputerSystemBootSourceOverrideTargetRemoteDrive:  true,
+		generated.ComputerSystemBootSourceOverrideTargetSDCard:       true,
+		generated.ComputerSystemBootSourceOverrideTargetUefiBootNext: true,
+		generated.ComputerSystemBootSourceOverrideTargetUefiHttp:     true,
+		generated.ComputerSystemBootSourceOverrideTargetUefiShell:    true,
+		generated.ComputerSystemBootSourceOverrideTargetUefiTarget:   true,
+		generated.ComputerSystemBootSourceOverrideTargetUsb:          true,
+		generated.ComputerSystemBootSourceOverrideTargetUtilities:    true,
 	}
 	
 	if validTargets[target] {
@@ -351,9 +351,7 @@ func validateBootTarget(target generated.ComputerSystemBootSourceOverrideTarget)
 	}
 	
 	return fmt.Errorf("%w: invalid boot target %s", ErrInvalidBootSettings, target)
-}
-
-// validateBootEnabled validates the boot source override enabled setting.
+}// validateBootEnabled validates the boot source override enabled setting.
 func validateBootEnabled(enabled generated.ComputerSystemBootSourceOverrideEnabled) error {
 	switch enabled {
 	case generated.ComputerSystemBootSourceOverrideEnabledContinuous,
@@ -475,30 +473,6 @@ func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generate
 	}
 
 	return &stateObj
-}
-
-// mapStateStringToEnum maps state string to ResourceState enum.
-func (uc *ComputerSystemUseCase) mapStateStringToEnum(state string) *generated.ResourceState {
-	stateMap := map[string]generated.ResourceState{
-		StateEnabled:            generated.ResourceStateEnabled,
-		StateDisabled:           generated.ResourceStateDisabled,
-		StateStandbyOffline:     generated.ResourceStateStandbyOffline,
-		StateStandbySpare:       generated.ResourceStateStandbySpare,
-		StateInTest:             generated.ResourceStateInTest,
-		StateStarting:           generated.ResourceStateStarting,
-		StateAbsent:             generated.ResourceStateAbsent,
-		StateUnavailableOffline: generated.ResourceStateUnavailableOffline,
-		StateDeferring:          generated.ResourceStateDeferring,
-		StateQuiesced:           generated.ResourceStateQuiesced,
-		StateUpdating:           generated.ResourceStateUpdating,
-		StateDegraded:           generated.ResourceStateDegraded,
-	}
-
-	if stateEnum, exists := stateMap[state]; exists {
-		return &stateEnum
-	}
-
-	return nil
 }
 
 // createActionsStruct builds the Actions property using generated types.

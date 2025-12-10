@@ -7,8 +7,8 @@ import (
 	"fmt"
 
 	amtBoot "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/amt/boot"
-	cimBoot "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/boot"
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/bios"
+	cimBoot "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/boot"
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chip"
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/physical"
@@ -1136,17 +1136,17 @@ func (r *WsmanComputerSystemRepo) GetBootSettings(ctx context.Context, systemID 
 
 	switch {
 	case bootData.BIOSSetup:
-		_ = target.FromComputerSystemBootSourceOverrideTarget("BiosSetup")
+		_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetBiosSetup)
 	case bootData.UseIDER:
 		// IDER can be CD or Floppy
 		if bootData.IDERBootDevice == 1 {
-			_ = target.FromComputerSystemBootSourceOverrideTarget("Cd")
+			_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetCd)
 		} else {
-			_ = target.FromComputerSystemBootSourceOverrideTarget("Floppy")
+			_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetFloppy)
 		}
 	default:
 		// Default or PXE boot - would need additional logic to determine exact source
-		_ = target.FromComputerSystemBootSourceOverrideTarget("None")
+		_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetNone)
 	}
 
 	boot.BootSourceOverrideTarget = &target
@@ -1251,28 +1251,31 @@ func (r *WsmanComputerSystemRepo) applyBootTarget(boot *generated.ComputerSystem
 	}
 
 	switch target {
-	case "BiosSetup":
+	case generated.ComputerSystemBootSourceOverrideTargetBiosSetup:
 		newBootData.BIOSSetup = true
 
 		return "", nil // Clear boot order for BIOS setup
-	case "Pxe":
+	case generated.ComputerSystemBootSourceOverrideTargetPxe:
 		return string(cimBoot.PXE), nil
-	case "Cd":
+	case generated.ComputerSystemBootSourceOverrideTargetCd:
 		newBootData.UseIDER = true
 		newBootData.IDERBootDevice = 1 // CD-ROM
 
 		return string(cimBoot.CD), nil
-	case "Floppy":
+	case generated.ComputerSystemBootSourceOverrideTargetFloppy:
 		newBootData.UseIDER = true
 		newBootData.IDERBootDevice = 0 // Floppy
 
 		return "", nil
-	case "Hdd", "None":
+	case generated.ComputerSystemBootSourceOverrideTargetHdd, generated.ComputerSystemBootSourceOverrideTargetNone:
 		return "", nil // Default boot or clear override
-	case "Usb":
+	case generated.ComputerSystemBootSourceOverrideTargetUsb:
 		return "", ErrUnsupportedBootTarget
-	case "Diags", "Recovery", "RemoteDrive", "SDCard",
-		"UefiBootNext", "UefiHttp", "UefiShell", "UefiTarget", "Utilities":
+	case generated.ComputerSystemBootSourceOverrideTargetDiags, generated.ComputerSystemBootSourceOverrideTargetRecovery,
+		generated.ComputerSystemBootSourceOverrideTargetRemoteDrive, generated.ComputerSystemBootSourceOverrideTargetSDCard,
+		generated.ComputerSystemBootSourceOverrideTargetUefiBootNext, generated.ComputerSystemBootSourceOverrideTargetUefiHttp,
+		generated.ComputerSystemBootSourceOverrideTargetUefiShell, generated.ComputerSystemBootSourceOverrideTargetUefiTarget,
+		generated.ComputerSystemBootSourceOverrideTargetUtilities:
 		return "", ErrUnsupportedBootTarget
 	default:
 		return "", ErrUnsupportedBootTarget

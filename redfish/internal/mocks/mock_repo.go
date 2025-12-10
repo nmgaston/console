@@ -180,7 +180,7 @@ func (r *MockComputerSystemRepo) GetBootSettings(_ context.Context, systemID str
 	boot.BootSourceOverrideEnabled = &enabled
 
 	target := generated.ComputerSystemBoot_BootSourceOverrideTarget{}
-	_ = target.FromComputerSystemBootSourceOverrideTarget("None")
+	_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetNone)
 	boot.BootSourceOverrideTarget = &target
 
 	mode := generated.ComputerSystemBoot_BootSourceOverrideMode{}

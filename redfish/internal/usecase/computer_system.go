@@ -147,23 +147,31 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 	// Create Actions for this system using the generated Actions type
 	actions := uc.createActionsStruct(systemID)
 
+	// Convert MemorySummary if present
+	memorySummary := uc.convertMemorySummaryToGenerated(system.MemorySummary)
+
+	// Convert ProcessorSummary if present
+	processorSummary := uc.convertProcessorSummaryToGenerated(system.ProcessorSummary)
+
 	result := generated.ComputerSystemComputerSystem{
-		OdataContext: &odataContext,
-		OdataId:      &odataID,
-		OdataType:    &odataType,
-		Id:           systemID,
-		Name:         system.Name,
-		Description:  descriptionUnion,
-		BiosVersion:  biosVersion,
-		HostName:     hostName,
-		Manufacturer: manufacturer,
-		Model:        model,
-		SerialNumber: serialNumber,
-		PowerState:   powerState,
-		SystemType:   &systemType,
-		Status:       status,
-		Boot:         boot,
-		Actions:      actions,
+		OdataContext:     &odataContext,
+		OdataId:          &odataID,
+		OdataType:        &odataType,
+		Id:               systemID,
+		Name:             system.Name,
+		Description:      descriptionUnion,
+		BiosVersion:      biosVersion,
+		HostName:         hostName,
+		Manufacturer:     manufacturer,
+		Model:            model,
+		SerialNumber:     serialNumber,
+		PowerState:       powerState,
+		SystemType:       &systemType,
+		Status:           status,
+    Boot:             boot,
+		Actions:          actions,
+		MemorySummary:    memorySummary,
+		ProcessorSummary: processorSummary,
 	}
 
 	return &result, nil
@@ -359,34 +367,40 @@ func (uc *ComputerSystemUseCase) convertStatusToGenerated(status *redfishv1.Stat
 		return nil
 	}
 
-	var healthPtr *generated.ResourceStatus_Health
-
-	var statePtr *generated.ResourceStatus_State
-
-	// Convert Health if present
-
-	if status.Health != "" {
-		healthPtr = uc.convertHealthToGenerated(status.Health)
-	}
-
-	// Convert State if present
-	if status.State != "" {
-		statePtr = uc.convertStateToGenerated(status.State)
-	}
+	healthPtr := uc.convertHealthToGenerated(status.Health)
+	healthRollupPtr := uc.convertHealthToGenerated(status.HealthRollup)
+	statePtr := uc.convertStateToGenerated(status.State)
 
 	// Only create Status if we have at least one field
-	if healthPtr != nil || statePtr != nil {
-		return &generated.ResourceStatus{
-			Health: healthPtr,
-			State:  statePtr,
+	if healthPtr == nil && healthRollupPtr == nil && statePtr == nil {
+		return nil
+	}
+
+	result := &generated.ResourceStatus{
+		Health: healthPtr,
+		State:  statePtr,
+	}
+
+	// Set HealthRollup using the same conversion as Health
+	if healthRollupPtr != nil {
+		healthEnum, err := healthRollupPtr.AsResourceHealth()
+		if err == nil {
+			healthRollup := &generated.ResourceStatus_HealthRollup{}
+			if err := healthRollup.FromResourceHealth(healthEnum); err == nil {
+				result.HealthRollup = healthRollup
+			}
 		}
 	}
 
-	return nil
+	return result
 }
 
 // convertHealthToGenerated converts Health string to generated ResourceStatus_Health.
 func (uc *ComputerSystemUseCase) convertHealthToGenerated(health string) *generated.ResourceStatus_Health {
+	if health == "" {
+		return nil
+	}
+
 	var healthEnum generated.ResourceHealth
 
 	switch health {
@@ -397,15 +411,15 @@ func (uc *ComputerSystemUseCase) convertHealthToGenerated(health string) *genera
 	case HealthCritical:
 		healthEnum = generated.Critical
 	default:
-		return nil // Don't create health if unknown value
+		return nil
 	}
 
 	healthObj := generated.ResourceStatus_Health{}
-	if err := healthObj.FromResourceHealth(healthEnum); err == nil {
-		return &healthObj
+	if err := healthObj.FromResourceHealth(healthEnum); err != nil {
+		return nil
 	}
 
-	return nil
+	return &healthObj
 }
 
 // convertStateToGenerated converts State string to generated ResourceStatus_State.
@@ -439,11 +453,42 @@ func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generate
 		stateEnum = generated.ResourceStateDegraded
 	default:
 		return nil // Don't create state if unknown value
+	if state == "" {
+		return nil
+	}
+
+	stateEnum := uc.mapStateStringToEnum(state)
+	if stateEnum == nil {
+		return nil
 	}
 
 	stateObj := generated.ResourceStatus_State{}
-	if err := stateObj.FromResourceState(stateEnum); err == nil {
-		return &stateObj
+	if err := stateObj.FromResourceState(*stateEnum); err != nil {
+		return nil
+	}
+
+	return &stateObj
+}
+
+// mapStateStringToEnum maps state string to ResourceState enum.
+func (uc *ComputerSystemUseCase) mapStateStringToEnum(state string) *generated.ResourceState {
+	stateMap := map[string]generated.ResourceState{
+		StateEnabled:            generated.Enabled,
+		StateDisabled:           generated.Disabled,
+		StateStandbyOffline:     generated.StandbyOffline,
+		StateStandbySpare:       generated.StandbySpare,
+		StateInTest:             generated.InTest,
+		StateStarting:           generated.Starting,
+		StateAbsent:             generated.Absent,
+		StateUnavailableOffline: generated.UnavailableOffline,
+		StateDeferring:          generated.Deferring,
+		StateQuiesced:           generated.Quiesced,
+		StateUpdating:           generated.Updating,
+		StateDegraded:           generated.Degraded,
+	}
+
+	if stateEnum, exists := stateMap[state]; exists {
+		return &stateEnum
 	}
 
 	return nil
@@ -464,5 +509,96 @@ func (uc *ComputerSystemUseCase) createActionsStruct(systemID string) *generated
 	// Create and return the Actions structure
 	return &generated.ComputerSystemActions{
 		HashComputerSystemReset: resetAction,
+	}
+}
+
+// convertMemorySummaryToGenerated converts entity ComputerSystemMemorySummary to generated ComputerSystemMemorySummary.
+func (uc *ComputerSystemUseCase) convertMemorySummaryToGenerated(memorySummary *redfishv1.ComputerSystemMemorySummary) *generated.ComputerSystemMemorySummary {
+	if memorySummary == nil {
+		return nil
+	}
+
+	return &generated.ComputerSystemMemorySummary{
+		TotalSystemMemoryGiB: memorySummary.TotalSystemMemoryGiB,
+		Status:               uc.convertStatusToGenerated(memorySummary.Status),
+		MemoryMirroring:      uc.convertMemoryMirroringToGenerated(memorySummary.MemoryMirroring),
+	}
+}
+
+// convertMemoryMirroringToGenerated converts MemoryMirroring enum to generated type.
+func (uc *ComputerSystemUseCase) convertMemoryMirroringToGenerated(mirroring redfishv1.MemoryMirroring) *generated.ComputerSystemMemorySummary_MemoryMirroring {
+	if mirroring == "" {
+		return nil
+	}
+
+	// Validate the MemoryMirroring value against known enum values
+	if !uc.isValidMemoryMirroring(mirroring) {
+		return nil // Return nil for invalid mirroring types
+	}
+
+	memoryMirroring := &generated.ComputerSystemMemorySummary_MemoryMirroring{}
+
+	mirroringType := generated.ComputerSystemMemoryMirroring(string(mirroring))
+	if err := memoryMirroring.FromComputerSystemMemoryMirroring(mirroringType); err != nil {
+		return nil // Return nil on conversion error
+	}
+
+	return memoryMirroring
+}
+
+// isValidMemoryMirroring validates if the MemoryMirroring value is one of the defined enum values.
+func (uc *ComputerSystemUseCase) isValidMemoryMirroring(mirroring redfishv1.MemoryMirroring) bool {
+	switch mirroring {
+	case redfishv1.MemoryMirroringSystem, redfishv1.MemoryMirroringDIMM,
+		redfishv1.MemoryMirroringHybrid, redfishv1.MemoryMirroringNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// convertProcessorSummaryToGenerated converts entity ComputerSystemProcessorSummary to generated ComputerSystemProcessorSummary.
+func (uc *ComputerSystemUseCase) convertProcessorSummaryToGenerated(processorSummary *redfishv1.ComputerSystemProcessorSummary) *generated.ComputerSystemProcessorSummary {
+	if processorSummary == nil {
+		return nil
+	}
+
+	var metrics *generated.OdataV4IdRef
+	if processorSummary.Metrics != nil {
+		metrics = &generated.OdataV4IdRef{
+			OdataId: processorSummary.Metrics,
+		}
+	}
+
+	// Convert *int to *int64 for count fields
+	var count *int64
+
+	if processorSummary.Count != nil {
+		c := int64(*processorSummary.Count)
+		count = &c
+	}
+
+	var coreCount *int64
+
+	if processorSummary.CoreCount != nil {
+		cc := int64(*processorSummary.CoreCount)
+		coreCount = &cc
+	}
+
+	var logicalProcessorCount *int64
+
+	if processorSummary.LogicalProcessorCount != nil {
+		lpc := int64(*processorSummary.LogicalProcessorCount)
+		logicalProcessorCount = &lpc
+	}
+
+	return &generated.ComputerSystemProcessorSummary{
+		Count:                 count,
+		CoreCount:             coreCount,
+		LogicalProcessorCount: logicalProcessorCount,
+		Metrics:               metrics,
+		Model:                 processorSummary.Model,
+		Status:                uc.convertStatusToGenerated(processorSummary.Status),
+		ThreadingEnabled:      processorSummary.ThreadingEnabled,
 	}
 }

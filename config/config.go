@@ -33,9 +33,7 @@ type (
 		EncryptionKey        string `yaml:"encryption_key" env:"APP_ENCRYPTION_KEY"`
 		AllowInsecureCiphers bool   `yaml:"allow_insecure_ciphers" env:"APP_ALLOW_INSECURE_CIPHERS"`
 		EnvironmentUUID      string `yaml:"environment_uuid" env:"APP_ENV_UUID"`
-	} // HTTP -.
 		CommonName           string `yaml:"common_name" env:"APP_COMMON_NAME"`
-		EnvironmentUUID      string `yaml:"environment_uuid" env:"APP_ENV_UUID"`
 	} // HTTP -.
 	HTTP struct {
 		Host           string   `env-required:"true" yaml:"host" env:"HTTP_HOST"`

@@ -291,16 +291,9 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 		UUID:           StringPtr(generateServiceUUID(s.Config.EnvironmentUUID)),
 		Product:        StringPtr("Device Management Toolkit - Redfish Service"),
 		Vendor:         StringPtr("Device Management Toolkit"),
-		Links: generated.ServiceRootLinks{
-			Sessions: generated.OdataV4IdRef{
-				OdataId: StringPtr("/redfish/v1/SessionService/Sessions"),
-			},
-		},
+		Links:          &generated.ServiceRootLinks{},
 		Systems: &generated.OdataV4IdRef{
 			OdataId: StringPtr("/redfish/v1/Systems"),
-		},
-		Registries: &generated.OdataV4IdRef{
-			OdataId: StringPtr("/redfish/v1/Registries"),
 		},
 	}
 

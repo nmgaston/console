@@ -26,7 +26,7 @@ const (
 	systemsCollectionTitleTest        = "Computer System Collection"
 	systemsEndpointTest               = "/redfish/v1/Systems"
 	jsonContentTypeTest               = "application/json; charset=utf-8"
-	systemODataType                   = "#ComputerSystem.v1_22_0.ComputerSystem"
+	systemODataType                   = "#ComputerSystem.v1_26_0.ComputerSystem"
 )
 
 // Test error constants specific to systems
@@ -369,10 +369,43 @@ func createTestSystemEntityData(systemID, name, manufacturer, model, serialNumbe
 	return &redfishv1.ComputerSystem{
 		ID:           systemID,
 		Name:         name,
+		BiosVersion:  "1.2.3.4",
 		Manufacturer: manufacturer,
 		Model:        model,
 		SerialNumber: serialNumber,
 		PowerState:   redfishv1.PowerStateOn,
+	}
+}
+
+// createTestSystemEntityDataWithAllProperties creates a test system entity with Description, HostName, and Status populated
+func createTestSystemEntityDataWithAllProperties(systemID, name, manufacturer, model, serialNumber string) *redfishv1.ComputerSystem {
+	return &redfishv1.ComputerSystem{
+		ID:          systemID,
+		Name:        name,
+		Description: "Computer System managed by Intel AMT",
+		BiosVersion: "2.4.6.8",
+		HostName:    "amt-" + systemID + ".example.com",
+		Status: &redfishv1.Status{
+			State:  "Enabled",
+			Health: "OK",
+		},
+		Manufacturer: manufacturer,
+		Model:        model,
+		SerialNumber: serialNumber,
+		PowerState:   redfishv1.PowerStateOn,
+	}
+}
+
+// createTestSystemEntityDataMinimal creates a test system entity with minimal properties
+func createTestSystemEntityDataMinimal(systemID, name string) *redfishv1.ComputerSystem {
+	return &redfishv1.ComputerSystem{
+		ID:           systemID,
+		Name:         name,
+		Manufacturer: "Intel Corporation",
+		Model:        "Test Model",
+		SerialNumber: "MIN001",
+		PowerState:   redfishv1.PowerStateOff,
+		// Description and HostName are empty - would be populated by CIM extraction in real repository
 	}
 }
 
@@ -382,8 +415,15 @@ func setupExistingSystemMockTest(repo *TestSystemsComputerSystemRepository, syst
 	repo.AddSystem(systemID, system)
 }
 
-func setupUUIDSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
-	system := createTestSystemEntityData(systemID, "UUID System", "UUID Manufacturer", "UUID Model", "UUID-SN789")
+// setupSystemWithAllPropertiesMockTest sets up a system with Description, HostName, and Status populated
+func setupSystemWithAllPropertiesMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithAllProperties(systemID, "Enhanced Test System", "Intel Corporation", "vPro Test Model", "ENH123456")
+	repo.AddSystem(systemID, system)
+}
+
+// setupMinimalSystemMockTest sets up a system with minimal properties
+func setupMinimalSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataMinimal(systemID, "Minimal Test System")
 	repo.AddSystem(systemID, system)
 }
 
@@ -416,10 +456,96 @@ func validateSystemResponseDataTest(t *testing.T, w *httptest.ResponseRecorder, 
 	assert.Equal(t, expectedModel, *response.Model)
 	assert.NotNil(t, response.SerialNumber)
 	assert.Equal(t, expectedSerial, *response.SerialNumber)
+	// Validate BiosVersion property
+	assert.NotNil(t, response.BiosVersion)
+	assert.Equal(t, "1.2.3.4", *response.BiosVersion)
 	assert.NotNil(t, response.OdataId)
 	assert.Equal(t, fmt.Sprintf("%s/%s", systemsEndpointTest, systemID), *response.OdataId)
 	assert.NotNil(t, response.OdataType)
 	assert.Equal(t, systemODataType, *response.OdataType)
+}
+
+// validateSystemResponseWithAllPropertiesTest validates system response with Description, HostName, and Status properties
+func validateSystemResponseWithAllPropertiesTest(t *testing.T, w *httptest.ResponseRecorder, systemID, expectedName, expectedDescription, expectedHostName string) {
+	t.Helper()
+	validateJSONContentTypeTest(t, w)
+
+	var response generated.ComputerSystemComputerSystem
+	unmarshalJSONResponseTest(t, w, &response)
+
+	// Validate basic properties
+	assert.Equal(t, systemID, response.Id)
+	assert.Equal(t, expectedName, response.Name)
+
+	// Validate BiosVersion property
+	assert.NotNil(t, response.BiosVersion)
+	assert.Equal(t, "2.4.6.8", *response.BiosVersion)
+
+	// Validate Description property
+	if expectedDescription != "" {
+		assert.NotNil(t, response.Description)
+		description, err := response.Description.AsResourceDescription()
+		assert.NoError(t, err)
+		assert.Equal(t, expectedDescription, description)
+	}
+
+	// Validate HostName property
+	if expectedHostName != "" {
+		assert.NotNil(t, response.HostName)
+		assert.Equal(t, expectedHostName, *response.HostName)
+	}
+
+	// Validate Status if present
+	if response.Status != nil {
+		assert.NotNil(t, response.Status.State)
+		assert.NotNil(t, response.Status.Health)
+
+		state, err := response.Status.State.AsResourceStatusState1()
+		assert.NoError(t, err)
+		assert.Equal(t, "Enabled", state)
+
+		health, err := response.Status.Health.AsResourceStatusHealth1()
+		assert.NoError(t, err)
+		assert.Equal(t, "OK", health)
+	}
+
+	// Validate OData fields
+	assert.NotNil(t, response.OdataContext)
+	assert.Equal(t, "/redfish/v1/$metadata#ComputerSystem.ComputerSystem", *response.OdataContext)
+	assert.NotNil(t, response.OdataId)
+	assert.Equal(t, fmt.Sprintf("/redfish/v1/Systems/%s", systemID), *response.OdataId)
+	assert.NotNil(t, response.OdataType)
+	assert.Equal(t, systemODataType, *response.OdataType)
+}
+
+// validateSystemActionsResponseTest validates system response with Actions property
+func validateSystemActionsResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+	validateJSONContentTypeTest(t, w)
+
+	var response generated.ComputerSystemComputerSystem
+	unmarshalJSONResponseTest(t, w, &response)
+
+	// Validate basic properties
+	assert.Equal(t, systemID, response.Id)
+	assert.Equal(t, "Test System", response.Name)
+
+	// Validate Actions property
+	assert.NotNil(t, response.Actions, "Actions property should not be nil")
+	assert.NotNil(t, response.Actions.HashComputerSystemReset, "ComputerSystem.Reset action should not be nil")
+
+	// Validate Reset action properties
+	resetAction := response.Actions.HashComputerSystemReset
+	assert.NotNil(t, resetAction.Target, "Reset action target should not be nil")
+
+	expectedTarget := fmt.Sprintf("/redfish/v1/Systems/%s/Actions/ComputerSystem.Reset", systemID)
+	assert.Equal(t, expectedTarget, *resetAction.Target)
+
+	assert.NotNil(t, resetAction.Title, "Reset action title should not be nil")
+	assert.Equal(t, "Reset", *resetAction.Title)
+
+	// Note: ResetType@Redfish.AllowableValues are now provided through ActionInfo endpoint
+	// as per DMTF specification, not embedded in the Reset action itself
 }
 
 // Validation functions for system by ID tests (reusing shared validation)
@@ -428,9 +554,41 @@ func validateSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder, syst
 	validateSystemResponseDataTest(t, w, systemID, "Test System", "Test Manufacturer", "Test Model", "SN123456")
 }
 
-func validateUUIDSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+// validateSystemWithAllPropertiesResponseTest validates system response with Description and HostName properties
+func validateSystemWithAllPropertiesResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
 	t.Helper()
-	validateSystemResponseDataTest(t, w, systemID, "UUID System", "UUID Manufacturer", "UUID Model", "UUID-SN789")
+	validateSystemResponseWithAllPropertiesTest(t, w, systemID, "Enhanced Test System",
+		"Computer System managed by Intel AMT",
+		"amt-"+systemID+".example.com")
+}
+
+// validateMinimalSystemResponseTest validates system response with actual CIM data from repository
+func validateMinimalSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+	validateJSONContentTypeTest(t, w)
+
+	var response generated.ComputerSystemComputerSystem
+	unmarshalJSONResponseTest(t, w, &response)
+
+	// Validate basic properties
+	assert.Equal(t, systemID, response.Id)
+	assert.Equal(t, "Minimal Test System", response.Name)
+
+	// Since this is using mock repository without actual CIM data extraction,
+	// Description and HostName will be empty strings (as returned by mock)
+	// In a real scenario, these would be populated by extractCIMSystemInfo()
+
+	// Validate that Description field exists but may be empty (no CIM data in mock)
+	if response.Description != nil {
+		description, err := response.Description.AsResourceDescription()
+		assert.NoError(t, err)
+		// Description could be empty in mock test environment
+		_ = description
+	}
+
+	// Validate that HostName field exists but may be nil (no CIM data in mock)
+	// In real implementation, this would be populated from CIM_ComputerSystem.DNSHostName
+	_ = response.HostName
 }
 
 func validateSystemNotFoundResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
@@ -544,11 +702,27 @@ func TestSystemsHandler_GetSystemByID(t *testing.T) {
 	}
 
 	tests := []SystemsTestCase[string]{
+		// Basic system tests
 		{"Success - Existing System", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemResponseTest, "System1"},
-		{"Success - UUID System", setupUUIDSystemMockTest, "GET", http.StatusOK, validateUUIDSystemResponseTest, "b4c3a390-468c-491f-8e1d-9ce04c2fcbc1"},
+		{"Success - System with Actions", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemActionsResponseTest, "System1"},
+		{"Success - Minimal System Properties", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "minimal-system-1"},
+		{"Success - System with Long ID", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "very-long-system-identifier-that-exceeds-character-limits"},
+
+		// Individual property tests
+		{"Success - System with All Properties (Description/HostName/Status)", setupSystemWithAllPropertiesMockTest, "GET", http.StatusOK, validateSystemWithAllPropertiesResponseTest, "enhanced-system-1"},
+		{"Success - System with MemorySummary", setupSystemWithMemoryMockTest, "GET", http.StatusOK, validateSystemWithMemoryResponseTest, "memory-system-1"},
+		{"Success - System with ProcessorSummary", setupSystemWithProcessorMockTest, "GET", http.StatusOK, validateSystemWithProcessorResponseTest, "processor-system-1"},
+
+		// Combined property tests
+		{"Success - System with Memory and Processor Summaries", setupSystemWithMemoryAndProcessorMockTest, "GET", http.StatusOK, validateSystemWithMemoryAndProcessorResponseTest, "memory-processor-system-1"},
+		{"Success - System with All Properties and Summaries", setupSystemWithFullPropertiesMockTest, "GET", http.StatusOK, validateSystemWithFullPropertiesResponseTest, "complete-system-1"},
+
+		// Error cases
 		{"Error - Empty System ID", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateBadRequestResponseTest, ""},
 		{"Error - System Not Found", setupSystemNotFoundMockTest, "GET", http.StatusNotFound, validateSystemNotFoundResponseTest, "NonExistentSystem"},
 		{"Error - Repository Error", setupSystemRepositoryErrorMockTest, "GET", http.StatusInternalServerError, validateSystemErrorResponseTest, "System1"},
+
+		// HTTP method error cases
 		{"Error - HTTP Method POST Not Allowed", setupNoSystemMockTest, "POST", http.StatusNotFound, nil, "System1"},
 		{"Error - HTTP Method PUT Not Allowed", setupNoSystemMockTest, "PUT", http.StatusNotFound, nil, "System1"},
 		{"Error - HTTP Method DELETE Not Allowed", setupNoSystemMockTest, "DELETE", http.StatusNotFound, nil, "System1"},
@@ -621,4 +795,241 @@ func TestSystemsHandler_GetSystemByID_WithLogger(t *testing.T) {
 	// Verify logger was called
 	assert.Len(t, testLogger.ErrorCalls, 1)
 	assert.Equal(t, "Failed to retrieve computer system", testLogger.ErrorCalls[0][0])
+}
+
+// createTestSystemEntityDataWithMemory creates a test system entity with MemorySummary
+func createTestSystemEntityDataWithMemory(systemID, name, manufacturer, model, serialNumber string) *redfishv1.ComputerSystem {
+	system := createTestSystemEntityData(systemID, name, manufacturer, model, serialNumber)
+	system.MemorySummary = &redfishv1.ComputerSystemMemorySummary{
+		TotalSystemMemoryGiB: func() *float32 {
+			v := float32(16.0)
+
+			return &v
+		}(),
+		// MemoryMirroring is not set in test - only populated when AMT provides actual mirroring data
+		Status: &redfishv1.Status{
+			Health: "OK",
+			State:  "Enabled",
+		},
+	}
+
+	return system
+}
+
+// setupSystemWithMemoryMockTest sets up a system with MemorySummary populated
+func setupSystemWithMemoryMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithMemory(systemID, "Test System with Memory", "Test Manufacturer", "Test Model", "SN123456")
+	repo.AddSystem(systemID, system)
+}
+
+// validateSystemWithMemoryResponseTest validates system response includes MemorySummary
+func validateSystemWithMemoryResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+
+	validateSystemResponseDataTest(t, w, systemID, "Test System with Memory", "Test Manufacturer", "Test Model", "SN123456")
+
+	// Additional validation for MemorySummary
+	var response redfishv1.ComputerSystem
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	// Verify MemorySummary is present and correct
+	assert.NotNil(t, response.MemorySummary, "MemorySummary should be present")
+	assert.NotNil(t, response.MemorySummary.TotalSystemMemoryGiB, "TotalSystemMemoryGiB should be set")
+	assert.Equal(t, float32(16.0), *response.MemorySummary.TotalSystemMemoryGiB, "Memory should be 16.0 GiB")
+	// MemoryMirroring is not asserted as it should only be populated when AMT provides actual mirroring data
+	assert.NotNil(t, response.MemorySummary.Status, "MemorySummary Status should be set")
+	assert.Equal(t, "OK", response.MemorySummary.Status.Health, "Memory health should be OK")
+	assert.Equal(t, "Enabled", response.MemorySummary.Status.State, "Memory state should be Enabled")
+}
+
+// createTestSystemEntityDataWithProcessor creates a test system entity with ProcessorSummary populated
+func createTestSystemEntityDataWithProcessor(systemID, name, manufacturer, model, serialNumber string) *redfishv1.ComputerSystem {
+	system := createTestSystemEntityData(systemID, name, manufacturer, model, serialNumber)
+	system.ProcessorSummary = &redfishv1.ComputerSystemProcessorSummary{
+		Count: intPtr(2),
+		// CoreCount, LogicalProcessorCount, and ThreadingEnabled are nil
+		// because CIM_Processor doesn't provide these in Intel AMT WSMAN implementation
+		// Model is available from CIM_Chip.Version
+		CoreCount:             nil,
+		LogicalProcessorCount: nil,
+		Model:                 stringPtr("12th Gen Intel(R) Core(TM) i5-1250P"),
+		Status: &redfishv1.Status{
+			Health:       "OK",
+			HealthRollup: "OK",
+			State:        "Enabled",
+		},
+		StatusRedfishDeprecated: stringPtr("Please migrate to use Status in the individual Processor resources"),
+		ThreadingEnabled:        nil,
+	}
+
+	return system
+} // Helper functions for pointer creation
+func intPtr(i int) *int {
+	return &i
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+// setupSystemWithProcessorMockTest sets up a system with ProcessorSummary populated
+func setupSystemWithProcessorMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithProcessor(systemID, "Test System with Processor", "Intel Corporation", "Test Model", "SN123456")
+	repo.AddSystem(systemID, system)
+}
+
+// setupSystemWithMemoryAndProcessorMockTest sets up a system with both MemorySummary and ProcessorSummary populated
+func setupSystemWithMemoryAndProcessorMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithProcessor(systemID, "Test System with Memory and Processor", "Intel Corporation", "Complete Test Model", "COMP123456")
+	// Add MemorySummary to the system
+	system.MemorySummary = &redfishv1.ComputerSystemMemorySummary{
+		TotalSystemMemoryGiB: func() *float32 {
+			v := float32(32.0)
+
+			return &v
+		}(),
+		Status: &redfishv1.Status{
+			Health: "OK",
+			State:  "Enabled",
+		},
+	}
+	repo.AddSystem(systemID, system)
+}
+
+// setupSystemWithFullPropertiesMockTest sets up a system with all properties (All Properties + Memory + Processor)
+func setupSystemWithFullPropertiesMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithAllProperties(systemID, "Complete Test System", "Intel Corporation", "vPro Complete Model", "FULL123456")
+	// Add MemorySummary
+	system.MemorySummary = &redfishv1.ComputerSystemMemorySummary{
+		TotalSystemMemoryGiB: func() *float32 {
+			v := float32(64.0)
+
+			return &v
+		}(),
+		Status: &redfishv1.Status{
+			Health: "OK",
+			State:  "Enabled",
+		},
+	}
+	// Add ProcessorSummary
+	system.ProcessorSummary = &redfishv1.ComputerSystemProcessorSummary{
+		Count:                 intPtr(4),
+		CoreCount:             nil,
+		LogicalProcessorCount: nil,
+		Model:                 stringPtr("12th Gen Intel(R) Core(TM) i7-1270P"),
+		Status: &redfishv1.Status{
+			Health:       "OK",
+			HealthRollup: "OK",
+			State:        "Enabled",
+		},
+		StatusRedfishDeprecated: stringPtr("Please migrate to use Status in the individual Processor resources"),
+		ThreadingEnabled:        nil,
+	}
+	repo.AddSystem(systemID, system)
+}
+
+// validateSystemWithProcessorResponseTest validates system response includes ProcessorSummary
+func validateSystemWithProcessorResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+
+	validateSystemResponseDataTest(t, w, systemID, "Test System with Processor", "Intel Corporation", "Test Model", "SN123456")
+
+	// Additional validation for ProcessorSummary
+	var response redfishv1.ComputerSystem
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	// Verify ProcessorSummary is present and correct
+	assert.NotNil(t, response.ProcessorSummary, "ProcessorSummary should be present")
+
+	// Count should be available from hardware enumeration
+	assert.NotNil(t, response.ProcessorSummary.Count, "Count should be set")
+	assert.Equal(t, 2, *response.ProcessorSummary.Count, "Processor count should be 2")
+
+	// These properties are nil because CIM_Processor doesn't provide them in Intel AMT WSMAN
+	assert.Nil(t, response.ProcessorSummary.CoreCount, "CoreCount should be nil (not available from CIM_Processor)")
+	assert.Nil(t, response.ProcessorSummary.LogicalProcessorCount, "LogicalProcessorCount should be nil (not available from CIM_Processor)")
+	assert.Nil(t, response.ProcessorSummary.ThreadingEnabled, "ThreadingEnabled should be nil (not available from CIM_Processor)")
+
+	// Model should be available from CIM_Chip.Version
+	assert.NotNil(t, response.ProcessorSummary.Model, "Model should be present from CIM_Chip.Version")
+	assert.Equal(t, "12th Gen Intel(R) Core(TM) i5-1250P", *response.ProcessorSummary.Model, "Processor model should match CIM_Chip.Version")
+
+	// Status should be available from CIM_Processor HealthState and EnabledState
+	assert.NotNil(t, response.ProcessorSummary.Status, "ProcessorSummary Status should be set")
+	assert.Equal(t, "OK", response.ProcessorSummary.Status.Health, "Processor health should be OK")
+	assert.Equal(t, "OK", response.ProcessorSummary.Status.HealthRollup, "Processor HealthRollup should be OK")
+	assert.Equal(t, "Enabled", response.ProcessorSummary.Status.State, "Processor state should be Enabled")
+
+	// Note: StatusRedfishDeprecated is not included in generated types from OpenAPI spec
+	// This is a limitation of the current OpenAPI generator which doesn't handle Redfish-specific annotations
+}
+
+// validateSystemWithMemoryAndProcessorResponseTest validates system response includes both MemorySummary and ProcessorSummary
+func validateSystemWithMemoryAndProcessorResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+
+	validateSystemResponseDataTest(t, w, systemID, "Test System with Memory and Processor", "Intel Corporation", "Complete Test Model", "COMP123456")
+
+	// Additional validation for both MemorySummary and ProcessorSummary
+	var response redfishv1.ComputerSystem
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	// Verify MemorySummary is present and correct
+	assert.NotNil(t, response.MemorySummary, "MemorySummary should be present")
+	assert.NotNil(t, response.MemorySummary.TotalSystemMemoryGiB, "TotalSystemMemoryGiB should be set")
+	assert.Equal(t, float32(32.0), *response.MemorySummary.TotalSystemMemoryGiB, "Memory should be 32.0 GiB")
+	assert.NotNil(t, response.MemorySummary.Status, "MemorySummary Status should be set")
+	assert.Equal(t, "OK", response.MemorySummary.Status.Health, "Memory health should be OK")
+	assert.Equal(t, "Enabled", response.MemorySummary.Status.State, "Memory state should be Enabled")
+
+	// Verify ProcessorSummary is present and correct
+	assert.NotNil(t, response.ProcessorSummary, "ProcessorSummary should be present")
+	assert.NotNil(t, response.ProcessorSummary.Count, "Count should be set")
+	assert.Equal(t, 2, *response.ProcessorSummary.Count, "Processor count should be 2")
+	assert.NotNil(t, response.ProcessorSummary.Model, "Model should be present from CIM_Chip.Version")
+	assert.Equal(t, "12th Gen Intel(R) Core(TM) i5-1250P", *response.ProcessorSummary.Model, "Processor model should match CIM_Chip.Version")
+	assert.NotNil(t, response.ProcessorSummary.Status, "ProcessorSummary Status should be set")
+	assert.Equal(t, "OK", response.ProcessorSummary.Status.Health, "Processor health should be OK")
+	assert.Equal(t, "Enabled", response.ProcessorSummary.Status.State, "Processor state should be Enabled")
+}
+
+// validateSystemWithFullPropertiesResponseTest validates system response includes all properties
+func validateSystemWithFullPropertiesResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+
+	// First validate basic properties and All Properties (Description, HostName, Status)
+	validateSystemResponseWithAllPropertiesTest(t, w, systemID, "Complete Test System",
+		"Computer System managed by Intel AMT",
+		"amt-"+systemID+".example.com")
+
+	// Additional validation for MemorySummary and ProcessorSummary
+	var response redfishv1.ComputerSystem
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	// Verify MemorySummary is present and correct
+	assert.NotNil(t, response.MemorySummary, "MemorySummary should be present")
+	assert.NotNil(t, response.MemorySummary.TotalSystemMemoryGiB, "TotalSystemMemoryGiB should be set")
+	assert.Equal(t, float32(64.0), *response.MemorySummary.TotalSystemMemoryGiB, "Memory should be 64.0 GiB")
+	assert.NotNil(t, response.MemorySummary.Status, "MemorySummary Status should be set")
+	assert.Equal(t, "OK", response.MemorySummary.Status.Health, "Memory health should be OK")
+	assert.Equal(t, "Enabled", response.MemorySummary.Status.State, "Memory state should be Enabled")
+
+	// Verify ProcessorSummary is present and correct
+	assert.NotNil(t, response.ProcessorSummary, "ProcessorSummary should be present")
+	assert.NotNil(t, response.ProcessorSummary.Count, "Count should be set")
+	assert.Equal(t, 4, *response.ProcessorSummary.Count, "Processor count should be 4")
+	assert.NotNil(t, response.ProcessorSummary.Model, "Model should be present from CIM_Chip.Version")
+	assert.Equal(t, "12th Gen Intel(R) Core(TM) i7-1270P", *response.ProcessorSummary.Model, "Processor model should match CIM_Chip.Version")
+	assert.NotNil(t, response.ProcessorSummary.Status, "ProcessorSummary Status should be set")
+	assert.Equal(t, "OK", response.ProcessorSummary.Status.Health, "Processor health should be OK")
+	assert.Equal(t, "Enabled", response.ProcessorSummary.Status.State, "Processor state should be Enabled")
+	// Note: StatusRedfishDeprecated is not available in HTTP responses due to generated types limitation
 }

@@ -23,6 +23,9 @@ http:
     - "*"
 logger:
   log_level: info
+secrets: 
+  address: http://localhost:8200
+  token: ""
 postgres:
   pool_max: 2
   url: ""

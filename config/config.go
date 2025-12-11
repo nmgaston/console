@@ -16,12 +16,13 @@ var ConsoleConfig *Config
 type (
 	// Config -.
 	Config struct {
-		App  `yaml:"app"`
-		HTTP `yaml:"http"`
-		Log  `yaml:"logger"`
-		DB   `yaml:"postgres"`
-		EA   `yaml:"ea"`
-		Auth `yaml:"auth"`
+		App     `yaml:"app"`
+		HTTP    `yaml:"http"`
+		Log     `yaml:"logger"`
+		Secrets `yaml:"secrets"`
+		DB      `yaml:"postgres"`
+		EA      `yaml:"ea"`
+		Auth    `yaml:"auth"`
 	}
 
 	// App -.
@@ -33,6 +34,10 @@ type (
 		AllowInsecureCiphers bool   `yaml:"allow_insecure_ciphers" env:"APP_ALLOW_INSECURE_CIPHERS"`
 		EnvironmentUUID      string `yaml:"environment_uuid" env:"APP_ENV_UUID"`
 	} // HTTP -.
+		CommonName           string `yaml:"common_name" env:"APP_COMMON_NAME"`
+	}
+
+	// HTTP -.
 	HTTP struct {
 		Host           string   `env-required:"true" yaml:"host" env:"HTTP_HOST"`
 		Port           string   `env-required:"true" yaml:"port" env:"HTTP_PORT"`
@@ -52,6 +57,13 @@ type (
 	// Log -.
 	Log struct {
 		Level string `env-required:"true" yaml:"log_level"   env:"LOG_LEVEL"`
+	}
+
+	// Secrets -.
+	Secrets struct {
+		Address string `yaml:"address" env:"SECRETS_ADDR"`
+		Token   string `yaml:"token" env:"SECRETS_TOKEN"`
+		Path    string `yaml:"path" env:"SECRETS_PATH"`
 	}
 
 	// DB -.
@@ -101,6 +113,7 @@ func defaultConfig() *Config {
 			Version:              "DEVELOPMENT",
 			EncryptionKey:        "",
 			AllowInsecureCiphers: false,
+			CommonName:           "localhost",
 		},
 		HTTP: HTTP{
 			Host:           "localhost",
@@ -116,6 +129,11 @@ func defaultConfig() *Config {
 		},
 		Log: Log{
 			Level: "info",
+		},
+		Secrets: Secrets{
+			Address: "http://localhost:8200",
+			Token:   "",
+			Path:    "secret/data/console",
 		},
 		DB: DB{
 			PoolMax: 2,

@@ -3,6 +3,7 @@ package v1
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -125,4 +126,62 @@ func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, comp
 	}
 
 	c.JSON(http.StatusOK, system)
+}
+
+// PatchRedfishV1SystemsComputerSystemId handles PATCH requests to update computer system settings
+//
+//revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
+func (s *RedfishServer) PatchRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
+	ctx := c.Request.Context()
+
+	if computerSystemID == "" {
+		BadRequestError(c, "Computer system ID is required")
+
+		return
+	}
+
+	// Parse the request body
+	var updateRequest generated.ComputerSystemComputerSystem
+	if err := c.ShouldBindJSON(&updateRequest); err != nil {
+		BadRequestError(c, "Invalid request body: "+err.Error())
+
+		return
+	}
+
+	// Verify system exists first
+	_, err := s.ComputerSystemUC.GetComputerSystem(ctx, computerSystemID)
+	if err != nil {
+		s.handleGetSystemError(c, err, computerSystemID)
+
+		return
+	}
+
+	// Update Boot settings if provided
+	if updateRequest.Boot != nil {
+		if err := s.ComputerSystemUC.UpdateBootSettings(ctx, computerSystemID, updateRequest.Boot); err != nil {
+			if s.Logger != nil {
+				s.Logger.Error("Failed to update boot settings",
+					"systemID", computerSystemID,
+					"error", err)
+			}
+
+			switch {
+			case errors.Is(err, usecase.ErrSystemNotFound):
+				NotFoundError(c, "System", computerSystemID)
+			case errors.Is(err, usecase.ErrInvalidBootSettings):
+				BadRequestError(c, "Invalid boot settings: "+err.Error())
+			default:
+				InternalServerError(c, err)
+			}
+
+			return
+		}
+	}
+
+	// Redfish spec: PATCH should return 204 No Content for successful resource updates
+	// Set Location header to the resource URI
+	c.Header("Location", fmt.Sprintf("/redfish/v1/Systems/%s", computerSystemID))
+
+	// Return 204 No Content per Redfish specification for PATCH operations
+	c.Status(http.StatusNoContent)
 }

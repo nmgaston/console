@@ -3,7 +3,11 @@ package v1
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 
@@ -22,7 +26,79 @@ const (
 
 	// Systems path patterns
 	systemsBasePath = "/redfish/v1/Systems/"
+
+	// SystemID validation limits
+	maxSystemIDLength = 255
+	minSystemIDLength = 1
 )
+
+var (
+	// validSystemIDPattern matches alphanumeric characters, hyphens, and underscores only.
+	validSystemIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
+	// SystemID validation errors
+	errSystemIDEmpty             = errors.New("system ID cannot be empty")
+	errSystemIDTooShort          = errors.New("system ID must be at least 1 character long")
+	errSystemIDTooLong           = errors.New("system ID exceeds maximum length of 255 characters")
+	errSystemIDInvalidUTF8       = errors.New("system ID contains invalid UTF-8 characters")
+	errSystemIDNullByte          = errors.New("system ID contains null byte")
+	errSystemIDPathCharacters    = errors.New("system ID contains invalid path characters")
+	errSystemIDSpecialCharacters = errors.New("system ID contains invalid special characters")
+	errSystemIDInvalidCharacters = errors.New("system ID contains invalid characters (only alphanumeric, hyphen, and underscore allowed)")
+)
+
+// validateSystemID validates system ID parameter for security and format compliance.
+// Performs layered security validation: basic checks (empty, length, UTF-8) followed by
+// security checks (null bytes, path traversal, special chars) and pattern enforcement.
+//
+// Example:
+//
+//	validateSystemID("test-system-1")           // returns nil (valid)
+//	validateSystemID("<script>alert</script>")  // returns errSystemIDSpecialCharacters
+//	validateSystemID("../etc/passwd")          // returns errSystemIDPathCharacters
+func validateSystemID(systemID string) error {
+	// Check for empty or whitespace-only ID
+	if strings.TrimSpace(systemID) == "" {
+		return errSystemIDEmpty
+	}
+
+	// Check minimum length
+	if len(systemID) < minSystemIDLength {
+		return errSystemIDTooShort
+	}
+
+	// Check maximum length
+	if len(systemID) > maxSystemIDLength {
+		return errSystemIDTooLong
+	}
+
+	// Check for valid UTF-8 encoding
+	if !utf8.ValidString(systemID) {
+		return errSystemIDInvalidUTF8
+	}
+
+	// Check for null bytes
+	if strings.Contains(systemID, "\x00") {
+		return errSystemIDNullByte
+	}
+
+	// Check for path traversal attempts
+	if strings.Contains(systemID, "..") || strings.Contains(systemID, "/") || strings.Contains(systemID, "\\") {
+		return errSystemIDPathCharacters
+	}
+
+	// Check for special characters that might indicate injection attempts
+	if strings.ContainsAny(systemID, "<>\"';&|`$(){}[]") {
+		return errSystemIDSpecialCharacters
+	}
+
+	// Check against valid pattern (alphanumeric, hyphen, underscore only)
+	if !validSystemIDPattern.MatchString(systemID) {
+		return errSystemIDInvalidCharacters
+	}
+
+	return nil
+}
 
 // CreateDescription creates a Description from a string using ResourceDescription.
 // If an error occurs during description creation, it logs the error and returns nil.
@@ -105,14 +181,16 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 	c.JSON(http.StatusOK, collection)
 }
 
-// GetRedfishV1SystemsComputerSystemId handles GET requests for individual computer systems
+// GetRedfishV1SystemsComputerSystemId handles GET requests for individual computer systems.
+// Validates system ID parameter before retrieval to prevent injection attacks.
 //
 //revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
 func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
 	ctx := c.Request.Context()
 
-	if computerSystemID == "" {
-		BadRequestError(c, "Computer system ID is required")
+	// Validate system ID to prevent injection attacks
+	if err := validateSystemID(computerSystemID); err != nil {
+		BadRequestError(c, fmt.Sprintf("Invalid system ID: %s", err.Error()))
 
 		return
 	}

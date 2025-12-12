@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -605,7 +606,7 @@ func validateSystemErrorResponseTest(t *testing.T, w *httptest.ResponseRecorder,
 
 func validateBadRequestResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ string) {
 	t.Helper()
-	_ = validateErrorResponseDataTest(t, w, "Base.1.22.0.GeneralError", "Computer system ID is required")
+	_ = validateErrorResponseDataTest(t, w, "Base.1.22.0.GeneralError", "Invalid system ID: system ID cannot be empty")
 }
 
 // TestLogger for testing logger code paths - captures log calls
@@ -1032,4 +1033,202 @@ func validateSystemWithFullPropertiesResponseTest(t *testing.T, w *httptest.Resp
 	assert.Equal(t, "OK", response.ProcessorSummary.Status.Health, "Processor health should be OK")
 	assert.Equal(t, "Enabled", response.ProcessorSummary.Status.State, "Processor state should be Enabled")
 	// Note: StatusRedfishDeprecated is not available in HTTP responses due to generated types limitation
+}
+
+func TestValidateSystemID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		systemID  string
+		wantError bool
+		wantErr   error
+	}{
+		// Valid IDs
+		{
+			name:      "Valid alphanumeric ID",
+			systemID:  "test-system-1",
+			wantError: false,
+		},
+		{
+			name:      "Valid ID with underscores",
+			systemID:  "test_system_123",
+			wantError: false,
+		},
+		{
+			name:      "Valid ID with hyphens",
+			systemID:  "test-system-abc-123",
+			wantError: false,
+		},
+		{
+			name:      "Valid mixed case",
+			systemID:  "TestSystem123",
+			wantError: false,
+		},
+		{
+			name:      "Maximum valid length (255 chars)",
+			systemID:  strings.Repeat("a", 255),
+			wantError: false,
+		},
+
+		// Length violations
+		{
+			name:      "Empty string",
+			systemID:  "",
+			wantError: true,
+			wantErr:   errSystemIDEmpty,
+		},
+		{
+			name:      "Too long (256 chars)",
+			systemID:  strings.Repeat("a", 256),
+			wantError: true,
+			wantErr:   errSystemIDTooLong,
+		},
+
+		// Security: XSS attempts
+		{
+			name:      "XSS - angle brackets",
+			systemID:  "<script>alert('xss')</script>",
+			wantError: true,
+			wantErr:   errSystemIDPathCharacters, // Contains '/' which is checked before special chars
+		},
+		{
+			name:      "XSS - double quotes",
+			systemID:  "test\"system",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+		{
+			name:      "XSS - single quote",
+			systemID:  "test'system",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+
+		// Security: SQL injection
+		{
+			name:      "SQL injection attempt",
+			systemID:  "' OR '1'='1",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+
+		// Security: Path traversal
+		{
+			name:      "Path traversal - forward slash",
+			systemID:  "../../../etc/passwd",
+			wantError: true,
+			wantErr:   errSystemIDPathCharacters,
+		},
+		{
+			name:      "Path traversal - backslash",
+			systemID:  "..\\..\\..\\windows\\system32",
+			wantError: true,
+			wantErr:   errSystemIDPathCharacters,
+		},
+
+		// Security: Null bytes
+		{
+			name:      "Null byte injection",
+			systemID:  "system\x00id",
+			wantError: true,
+			wantErr:   errSystemIDNullByte,
+		},
+
+		// Security: Command injection
+		{
+			name:      "Command injection - semicolon",
+			systemID:  "test;system",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+		{
+			name:      "Command injection - ampersand",
+			systemID:  "test&system",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+		{
+			name:      "Command injection - pipe",
+			systemID:  "test|system",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+		{
+			name:      "Command injection - backtick",
+			systemID:  "test`system",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+		{
+			name:      "Command injection - dollar sign",
+			systemID:  "test$system",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+		{
+			name:      "Command injection - parentheses",
+			systemID:  "test(system)",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+		{
+			name:      "Command injection - braces",
+			systemID:  "test{system}",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+		{
+			name:      "Command injection - brackets",
+			systemID:  "test[system]",
+			wantError: true,
+			wantErr:   errSystemIDSpecialCharacters,
+		},
+
+		// Invalid characters
+		{
+			name:      "Unicode characters",
+			systemID:  "系统标识符",
+			wantError: true,
+			wantErr:   errSystemIDInvalidCharacters,
+		},
+		{
+			name:      "Whitespace - spaces",
+			systemID:  "test system",
+			wantError: true,
+			wantErr:   errSystemIDInvalidCharacters,
+		},
+		{
+			name:      "Whitespace - tab",
+			systemID:  "test\tsystem",
+			wantError: true,
+			wantErr:   errSystemIDInvalidCharacters,
+		},
+		{
+			name:      "Whitespace - newline",
+			systemID:  "test\nsystem",
+			wantError: true,
+			wantErr:   errSystemIDInvalidCharacters,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt // capture range variable
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateSystemID(tt.systemID)
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("validateSystemID() expected error but got nil")
+				} else if tt.wantErr != nil && !errors.Is(err, tt.wantErr) {
+					t.Errorf("validateSystemID() error = %v, wantErr %v", err, tt.wantErr)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("validateSystemID() unexpected error = %v", err)
+				}
+			}
+		})
+	}
 }

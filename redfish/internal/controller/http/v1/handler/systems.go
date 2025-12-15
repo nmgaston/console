@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 
@@ -26,76 +25,24 @@ const (
 
 	// Systems path patterns
 	systemsBasePath = "/redfish/v1/Systems/"
-
-	// SystemID validation limits
-	maxSystemIDLength = 50
-	minSystemIDLength = 1
 )
 
 var (
-	// validSystemIDPattern matches alphanumeric characters, hyphens, and underscores only.
-	validSystemIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+	// uuidPattern matches standard UUID/GUID format (8-4-4-4-12 hex digits)
+	uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`)
 
-	// SystemID validation errors
-	errSystemIDEmpty             = errors.New("system ID cannot be empty")
-	errSystemIDTooShort          = errors.New("system ID must be at least 1 character long")
-	errSystemIDTooLong           = errors.New("system ID exceeds maximum length of 50 characters")
-	errSystemIDInvalidUTF8       = errors.New("system ID contains invalid UTF-8 characters")
-	errSystemIDNullByte          = errors.New("system ID contains null byte")
-	errSystemIDPathCharacters    = errors.New("system ID contains invalid path characters")
-	errSystemIDSpecialCharacters = errors.New("system ID contains invalid special characters")
-	errSystemIDInvalidCharacters = errors.New("system ID contains invalid characters (only alphanumeric, hyphen, and underscore allowed)")
+	errSystemIDEmpty   = errors.New("system ID cannot be empty")
+	errSystemIDInvalid = errors.New("system ID must be a valid UUID")
 )
 
-// validateSystemID validates system ID parameter for security and format compliance.
-// Performs layered security validation: basic checks (empty, length, UTF-8) followed by
-// security checks (null bytes, path traversal, special chars) and pattern enforcement.
-// Length limit: 1-50 characters (accommodates GUIDs which are typically 36 characters).
-//
-// Example:
-//
-//	validateSystemID("test-system-1")           // returns nil (valid)
-//	validateSystemID("<script>alert</script>")  // returns errSystemIDSpecialCharacters
-//	validateSystemID("../etc/passwd")          // returns errSystemIDPathCharacters
+// validateSystemID validates that system ID is a valid UUID/GUID.
 func validateSystemID(systemID string) error {
-	// Check for empty or whitespace-only ID
 	if strings.TrimSpace(systemID) == "" {
 		return errSystemIDEmpty
 	}
 
-	// Check minimum length
-	if len(systemID) < minSystemIDLength {
-		return errSystemIDTooShort
-	}
-
-	// Check maximum length
-	if len(systemID) > maxSystemIDLength {
-		return errSystemIDTooLong
-	}
-
-	// Check for valid UTF-8 encoding
-	if !utf8.ValidString(systemID) {
-		return errSystemIDInvalidUTF8
-	}
-
-	// Check for null bytes
-	if strings.Contains(systemID, "\x00") {
-		return errSystemIDNullByte
-	}
-
-	// Check for path traversal attempts
-	if strings.Contains(systemID, "..") || strings.Contains(systemID, "/") || strings.Contains(systemID, "\\") {
-		return errSystemIDPathCharacters
-	}
-
-	// Check for special characters that might indicate injection attempts
-	if strings.ContainsAny(systemID, "<>\"';&|`$(){}[]") {
-		return errSystemIDSpecialCharacters
-	}
-
-	// Check against valid pattern (alphanumeric, hyphen, underscore only)
-	if !validSystemIDPattern.MatchString(systemID) {
-		return errSystemIDInvalidCharacters
+	if !uuidPattern.MatchString(systemID) {
+		return errSystemIDInvalid
 	}
 
 	return nil

@@ -45,7 +45,7 @@ func NewMockComputerSystemRepo() *MockComputerSystemRepo {
 
 	// Add default test system
 	testSystem := &redfishv1.ComputerSystem{
-		ID:           "test-system-1",
+		ID:           "550e8400-e29b-41d4-a716-446655440001",
 		Name:         "Test System 1",
 		SystemType:   redfishv1.SystemTypePhysical,
 		Manufacturer: "Intel Corporation",
@@ -78,11 +78,11 @@ func NewMockComputerSystemRepo() *MockComputerSystemRepo {
 			StatusRedfishDeprecated: stringPtr("Please migrate to use Status in the individual Processor resources"),
 			ThreadingEnabled:        nil,
 		},
-		ODataID:   "/redfish/v1/Systems/test-system-1",
+		ODataID:   "/redfish/v1/Systems/550e8400-e29b-41d4-a716-446655440001",
 		ODataType: "#ComputerSystem.v1_22_0.ComputerSystem",
 	}
 
-	repo.systems["test-system-1"] = testSystem
+	repo.systems["550e8400-e29b-41d4-a716-446655440001"] = testSystem
 
 	return repo
 }

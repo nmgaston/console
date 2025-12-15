@@ -1245,8 +1245,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 404', function () {",
-                  "    pm.response.to.have.status(404);",
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
                   "});",
                   "",
                   "pm.test('Content-Type is application/json', function () {",
@@ -2324,8 +2324,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 404 for non-existent SystemID', function () {",
-                  "    pm.response.to.have.status(404);",
+                  "pm.test('Status code is 400 for non-existent SystemID', function () {",
+                  "    pm.response.to.have.status(400);",
                   "});",
                   "",
                   "pm.test('Response is JSON', function () {",
@@ -3179,8 +3179,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 404 Not Found', function () {",
-                  "    pm.response.to.have.status(404);",
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
                   "});",
                   "",
                   "pm.test('Content-Type is application/json', function () {",

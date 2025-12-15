@@ -707,7 +707,7 @@ func TestSystemsHandler_GetSystemByID(t *testing.T) {
 		{"Success - Existing System", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemResponseTest, "System1"},
 		{"Success - System with Actions", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemActionsResponseTest, "System1"},
 		{"Success - Minimal System Properties", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "minimal-system-1"},
-		{"Success - System with Long ID", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "very-long-system-identifier-that-exceeds-character-limits"},
+		{"Success - System with Long ID", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "very-long-system-id-with-exactly-fifty-chars12"},
 
 		// Individual property tests
 		{"Success - System with All Properties (Description/HostName/Status)", setupSystemWithAllPropertiesMockTest, "GET", http.StatusOK, validateSystemWithAllPropertiesResponseTest, "enhanced-system-1"},
@@ -1066,8 +1066,8 @@ func TestValidateSystemID(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name:      "Maximum valid length (255 chars)",
-			systemID:  strings.Repeat("a", 255),
+			name:      "Maximum valid length (50 chars)",
+			systemID:  strings.Repeat("a", 50),
 			wantError: false,
 		},
 
@@ -1079,8 +1079,8 @@ func TestValidateSystemID(t *testing.T) {
 			wantErr:   errSystemIDEmpty,
 		},
 		{
-			name:      "Too long (256 chars)",
-			systemID:  strings.Repeat("a", 256),
+			name:      "Too long (51 chars)",
+			systemID:  strings.Repeat("a", 51),
 			wantError: true,
 			wantErr:   errSystemIDTooLong,
 		},

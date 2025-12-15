@@ -28,7 +28,7 @@ const (
 	systemsBasePath = "/redfish/v1/Systems/"
 
 	// SystemID validation limits
-	maxSystemIDLength = 255
+	maxSystemIDLength = 50
 	minSystemIDLength = 1
 )
 
@@ -39,7 +39,7 @@ var (
 	// SystemID validation errors
 	errSystemIDEmpty             = errors.New("system ID cannot be empty")
 	errSystemIDTooShort          = errors.New("system ID must be at least 1 character long")
-	errSystemIDTooLong           = errors.New("system ID exceeds maximum length of 255 characters")
+	errSystemIDTooLong           = errors.New("system ID exceeds maximum length of 50 characters")
 	errSystemIDInvalidUTF8       = errors.New("system ID contains invalid UTF-8 characters")
 	errSystemIDNullByte          = errors.New("system ID contains null byte")
 	errSystemIDPathCharacters    = errors.New("system ID contains invalid path characters")
@@ -50,6 +50,7 @@ var (
 // validateSystemID validates system ID parameter for security and format compliance.
 // Performs layered security validation: basic checks (empty, length, UTF-8) followed by
 // security checks (null bytes, path traversal, special chars) and pattern enforcement.
+// Length limit: 1-50 characters (accommodates GUIDs which are typically 36 characters).
 //
 // Example:
 //

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -37,7 +36,7 @@ var (
 
 // validateSystemID validates that system ID is a valid UUID/GUID.
 func validateSystemID(systemID string) error {
-	if strings.TrimSpace(systemID) == "" {
+	if systemID == "" {
 		return errSystemIDEmpty
 	}
 

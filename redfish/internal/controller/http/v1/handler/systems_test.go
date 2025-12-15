@@ -27,6 +27,19 @@ const (
 	systemsEndpointTest               = "/redfish/v1/Systems"
 	jsonContentTypeTest               = "application/json; charset=utf-8"
 	systemODataType                   = "#ComputerSystem.v1_26_0.ComputerSystem"
+
+	// Test UUID constants for consistent system IDs
+	testUUID1  = "550e8400-e29b-41d4-a716-446655440001"
+	testUUID2  = "550e8400-e29b-41d4-a716-446655440002"
+	testUUID3  = "550e8400-e29b-41d4-a716-446655440003"
+	testUUID4  = "550e8400-e29b-41d4-a716-446655440004"
+	testUUID5  = "550e8400-e29b-41d4-a716-446655440005"
+	testUUID6  = "550e8400-e29b-41d4-a716-446655440006"
+	testUUID7  = "550e8400-e29b-41d4-a716-446655440007"
+	testUUID8  = "550e8400-e29b-41d4-a716-446655440008"
+	testUUID9  = "550e8400-e29b-41d4-a716-446655440009"
+	testUUID10 = "550e8400-e29b-41d4-a716-44665544000a"
+	testUUIDNotFound = "999e8400-e29b-41d4-a716-446655440000"
 )
 
 // Test error constants specific to systems
@@ -200,8 +213,8 @@ func setupSystemByIDTestRouter(server *RedfishServer) *gin.Engine {
 func validateMultipleSystemsResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ struct{}) {
 	t.Helper()
 	validateSystemsCollectionResponse(t, w, 2, []string{
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440001", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440002", systemsEndpointTest),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID1),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID2),
 	})
 }
 
@@ -213,15 +226,15 @@ func validateEmptyCollectionResponseTest(t *testing.T, w *httptest.ResponseRecor
 func validateFilteredSystemsResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ struct{}) {
 	t.Helper()
 	validateSystemsCollectionResponse(t, w, 3, []string{
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440001", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440002", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440003", systemsEndpointTest),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID1),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID2),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID3),
 	})
 }
 
 func validateSingleSystemResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ struct{}) {
 	t.Helper()
-	validateSystemsCollectionResponse(t, w, 1, []string{fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440001", systemsEndpointTest)})
+	validateSystemsCollectionResponse(t, w, 1, []string{fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID1)})
 }
 
 func validateLargeCollectionResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ struct{}) {
@@ -229,16 +242,16 @@ func validateLargeCollectionResponseTest(t *testing.T, w *httptest.ResponseRecor
 
 	// Create expected members in alphabetical order (as returned by sorted repository)
 	expectedMembers := []string{
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440001", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440002", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440003", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440004", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440005", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440006", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440007", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440008", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-446655440009", systemsEndpointTest),
-		fmt.Sprintf("%s/550e8400-e29b-41d4-a716-44665544000a", systemsEndpointTest),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID1),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID2),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID3),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID4),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID5),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID6),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID7),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID8),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID9),
+		fmt.Sprintf("%s/%s", systemsEndpointTest, testUUID10),
 	}
 
 	validateSystemsCollectionResponse(t, w, 10, expectedMembers)
@@ -293,8 +306,8 @@ func validateErrorResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ str
 
 // Repository setup functions for Systems collection
 func setupMultipleSystemsMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
-	repo.AddSystem("550e8400-e29b-41d4-a716-446655440001", &redfishv1.ComputerSystem{ID: "550e8400-e29b-41d4-a716-446655440001", Name: "System 1", PowerState: redfishv1.PowerStateOn})
-	repo.AddSystem("550e8400-e29b-41d4-a716-446655440002", &redfishv1.ComputerSystem{ID: "550e8400-e29b-41d4-a716-446655440002", Name: "System 2", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem(testUUID1, &redfishv1.ComputerSystem{ID: testUUID1, Name: "System 1", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem(testUUID2, &redfishv1.ComputerSystem{ID: testUUID2, Name: "System 2", PowerState: redfishv1.PowerStateOn})
 }
 
 func setupEmptyCollectionMockTest(_ *TestSystemsComputerSystemRepository, _ struct{}) {
@@ -302,29 +315,18 @@ func setupEmptyCollectionMockTest(_ *TestSystemsComputerSystemRepository, _ stru
 }
 
 func setupFilteredSystemsMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
-	repo.AddSystem("550e8400-e29b-41d4-a716-446655440001", &redfishv1.ComputerSystem{ID: "550e8400-e29b-41d4-a716-446655440001", Name: "System 1", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem(testUUID1, &redfishv1.ComputerSystem{ID: testUUID1, Name: "System 1", PowerState: redfishv1.PowerStateOn})
 	repo.AddSystem("", &redfishv1.ComputerSystem{ID: "", Name: "Empty ID", PowerState: redfishv1.PowerStateOn}) // This will be filtered out
-	repo.AddSystem("550e8400-e29b-41d4-a716-446655440003", &redfishv1.ComputerSystem{ID: "550e8400-e29b-41d4-a716-446655440003", Name: "ABC System", PowerState: redfishv1.PowerStateOn})
-	repo.AddSystem("550e8400-e29b-41d4-a716-446655440002", &redfishv1.ComputerSystem{ID: "550e8400-e29b-41d4-a716-446655440002", Name: "System 2", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem(testUUID3, &redfishv1.ComputerSystem{ID: testUUID3, Name: "ABC System", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem(testUUID2, &redfishv1.ComputerSystem{ID: testUUID2, Name: "System 2", PowerState: redfishv1.PowerStateOn})
 }
 
 func setupSingleSystemMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
-	repo.AddSystem("550e8400-e29b-41d4-a716-446655440001", &redfishv1.ComputerSystem{ID: "550e8400-e29b-41d4-a716-446655440001", Name: "System 1", PowerState: redfishv1.PowerStateOn})
+	repo.AddSystem(testUUID1, &redfishv1.ComputerSystem{ID: testUUID1, Name: "System 1", PowerState: redfishv1.PowerStateOn})
 }
 
 func setupLargeCollectionMockTest(repo *TestSystemsComputerSystemRepository, _ struct{}) {
-	uuids := []string{
-		"550e8400-e29b-41d4-a716-446655440001",
-		"550e8400-e29b-41d4-a716-446655440002",
-		"550e8400-e29b-41d4-a716-446655440003",
-		"550e8400-e29b-41d4-a716-446655440004",
-		"550e8400-e29b-41d4-a716-446655440005",
-		"550e8400-e29b-41d4-a716-446655440006",
-		"550e8400-e29b-41d4-a716-446655440007",
-		"550e8400-e29b-41d4-a716-446655440008",
-		"550e8400-e29b-41d4-a716-446655440009",
-		"550e8400-e29b-41d4-a716-44665544000a",
-	}
+	uuids := []string{testUUID1, testUUID2, testUUID3, testUUID4, testUUID5, testUUID6, testUUID7, testUUID8, testUUID9, testUUID10}
 	for i, systemID := range uuids {
 		repo.AddSystem(systemID, &redfishv1.ComputerSystem{ID: systemID, Name: fmt.Sprintf("System %d", i+1), PowerState: redfishv1.PowerStateOn})
 	}
@@ -713,26 +715,26 @@ func TestSystemsHandler_GetSystemByID(t *testing.T) {
 	}
 
 	tests := []SystemsTestCase[string]{
-		{"Success - Existing System", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemResponseTest, "550e8400-e29b-41d4-a716-446655440001"},
-		{"Success - System with Actions", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemActionsResponseTest, "550e8400-e29b-41d4-a716-446655440001"},
-		{"Success - Minimal System Properties", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "550e8400-e29b-41d4-a716-446655440002"},
-		{"Success - System with Long ID", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, "550e8400-e29b-41d4-a716-446655440003"},
+		{"Success - Existing System", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemResponseTest, testUUID1},
+		{"Success - System with Actions", setupExistingSystemMockTest, "GET", http.StatusOK, validateSystemActionsResponseTest, testUUID1},
+		{"Success - Minimal System Properties", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, testUUID2},
+		{"Success - System with Long ID", setupMinimalSystemMockTest, "GET", http.StatusOK, validateMinimalSystemResponseTest, testUUID3},
 
-		{"Success - System with All Properties (Description/HostName/Status)", setupSystemWithAllPropertiesMockTest, "GET", http.StatusOK, validateSystemWithAllPropertiesResponseTest, "550e8400-e29b-41d4-a716-446655440004"},
-		{"Success - System with MemorySummary", setupSystemWithMemoryMockTest, "GET", http.StatusOK, validateSystemWithMemoryResponseTest, "550e8400-e29b-41d4-a716-446655440005"},
-		{"Success - System with ProcessorSummary", setupSystemWithProcessorMockTest, "GET", http.StatusOK, validateSystemWithProcessorResponseTest, "550e8400-e29b-41d4-a716-446655440006"},
+		{"Success - System with All Properties (Description/HostName/Status)", setupSystemWithAllPropertiesMockTest, "GET", http.StatusOK, validateSystemWithAllPropertiesResponseTest, testUUID4},
+		{"Success - System with MemorySummary", setupSystemWithMemoryMockTest, "GET", http.StatusOK, validateSystemWithMemoryResponseTest, testUUID5},
+		{"Success - System with ProcessorSummary", setupSystemWithProcessorMockTest, "GET", http.StatusOK, validateSystemWithProcessorResponseTest, testUUID6},
 
-		{"Success - System with Memory and Processor Summaries", setupSystemWithMemoryAndProcessorMockTest, "GET", http.StatusOK, validateSystemWithMemoryAndProcessorResponseTest, "550e8400-e29b-41d4-a716-446655440007"},
-		{"Success - System with All Properties and Summaries", setupSystemWithFullPropertiesMockTest, "GET", http.StatusOK, validateSystemWithFullPropertiesResponseTest, "550e8400-e29b-41d4-a716-446655440008"},
+		{"Success - System with Memory and Processor Summaries", setupSystemWithMemoryAndProcessorMockTest, "GET", http.StatusOK, validateSystemWithMemoryAndProcessorResponseTest, testUUID7},
+		{"Success - System with All Properties and Summaries", setupSystemWithFullPropertiesMockTest, "GET", http.StatusOK, validateSystemWithFullPropertiesResponseTest, testUUID8},
 
 		{"Error - Empty System ID", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateBadRequestResponseTest, ""},
-		{"Error - System Not Found", setupSystemNotFoundMockTest, "GET", http.StatusNotFound, validateSystemNotFoundResponseTest, "999e8400-e29b-41d4-a716-446655440000"},
-		{"Error - Repository Error", setupSystemRepositoryErrorMockTest, "GET", http.StatusInternalServerError, validateSystemErrorResponseTest, "550e8400-e29b-41d4-a716-446655440001"},
+		{"Error - System Not Found", setupSystemNotFoundMockTest, "GET", http.StatusNotFound, validateSystemNotFoundResponseTest, testUUIDNotFound},
+		{"Error - Repository Error", setupSystemRepositoryErrorMockTest, "GET", http.StatusInternalServerError, validateSystemErrorResponseTest, testUUID1},
 
-		{"Error - HTTP Method POST Not Allowed", setupNoSystemMockTest, "POST", http.StatusNotFound, nil, "550e8400-e29b-41d4-a716-446655440001"},
-		{"Error - HTTP Method PUT Not Allowed", setupNoSystemMockTest, "PUT", http.StatusNotFound, nil, "550e8400-e29b-41d4-a716-446655440001"},
-		{"Error - HTTP Method DELETE Not Allowed", setupNoSystemMockTest, "DELETE", http.StatusNotFound, nil, "550e8400-e29b-41d4-a716-446655440001"},
-		{"Error - HTTP Method PATCH Not Allowed", setupNoSystemMockTest, "PATCH", http.StatusNotFound, nil, "550e8400-e29b-41d4-a716-446655440001"},
+		{"Error - HTTP Method POST Not Allowed", setupNoSystemMockTest, "POST", http.StatusNotFound, nil, testUUID1},
+		{"Error - HTTP Method PUT Not Allowed", setupNoSystemMockTest, "PUT", http.StatusNotFound, nil, testUUID1},
+		{"Error - HTTP Method DELETE Not Allowed", setupNoSystemMockTest, "DELETE", http.StatusNotFound, nil, testUUID1},
+		{"Error - HTTP Method PATCH Not Allowed", setupNoSystemMockTest, "PATCH", http.StatusNotFound, nil, testUUID1},
 	}
 
 	for _, tt := range tests {
@@ -779,7 +781,7 @@ func TestSystemsHandler_GetSystemByID_WithLogger(t *testing.T) {
 
 	// Test error logging path
 	testRepo := NewTestSystemsComputerSystemRepository()
-	testRepo.SetErrorOnGetByID("550e8400-e29b-41d4-a716-446655440001", errSystemRepoFailure)
+	testRepo.SetErrorOnGetByID(testUUID1, errSystemRepoFailure)
 
 	testLogger := NewTestLogger()
 
@@ -792,7 +794,7 @@ func TestSystemsHandler_GetSystemByID_WithLogger(t *testing.T) {
 		Logger:           testLogger,
 	}
 	router := setupSystemByIDTestRouter(server)
-	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/redfish/v1/Systems/550e8400-e29b-41d4-a716-446655440001", http.NoBody)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/redfish/v1/Systems/"+testUUID1, http.NoBody)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -1051,7 +1053,7 @@ func TestValidateSystemID(t *testing.T) {
 	}{
 		{
 			name:      "Valid UUID - lowercase",
-			systemID:  "550e8400-e29b-41d4-a716-446655440001",
+			systemID:  testUUID1,
 			wantError: false,
 		},
 		{
@@ -1074,7 +1076,7 @@ func TestValidateSystemID(t *testing.T) {
 			name:      "Whitespace only",
 			systemID:  "   ",
 			wantError: true,
-			wantErr:   errSystemIDEmpty,
+			wantErr:   errSystemIDInvalid,
 		},
 		{
 			name:      "Invalid - missing hyphens",

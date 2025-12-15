@@ -187,3 +187,107 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+  /redfish/v1/SessionService:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: SessionService.v1_1_9.yaml#/components/schemas/SessionService_v1_1_9_SessionService
+          description: The response contains a representation of the SessionService resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+  /redfish/v1/SessionService/Sessions:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: SessionCollection.yaml#/components/schemas/SessionCollection_SessionCollection
+          description: The response contains a representation of the SessionCollection resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              description: Request body for creating a session
+              properties:
+                Password:
+                  description: Password for authentication
+                  format: password
+                  type: string
+                UserName:
+                  description: Username for authentication
+                  type: string
+              required:
+              - UserName
+              - Password
+              type: object
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: Session.v1_7_0.yaml#/components/schemas/Session_v1_7_0_Session
+          description: Session created successfully
+          headers:
+            Location:
+              description: URI of the created session
+              schema:
+                type: string
+            X-Auth-Token:
+              description: JWT session token
+              schema:
+                type: string
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+  /redfish/v1/SessionService/Sessions/{SessionId}:
+    delete:
+      responses:
+        '204':
+          description: Session deleted successfully
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: Session.v1_7_0.yaml#/components/schemas/Session_v1_7_0_Session
+          description: The response contains a representation of the Session resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    parameters:
+    - description: The value of the Id property of the Session resource
+      in: path
+      name: SessionId
+      required: true
+      schema:
+        type: string

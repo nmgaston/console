@@ -24,6 +24,21 @@ type ServerInterface interface {
 	// (GET /redfish/v1/$metadata)
 	GetRedfishV1Metadata(c *gin.Context)
 
+	// (GET /redfish/v1/SessionService)
+	GetRedfishV1SessionService(c *gin.Context)
+
+	// (GET /redfish/v1/SessionService/Sessions)
+	GetRedfishV1SessionServiceSessions(c *gin.Context)
+
+	// (POST /redfish/v1/SessionService/Sessions)
+	PostRedfishV1SessionServiceSessions(c *gin.Context)
+
+	// (DELETE /redfish/v1/SessionService/Sessions/{SessionId})
+	DeleteRedfishV1SessionServiceSessionsSessionId(c *gin.Context, sessionId string)
+
+	// (GET /redfish/v1/SessionService/Sessions/{SessionId})
+	GetRedfishV1SessionServiceSessionsSessionId(c *gin.Context, sessionId string)
+
 	// (GET /redfish/v1/Systems)
 	GetRedfishV1Systems(c *gin.Context)
 
@@ -70,6 +85,103 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1Metadata(c *gin.Context) {
 	}
 
 	siw.Handler.GetRedfishV1Metadata(c)
+}
+
+// GetRedfishV1SessionService operation middleware
+func (siw *ServerInterfaceWrapper) GetRedfishV1SessionService(c *gin.Context) {
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRedfishV1SessionService(c)
+}
+
+// GetRedfishV1SessionServiceSessions operation middleware
+func (siw *ServerInterfaceWrapper) GetRedfishV1SessionServiceSessions(c *gin.Context) {
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRedfishV1SessionServiceSessions(c)
+}
+
+// PostRedfishV1SessionServiceSessions operation middleware
+func (siw *ServerInterfaceWrapper) PostRedfishV1SessionServiceSessions(c *gin.Context) {
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PostRedfishV1SessionServiceSessions(c)
+}
+
+// DeleteRedfishV1SessionServiceSessionsSessionId operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRedfishV1SessionServiceSessionsSessionId(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "SessionId" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "SessionId", c.Param("SessionId"), &sessionId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter SessionId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteRedfishV1SessionServiceSessionsSessionId(c, sessionId)
+}
+
+// GetRedfishV1SessionServiceSessionsSessionId operation middleware
+func (siw *ServerInterfaceWrapper) GetRedfishV1SessionServiceSessionsSessionId(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "SessionId" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "SessionId", c.Param("SessionId"), &sessionId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter SessionId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRedfishV1SessionServiceSessionsSessionId(c, sessionId)
 }
 
 // GetRedfishV1Systems operation middleware
@@ -181,6 +293,11 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.GET(options.BaseURL+"/redfish/v1/", wrapper.GetRedfishV1)
 	router.GET(options.BaseURL+"/redfish/v1/$metadata", wrapper.GetRedfishV1Metadata)
+	router.GET(options.BaseURL+"/redfish/v1/SessionService", wrapper.GetRedfishV1SessionService)
+	router.GET(options.BaseURL+"/redfish/v1/SessionService/Sessions", wrapper.GetRedfishV1SessionServiceSessions)
+	router.POST(options.BaseURL+"/redfish/v1/SessionService/Sessions", wrapper.PostRedfishV1SessionServiceSessions)
+	router.DELETE(options.BaseURL+"/redfish/v1/SessionService/Sessions/:SessionId", wrapper.DeleteRedfishV1SessionServiceSessionsSessionId)
+	router.GET(options.BaseURL+"/redfish/v1/SessionService/Sessions/:SessionId", wrapper.GetRedfishV1SessionServiceSessionsSessionId)
 	router.GET(options.BaseURL+"/redfish/v1/Systems", wrapper.GetRedfishV1Systems)
 	router.GET(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId", wrapper.GetRedfishV1SystemsComputerSystemId)
 	router.POST(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId/Actions/ComputerSystem.Reset", wrapper.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset)
@@ -247,6 +364,158 @@ type GetRedfishV1MetadatadefaultJSONResponse struct {
 }
 
 func (response GetRedfishV1MetadatadefaultJSONResponse) VisitGetRedfishV1MetadataResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetRedfishV1SessionServiceRequestObject struct {
+}
+
+type GetRedfishV1SessionServiceResponseObject interface {
+	VisitGetRedfishV1SessionServiceResponse(w http.ResponseWriter) error
+}
+
+type GetRedfishV1SessionService200JSONResponse SessionServiceSessionService
+
+func (response GetRedfishV1SessionService200JSONResponse) VisitGetRedfishV1SessionServiceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetRedfishV1SessionServicedefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response GetRedfishV1SessionServicedefaultJSONResponse) VisitGetRedfishV1SessionServiceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetRedfishV1SessionServiceSessionsRequestObject struct {
+}
+
+type GetRedfishV1SessionServiceSessionsResponseObject interface {
+	VisitGetRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error
+}
+
+type GetRedfishV1SessionServiceSessions200JSONResponse SessionCollectionSessionCollection
+
+func (response GetRedfishV1SessionServiceSessions200JSONResponse) VisitGetRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetRedfishV1SessionServiceSessionsdefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response GetRedfishV1SessionServiceSessionsdefaultJSONResponse) VisitGetRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type PostRedfishV1SessionServiceSessionsRequestObject struct {
+	Body *PostRedfishV1SessionServiceSessionsJSONRequestBody
+}
+
+type PostRedfishV1SessionServiceSessionsResponseObject interface {
+	VisitPostRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error
+}
+
+type PostRedfishV1SessionServiceSessions201ResponseHeaders struct {
+	Location   string
+	XAuthToken string
+}
+
+type PostRedfishV1SessionServiceSessions201JSONResponse struct {
+	Body    SessionSession
+	Headers PostRedfishV1SessionServiceSessions201ResponseHeaders
+}
+
+func (response PostRedfishV1SessionServiceSessions201JSONResponse) VisitPostRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.Header().Set("X-Auth-Token", fmt.Sprint(response.Headers.XAuthToken))
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type PostRedfishV1SessionServiceSessionsdefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response PostRedfishV1SessionServiceSessionsdefaultJSONResponse) VisitPostRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteRedfishV1SessionServiceSessionsSessionIdRequestObject struct {
+	SessionId string `json:"SessionId"`
+}
+
+type DeleteRedfishV1SessionServiceSessionsSessionIdResponseObject interface {
+	VisitDeleteRedfishV1SessionServiceSessionsSessionIdResponse(w http.ResponseWriter) error
+}
+
+type DeleteRedfishV1SessionServiceSessionsSessionId204Response struct {
+}
+
+func (response DeleteRedfishV1SessionServiceSessionsSessionId204Response) VisitDeleteRedfishV1SessionServiceSessionsSessionIdResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteRedfishV1SessionServiceSessionsSessionIddefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response DeleteRedfishV1SessionServiceSessionsSessionIddefaultJSONResponse) VisitDeleteRedfishV1SessionServiceSessionsSessionIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetRedfishV1SessionServiceSessionsSessionIdRequestObject struct {
+	SessionId string `json:"SessionId"`
+}
+
+type GetRedfishV1SessionServiceSessionsSessionIdResponseObject interface {
+	VisitGetRedfishV1SessionServiceSessionsSessionIdResponse(w http.ResponseWriter) error
+}
+
+type GetRedfishV1SessionServiceSessionsSessionId200JSONResponse SessionSession
+
+func (response GetRedfishV1SessionServiceSessionsSessionId200JSONResponse) VisitGetRedfishV1SessionServiceSessionsSessionIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetRedfishV1SessionServiceSessionsSessionIddefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response GetRedfishV1SessionServiceSessionsSessionIddefaultJSONResponse) VisitGetRedfishV1SessionServiceSessionsSessionIdResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 
@@ -392,6 +661,21 @@ type StrictServerInterface interface {
 	// (GET /redfish/v1/$metadata)
 	GetRedfishV1Metadata(ctx context.Context, request GetRedfishV1MetadataRequestObject) (GetRedfishV1MetadataResponseObject, error)
 
+	// (GET /redfish/v1/SessionService)
+	GetRedfishV1SessionService(ctx context.Context, request GetRedfishV1SessionServiceRequestObject) (GetRedfishV1SessionServiceResponseObject, error)
+
+	// (GET /redfish/v1/SessionService/Sessions)
+	GetRedfishV1SessionServiceSessions(ctx context.Context, request GetRedfishV1SessionServiceSessionsRequestObject) (GetRedfishV1SessionServiceSessionsResponseObject, error)
+
+	// (POST /redfish/v1/SessionService/Sessions)
+	PostRedfishV1SessionServiceSessions(ctx context.Context, request PostRedfishV1SessionServiceSessionsRequestObject) (PostRedfishV1SessionServiceSessionsResponseObject, error)
+
+	// (DELETE /redfish/v1/SessionService/Sessions/{SessionId})
+	DeleteRedfishV1SessionServiceSessionsSessionId(ctx context.Context, request DeleteRedfishV1SessionServiceSessionsSessionIdRequestObject) (DeleteRedfishV1SessionServiceSessionsSessionIdResponseObject, error)
+
+	// (GET /redfish/v1/SessionService/Sessions/{SessionId})
+	GetRedfishV1SessionServiceSessionsSessionId(ctx context.Context, request GetRedfishV1SessionServiceSessionsSessionIdRequestObject) (GetRedfishV1SessionServiceSessionsSessionIdResponseObject, error)
+
 	// (GET /redfish/v1/Systems)
 	GetRedfishV1Systems(ctx context.Context, request GetRedfishV1SystemsRequestObject) (GetRedfishV1SystemsResponseObject, error)
 
@@ -460,6 +744,143 @@ func (sh *strictHandler) GetRedfishV1Metadata(ctx *gin.Context) {
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(GetRedfishV1MetadataResponseObject); ok {
 		if err := validResponse.VisitGetRedfishV1MetadataResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRedfishV1SessionService operation middleware
+func (sh *strictHandler) GetRedfishV1SessionService(ctx *gin.Context) {
+	var request GetRedfishV1SessionServiceRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRedfishV1SessionService(ctx, request.(GetRedfishV1SessionServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRedfishV1SessionService")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetRedfishV1SessionServiceResponseObject); ok {
+		if err := validResponse.VisitGetRedfishV1SessionServiceResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRedfishV1SessionServiceSessions operation middleware
+func (sh *strictHandler) GetRedfishV1SessionServiceSessions(ctx *gin.Context) {
+	var request GetRedfishV1SessionServiceSessionsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRedfishV1SessionServiceSessions(ctx, request.(GetRedfishV1SessionServiceSessionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRedfishV1SessionServiceSessions")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetRedfishV1SessionServiceSessionsResponseObject); ok {
+		if err := validResponse.VisitGetRedfishV1SessionServiceSessionsResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostRedfishV1SessionServiceSessions operation middleware
+func (sh *strictHandler) PostRedfishV1SessionServiceSessions(ctx *gin.Context) {
+	var request PostRedfishV1SessionServiceSessionsRequestObject
+
+	var body PostRedfishV1SessionServiceSessionsJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PostRedfishV1SessionServiceSessions(ctx, request.(PostRedfishV1SessionServiceSessionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostRedfishV1SessionServiceSessions")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(PostRedfishV1SessionServiceSessionsResponseObject); ok {
+		if err := validResponse.VisitPostRedfishV1SessionServiceSessionsResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteRedfishV1SessionServiceSessionsSessionId operation middleware
+func (sh *strictHandler) DeleteRedfishV1SessionServiceSessionsSessionId(ctx *gin.Context, sessionId string) {
+	var request DeleteRedfishV1SessionServiceSessionsSessionIdRequestObject
+
+	request.SessionId = sessionId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteRedfishV1SessionServiceSessionsSessionId(ctx, request.(DeleteRedfishV1SessionServiceSessionsSessionIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteRedfishV1SessionServiceSessionsSessionId")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(DeleteRedfishV1SessionServiceSessionsSessionIdResponseObject); ok {
+		if err := validResponse.VisitDeleteRedfishV1SessionServiceSessionsSessionIdResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRedfishV1SessionServiceSessionsSessionId operation middleware
+func (sh *strictHandler) GetRedfishV1SessionServiceSessionsSessionId(ctx *gin.Context, sessionId string) {
+	var request GetRedfishV1SessionServiceSessionsSessionIdRequestObject
+
+	request.SessionId = sessionId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRedfishV1SessionServiceSessionsSessionId(ctx, request.(GetRedfishV1SessionServiceSessionsSessionIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRedfishV1SessionServiceSessionsSessionId")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetRedfishV1SessionServiceSessionsSessionIdResponseObject); ok {
+		if err := validResponse.VisitGetRedfishV1SessionServiceSessionsSessionIdResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

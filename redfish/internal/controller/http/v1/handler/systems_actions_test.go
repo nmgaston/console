@@ -18,8 +18,8 @@ import (
 
 // Test constants for system actions
 const (
-	testSystemID        = "system-123"
-	resetActionEndpoint = "/redfish/v1/Systems/system-123/Actions/ComputerSystem.Reset"
+	testSystemID        = "550e8400-e29b-41d4-a716-446655440001"
+	resetActionEndpoint = "/redfish/v1/Systems/550e8400-e29b-41d4-a716-446655440001/Actions/ComputerSystem.Reset"
 	taskServiceEndpoint = "/redfish/v1/TaskService/Tasks/"
 	taskODataContext    = "/redfish/v1/$metadata#Task.Task"
 	taskODataType       = "#Task.v1_6_0.Task"
@@ -220,7 +220,7 @@ func TestPostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset_SystemNo
 	router := setupSystemActionsTestRouter(server)
 
 	body := createResetRequest(generated.ResourceResetTypeOn)
-	endpoint := "/redfish/v1/Systems/nonexistent/Actions/ComputerSystem.Reset"
+	endpoint := "/redfish/v1/Systems/999e8400-e29b-41d4-a716-446655440000/Actions/ComputerSystem.Reset"
 	w := executeResetRequest(router, endpoint, body)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)

@@ -1245,8 +1245,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 404', function () {",
-                  "    pm.response.to.have.status(404);",
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
                   "});",
                   "",
                   "pm.test('Content-Type is application/json', function () {",
@@ -1342,6 +1342,1414 @@
                 "v1",
                 "Systems",
                 "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify All Core Properties",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('System has all required core properties', function () {",
+                  "    pm.expect(jsonData).to.have.property('Id');",
+                  "    pm.expect(jsonData).to.have.property('Name');",
+                  "    pm.expect(jsonData).to.have.property('SystemType');",
+                  "    pm.expect(jsonData).to.have.property('PowerState');",
+                  "});",
+                  "",
+                  "pm.test('System has manufacturer information', function () {",
+                  "    pm.expect(jsonData).to.have.property('Manufacturer');",
+                  "    pm.expect(jsonData.Manufacturer).to.be.a('string');",
+                  "    pm.expect(jsonData.Manufacturer.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test('System has model information', function () {",
+                  "    pm.expect(jsonData).to.have.property('Model');",
+                  "    pm.expect(jsonData.Model).to.be.a('string');",
+                  "    pm.expect(jsonData.Model.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test('System has serial number', function () {",
+                  "    pm.expect(jsonData).to.have.property('SerialNumber');",
+                  "    pm.expect(jsonData.SerialNumber).to.be.a('string');",
+                  "    pm.expect(jsonData.SerialNumber.length).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify OData Properties",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('@odata.context is correctly formatted', function () {",
+                  "    pm.expect(jsonData['@odata.context']).to.equal('/redfish/v1/$metadata#ComputerSystem.ComputerSystem');",
+                  "});",
+                  "",
+                  "pm.test('@odata.id matches system ID', function () {",
+                  "    var systemId = pm.environment.get('system_id');",
+                  "    pm.expect(jsonData['@odata.id']).to.equal('/redfish/v1/Systems/' + systemId);",
+                  "});",
+                  "",
+                  "pm.test('@odata.type is ComputerSystem', function () {",
+                  "    pm.expect(jsonData['@odata.type']).to.include('ComputerSystem');",
+                  "});",
+                  "",
+                  "pm.test('Id property matches URL parameter', function () {",
+                  "    var systemId = pm.environment.get('system_id');",
+                  "    pm.expect(jsonData.Id).to.equal(systemId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify BiosVersion Property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('BiosVersion property exists', function () {",
+                  "    pm.expect(jsonData).to.have.property('BiosVersion');",
+                  "});",
+                  "",
+                  "pm.test('BiosVersion is a string if present', function () {",
+                  "    if (jsonData.BiosVersion !== null && jsonData.BiosVersion !== undefined) {",
+                  "        pm.expect(jsonData.BiosVersion).to.be.a('string');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify Status Property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('Status property exists', function () {",
+                  "    pm.expect(jsonData).to.have.property('Status');",
+                  "});",
+                  "",
+                  "if (jsonData.Status !== null && jsonData.Status !== undefined) {",
+                  "    pm.test('Status has State property', function () {",
+                  "        pm.expect(jsonData.Status).to.have.property('State');",
+                  "    });",
+                  "",
+                  "    pm.test('Status has Health property', function () {",
+                  "        pm.expect(jsonData.Status).to.have.property('Health');",
+                  "    });",
+                  "",
+                  "    pm.test('Status has HealthRollup property if present', function () {",
+                  "        if (jsonData.Status.hasOwnProperty('HealthRollup') && jsonData.Status.HealthRollup !== null) {",
+                  "            var validHealth = ['OK', 'Warning', 'Critical'];",
+                  "            pm.expect(validHealth).to.include(jsonData.Status.HealthRollup);",
+                  "        }",
+                  "    });",
+                  "",
+                  "    pm.test('Status.State is valid', function () {",
+                  "        var validStates = ['Enabled', 'Disabled', 'StandbyOffline', 'StandbySpare', 'InTest', 'Starting', 'Absent', 'UnavailableOffline', 'Deferring', 'Quiesced', 'Updating', 'Degraded'];",
+                  "        if (jsonData.Status.State) {",
+                  "            pm.expect(validStates).to.include(jsonData.Status.State);",
+                  "        }",
+                  "    });",
+                  "",
+                  "    pm.test('Status.Health is valid', function () {",
+                  "        var validHealth = ['OK', 'Warning', 'Critical'];",
+                  "        if (jsonData.Status.Health) {",
+                  "            pm.expect(validHealth).to.include(jsonData.Status.Health);",
+                  "        }",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify PowerState Property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('PowerState property exists', function () {",
+                  "    pm.expect(jsonData).to.have.property('PowerState');",
+                  "});",
+                  "",
+                  "pm.test('PowerState value is valid', function () {",
+                  "    var validPowerStates = ['On', 'Off', 'PoweringOn', 'PoweringOff'];",
+                  "    if (jsonData.PowerState) {",
+                  "        pm.expect(validPowerStates).to.include(jsonData.PowerState);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify SystemType Property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('SystemType property exists', function () {",
+                  "    pm.expect(jsonData).to.have.property('SystemType');",
+                  "});",
+                  "",
+                  "pm.test('SystemType value is valid', function () {",
+                  "    var validSystemTypes = ['Physical', 'Virtual', 'OS', 'PhysicallyPartitioned', 'VirtuallyPartitioned'];",
+                  "    if (jsonData.SystemType) {",
+                  "        pm.expect(validSystemTypes).to.include(jsonData.SystemType);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify Actions Property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('Actions property exists', function () {",
+                  "    pm.expect(jsonData).to.have.property('Actions');",
+                  "});",
+                  "",
+                  "pm.test('Actions has Reset action', function () {",
+                  "    pm.expect(jsonData.Actions).to.have.property('#ComputerSystem.Reset');",
+                  "});",
+                  "",
+                  "pm.test('Reset action has target', function () {",
+                  "    var resetAction = jsonData.Actions['#ComputerSystem.Reset'];",
+                  "    pm.expect(resetAction).to.have.property('target');",
+                  "    var systemId = pm.environment.get('system_id');",
+                  "    pm.expect(resetAction.target).to.equal('/redfish/v1/Systems/' + systemId + '/Actions/ComputerSystem.Reset');",
+                  "});",
+                  "",
+                  "pm.test('Reset action structure is valid', function () {",
+                  "    var resetAction = jsonData.Actions['#ComputerSystem.Reset'];",
+                  "    pm.expect(resetAction).to.be.an('object');",
+                  "    pm.expect(Object.keys(resetAction).length).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify Optional Properties",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "// Test optional properties - they may or may not be present",
+                  "pm.test('Description is string if present', function () {",
+                  "    if (jsonData.hasOwnProperty('Description') && jsonData.Description !== null) {",
+                  "        pm.expect(jsonData.Description).to.be.a('string');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('HostName is string if present', function () {",
+                  "    if (jsonData.hasOwnProperty('HostName') && jsonData.HostName !== null) {",
+                  "        pm.expect(jsonData.HostName).to.be.a('string');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify MemorySummary Property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('MemorySummary property type is correct if present', function () {",
+                  "    if (jsonData.hasOwnProperty('MemorySummary') && jsonData.MemorySummary !== null) {",
+                  "        pm.expect(jsonData.MemorySummary).to.be.an('object');",
+                  "    }",
+                  "});",
+                  "",
+                  "if (jsonData.hasOwnProperty('MemorySummary') && jsonData.MemorySummary !== null) {",
+                  "    pm.test('MemorySummary has valid structure', function () {",
+                  "        var memory = jsonData.MemorySummary;",
+                  "        ",
+                  "        // TotalSystemMemoryGiB should be a number if present",
+                  "        if (memory.hasOwnProperty('TotalSystemMemoryGiB') && memory.TotalSystemMemoryGiB !== null) {",
+                  "            pm.expect(memory.TotalSystemMemoryGiB).to.be.a('number');",
+                  "            pm.expect(memory.TotalSystemMemoryGiB).to.be.above(0);",
+                  "        }",
+                  "        ",
+                  "        // Status should be an object if present",
+                  "        if (memory.hasOwnProperty('Status') && memory.Status !== null) {",
+                  "            pm.expect(memory.Status).to.be.an('object');",
+                  "        }",
+                  "        ",
+                  "        // MemoryMirroring should be valid enum if present",
+                  "        if (memory.hasOwnProperty('MemoryMirroring') && memory.MemoryMirroring !== null) {",
+                  "            var validMirroring = ['System', 'DIMM', 'Hybrid', 'None'];",
+                  "            pm.expect(validMirroring).to.include(memory.MemoryMirroring);",
+                  "        }",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Verify ProcessorSummary Property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test('ProcessorSummary property type is correct if present', function () {",
+                  "    if (jsonData.hasOwnProperty('ProcessorSummary') && jsonData.ProcessorSummary !== null) {",
+                  "        pm.expect(jsonData.ProcessorSummary).to.be.an('object');",
+                  "    }",
+                  "});",
+                  "",
+                  "if (jsonData.hasOwnProperty('ProcessorSummary') && jsonData.ProcessorSummary !== null) {",
+                  "    pm.test('ProcessorSummary has valid structure', function () {",
+                  "        var processor = jsonData.ProcessorSummary;",
+                  "        ",
+                  "        // Count should be a number if present",
+                  "        if (processor.hasOwnProperty('Count') && processor.Count !== null) {",
+                  "            pm.expect(processor.Count).to.be.a('number');",
+                  "            pm.expect(processor.Count).to.be.above(0);",
+                  "        }",
+                  "        ",
+                  "        // CoreCount should be a number if present",
+                  "        if (processor.hasOwnProperty('CoreCount') && processor.CoreCount !== null) {",
+                  "            pm.expect(processor.CoreCount).to.be.a('number');",
+                  "            pm.expect(processor.CoreCount).to.be.above(0);",
+                  "        }",
+                  "        ",
+                  "        // LogicalProcessorCount should be a number if present",
+                  "        if (processor.hasOwnProperty('LogicalProcessorCount') && processor.LogicalProcessorCount !== null) {",
+                  "            pm.expect(processor.LogicalProcessorCount).to.be.a('number');",
+                  "            pm.expect(processor.LogicalProcessorCount).to.be.above(0);",
+                  "        }",
+                  "        ",
+                  "        // Model should be a string if present",
+                  "        if (processor.hasOwnProperty('Model') && processor.Model !== null) {",
+                  "            pm.expect(processor.Model).to.be.a('string');",
+                  "        }",
+                  "        ",
+                  "        // ThreadingEnabled should be a boolean if present",
+                  "        if (processor.hasOwnProperty('ThreadingEnabled') && processor.ThreadingEnabled !== null) {",
+                  "            pm.expect(processor.ThreadingEnabled).to.be.a('boolean');",
+                  "        }",
+                  "        ",
+                  "        // Status should be an object if present",
+                  "        if (processor.hasOwnProperty('Status') && processor.Status !== null) {",
+                  "            pm.expect(processor.Status).to.be.an('object');",
+                  "        }",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - POST Method Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 405 Method Not Allowed', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Response contains Redfish error format', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"Name\": \"New System\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - PUT Method Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 405 Method Not Allowed', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Response contains Redfish error format', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"Name\": \"Updated System\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - PATCH Method Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 405 Method Not Allowed', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Response contains Redfish error format', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"Name\": \"Patched System\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - DELETE Method Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 405 Method Not Allowed', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});",
+                  "",
+                  "pm.test('Response contains Redfish error format', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error).to.have.property('@Message.ExtendedInfo');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - HEAD Method",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 405', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 405]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('OData-Version header is 4.0', function () {",
+                  "        var odataVersion = pm.response.headers.get('OData-Version');",
+                  "        pm.expect(odataVersion).to.equal('4.0');",
+                  "    });",
+                  "",
+                  "    pm.test('Content-Type header is present', function () {",
+                  "        var contentType = pm.response.headers.get('Content-Type');",
+                  "        pm.expect(contentType).to.include('application/json');",
+                  "    });",
+                  "",
+                  "    pm.test('Response body is empty for HEAD', function () {",
+                  "        pm.expect(pm.response.text()).to.equal('');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "HEAD",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/{{system_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "{{system_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Empty SystemID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 for empty SystemID (returns collection)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Response is Systems collection', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Members');",
+                  "    pm.expect(jsonData).to.have.property('Members@odata.count');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Invalid UUID Format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 for invalid UUID format', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response has expected structure', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/nonexistent-system-id-12345",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "nonexistent-system-id-12345"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Valid UUID Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 for valid UUID that does not exist', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response has expected structure', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Special Characters in SystemID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 or 404 for special characters', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                  "});",
+                  "",
+                  "pm.test('Server handles special characters (JSON or HTML error)', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    if (contentType && contentType.includes('application/json')) {",
+                  "        pm.response.to.be.json;",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('error');",
+                  "    } else {",
+                  "        // Server may return HTML error page for malformed URLs",
+                  "        pm.expect(pm.response.text()).to.include('<!doctype html>');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/<script>alert('xss')</script>",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "<script>alert('xss')</script>"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - SQL Injection Attempt in SystemID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 or 404 for SQL injection attempt', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response has expected structure', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/' OR '1'='1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "' OR '1'='1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Path Traversal Attempt in SystemID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 or 404 for path traversal attempt', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                  "});",
+                  "",
+                  "pm.test('Server blocks path traversal (JSON or HTML error)', function () {",
+                  "    var contentType = pm.response.headers.get('Content-Type');",
+                  "    if (contentType && contentType.includes('application/json')) {",
+                  "        pm.response.to.be.json;",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('error');",
+                  "    } else {",
+                  "        // Server may return HTML error page for malformed URLs",
+                  "        pm.expect(pm.response.text()).to.include('<!doctype html>');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/../../../etc/passwd",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "..",
+                "..",
+                "..",
+                "etc",
+                "passwd"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Very Long SystemID (51 chars)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 or 404 for very long SystemID', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404, 414]);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response has expected structure', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Extremely Long SystemID (1024 chars)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400, 404, or 414 for extremely long SystemID', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404, 414]);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON or error', function () {",
+                  "    // Service may return JSON error or reject the request entirely",
+                  "    if (pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json')) {",
+                  "        pm.response.to.be.json;",
+                  "    }",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json')) {",
+                  "    pm.test('Error response has expected structure', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('error');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Null Byte in SystemID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 or 404 for null byte in SystemID', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response has expected structure', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/system%00id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "system%00id"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Unicode Characters in SystemID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 or 404 for unicode characters', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response has expected structure', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/系统标识符",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "系统标识符"
               ]
             }
           },
@@ -1818,8 +3226,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 404 Not Found', function () {",
-                  "    pm.response.to.have.status(404);",
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
                   "});",
                   "",
                   "pm.test('Content-Type is application/json', function () {",

@@ -29,16 +29,16 @@ const (
 	systemODataType                   = "#ComputerSystem.v1_26_0.ComputerSystem"
 
 	// Test UUID constants for consistent system IDs
-	testUUID1  = "550e8400-e29b-41d4-a716-446655440001"
-	testUUID2  = "550e8400-e29b-41d4-a716-446655440002"
-	testUUID3  = "550e8400-e29b-41d4-a716-446655440003"
-	testUUID4  = "550e8400-e29b-41d4-a716-446655440004"
-	testUUID5  = "550e8400-e29b-41d4-a716-446655440005"
-	testUUID6  = "550e8400-e29b-41d4-a716-446655440006"
-	testUUID7  = "550e8400-e29b-41d4-a716-446655440007"
-	testUUID8  = "550e8400-e29b-41d4-a716-446655440008"
-	testUUID9  = "550e8400-e29b-41d4-a716-446655440009"
-	testUUID10 = "550e8400-e29b-41d4-a716-44665544000a"
+	testUUID1        = "550e8400-e29b-41d4-a716-446655440001"
+	testUUID2        = "550e8400-e29b-41d4-a716-446655440002"
+	testUUID3        = "550e8400-e29b-41d4-a716-446655440003"
+	testUUID4        = "550e8400-e29b-41d4-a716-446655440004"
+	testUUID5        = "550e8400-e29b-41d4-a716-446655440005"
+	testUUID6        = "550e8400-e29b-41d4-a716-446655440006"
+	testUUID7        = "550e8400-e29b-41d4-a716-446655440007"
+	testUUID8        = "550e8400-e29b-41d4-a716-446655440008"
+	testUUID9        = "550e8400-e29b-41d4-a716-446655440009"
+	testUUID10       = "550e8400-e29b-41d4-a716-44665544000a"
 	testUUIDNotFound = "999e8400-e29b-41d4-a716-446655440000"
 )
 
@@ -621,6 +621,11 @@ func validateBadRequestResponseTest(t *testing.T, w *httptest.ResponseRecorder, 
 	_ = validateErrorResponseDataTest(t, w, "Base.1.22.0.GeneralError", "Invalid system ID: system ID cannot be empty")
 }
 
+func validateInvalidUUIDFormatResponseTest(t *testing.T, w *httptest.ResponseRecorder, _ string) {
+	t.Helper()
+	_ = validateErrorResponseDataTest(t, w, "Base.1.22.0.GeneralError", "Invalid system ID: system ID must be a valid UUID")
+}
+
 // TestLogger for testing logger code paths - captures log calls
 type TestLogger struct {
 	DebugCalls [][]interface{}
@@ -728,6 +733,9 @@ func TestSystemsHandler_GetSystemByID(t *testing.T) {
 		{"Success - System with All Properties and Summaries", setupSystemWithFullPropertiesMockTest, "GET", http.StatusOK, validateSystemWithFullPropertiesResponseTest, testUUID8},
 
 		{"Error - Empty System ID", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateBadRequestResponseTest, ""},
+		{"Error - Invalid System ID Format - Not UUID", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateInvalidUUIDFormatResponseTest, "invalid-system-id"},
+		{"Error - Invalid System ID Format - Missing Hyphens", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateInvalidUUIDFormatResponseTest, "550e8400e29b41d4a716446655440001"},
+		{"Error - Invalid System ID Format - Special Characters", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateInvalidUUIDFormatResponseTest, "550e8400-e29b-41d4-a716-446655440001; DROP TABLE"},
 		{"Error - System Not Found", setupSystemNotFoundMockTest, "GET", http.StatusNotFound, validateSystemNotFoundResponseTest, testUUIDNotFound},
 		{"Error - Repository Error", setupSystemRepositoryErrorMockTest, "GET", http.StatusInternalServerError, validateSystemErrorResponseTest, testUUID1},
 

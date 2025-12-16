@@ -2318,13 +2318,13 @@
           "response": []
         },
         {
-          "name": "System by ID - Non-existent SystemID",
+          "name": "System by ID - Invalid UUID Format",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 400 for non-existent SystemID', function () {",
+                  "pm.test('Status code is 400 for invalid UUID format', function () {",
                   "    pm.response.to.have.status(400);",
                   "});",
                   "",
@@ -2359,6 +2359,53 @@
                 "v1",
                 "Systems",
                 "nonexistent-system-id-12345"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System by ID - Valid UUID Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 for valid UUID that does not exist', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response has expected structure', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/Systems/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redfish",
+                "v1",
+                "Systems",
+                "00000000-0000-0000-0000-000000000000"
               ]
             }
           },

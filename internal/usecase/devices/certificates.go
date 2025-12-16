@@ -23,6 +23,7 @@ import (
 
 	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/devices/wsman"
+	"github.com/device-management-toolkit/console/pkg/consoleerrors"
 )
 
 const (
@@ -408,21 +409,21 @@ func (uc *UseCase) DeleteCertificate(c context.Context, guid, instanceID string)
 	}
 
 	if targetCert == nil {
-		return ErrNotFound.Wrap("DeleteCertificate", "certificate not found", ErrCertificateNotFound)
+		return ErrNotFound.Wrap("DeleteCertificate", "certificate not found", nil)
 	}
 
 	// Check if the certificate is associated with any profiles
 	if len(targetCert.AssociatedProfiles) > 0 {
 		validationErr := dto.NotValidError{Console: consoleerrors.CreateConsoleError("DeleteCertificate")}
 
-		return validationErr.Wrap("DeleteCertificate", "certificate associated with profiles", ErrCertificateAssociatedProfiles)
+		return validationErr.Wrap("DeleteCertificate", "certificate associated with profiles", nil)
 	}
 
 	// Check if the certificate is read-only (cannot be deleted)
 	if targetCert.ReadOnlyCertificate {
 		validationErr := dto.NotValidError{Console: consoleerrors.CreateConsoleError("DeleteCertificate")}
 
-		return validationErr.Wrap("DeleteCertificate", "certificate is read-only", ErrCertificateReadOnly)
+		return validationErr.Wrap("DeleteCertificate", "certificate is read-only", nil)
 	}
 
 	// If the certificate is not associated with any profiles and is not read-only, proceed with deletion

@@ -17,19 +17,19 @@ components:
         the service root.
       properties:
         '@odata.context':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_context
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_context
         '@odata.id':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_id
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_id
         '@odata.type':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_type
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_type
         Description:
           oneOf:
-          - $ref: Resource.yaml#/components/schemas/Resource_Description
+          - $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Description
           - enum:
             - null
           readOnly: true
         Id:
-          $ref: Resource.yaml#/components/schemas/Resource_Id
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Id
           readOnly: true
         Links:
           $ref: '#/components/schemas/ServiceRoot_v1_19_0_Links'
@@ -37,7 +37,7 @@ components:
           nullable: true
           x-longDescription: This property shall contain links to resources that are related to but are not contained by, or subordinate to, this resource.
         Name:
-          $ref: Resource.yaml#/components/schemas/Resource_Name
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Name
           readOnly: true
         Product:
           description: The product associated with this Redfish service.
@@ -56,7 +56,7 @@ components:
             as specified in the 'Protocol version' clause of the Redfish Specification,
             to which this service conforms.
         Systems:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_idRef
           description: The link to a collection of systems.
           readOnly: true
           x-longDescription: This property shall contain a link to a resource collection

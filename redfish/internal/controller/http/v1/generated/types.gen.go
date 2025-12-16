@@ -25,6 +25,14 @@ const (
 	StringArray ActionInfoParameterTypes = "StringArray"
 )
 
+// Defines values for ComputerSystemMemoryMirroring.
+const (
+	DIMM   ComputerSystemMemoryMirroring = "DIMM"
+	Hybrid ComputerSystemMemoryMirroring = "Hybrid"
+	None   ComputerSystemMemoryMirroring = "None"
+	System ComputerSystemMemoryMirroring = "System"
+)
+
 // Defines values for ComputerSystemSystemType.
 const (
 	Composed              ComputerSystemSystemType = "Composed"
@@ -200,6 +208,12 @@ type ComputerSystemCollectionComputerSystemCollection_Description struct {
 	union json.RawMessage
 }
 
+// ComputerSystemActions The available actions for this resource.
+type ComputerSystemActions struct {
+	// HashComputerSystemReset This action resets the system.
+	HashComputerSystemReset *ComputerSystemReset `json:"#ComputerSystem.Reset,omitempty"`
+}
+
 // ComputerSystemComputerSystem The `ComputerSystem` schema represents a computer or system instance and the software-visible resources, or items within the data plane, such as memory, CPU, and other devices that it can access.  Details of those resources or subsystems are also linked through this resource.
 type ComputerSystemComputerSystem struct {
 	// OdataContext The OData description of a payload.
@@ -209,14 +223,26 @@ type ComputerSystemComputerSystem struct {
 	OdataId *OdataV4Id `json:"@odata.id,omitempty"`
 
 	// OdataType The type of a resource.
-	OdataType   *OdataV4Type                              `json:"@odata.type,omitempty"`
+	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
+
+	// Actions The available actions for this resource.
+	Actions *ComputerSystemActions `json:"Actions,omitempty"`
+
+	// BiosVersion The version of the system BIOS or primary system firmware.
+	BiosVersion *string                                   `json:"BiosVersion"`
 	Description *ComputerSystemComputerSystem_Description `json:"Description,omitempty"`
+
+	// HostName The DNS host name, without any domain information.
+	HostName *string `json:"HostName"`
 
 	// Id The unique identifier for this resource within the collection of similar resources.
 	Id ResourceId `json:"Id"`
 
 	// Manufacturer The manufacturer or OEM of this system.
 	Manufacturer *string `json:"Manufacturer"`
+
+	// MemorySummary The memory of the system in general detail.
+	MemorySummary *ComputerSystemMemorySummary `json:"MemorySummary,omitempty"`
 
 	// Model The product name for this system, without the manufacturer name.
 	Model *string `json:"Model"`
@@ -226,6 +252,9 @@ type ComputerSystemComputerSystem struct {
 
 	// PowerState The current power state of the system.
 	PowerState *ComputerSystemComputerSystem_PowerState `json:"PowerState,omitempty"`
+
+	// ProcessorSummary The central processors of the system in general detail.
+	ProcessorSummary *ComputerSystemProcessorSummary `json:"ProcessorSummary,omitempty"`
 
 	// SerialNumber The serial number for this system.
 	SerialNumber *string `json:"SerialNumber"`
@@ -249,6 +278,65 @@ type ComputerSystemComputerSystemPowerState1 = interface{}
 // ComputerSystemComputerSystem_PowerState The current power state of the system.
 type ComputerSystemComputerSystem_PowerState struct {
 	union json.RawMessage
+}
+
+// ComputerSystemMemoryMirroring defines model for ComputerSystem_MemoryMirroring.
+type ComputerSystemMemoryMirroring string
+
+// ComputerSystemMemorySummary The memory of the system in general detail.
+type ComputerSystemMemorySummary struct {
+	// MemoryMirroring The ability and type of memory mirroring that this computer system supports.
+	MemoryMirroring *ComputerSystemMemorySummary_MemoryMirroring `json:"MemoryMirroring,omitempty"`
+
+	// Metrics A reference to a resource.
+	Metrics *OdataV4IdRef `json:"Metrics,omitempty"`
+
+	// Status The status and health of a resource and its children.
+	Status *ResourceStatus `json:"Status,omitempty"`
+
+	// TotalSystemMemoryGiB The total configured operating system-accessible memory (RAM), measured in GiB.
+	TotalSystemMemoryGiB *float32 `json:"TotalSystemMemoryGiB"`
+}
+
+// ComputerSystemMemorySummaryMemoryMirroring1 defines model for .
+type ComputerSystemMemorySummaryMemoryMirroring1 = interface{}
+
+// ComputerSystemMemorySummary_MemoryMirroring The ability and type of memory mirroring that this computer system supports.
+type ComputerSystemMemorySummary_MemoryMirroring struct {
+	union json.RawMessage
+}
+
+// ComputerSystemProcessorSummary The central processors of the system in general detail.
+type ComputerSystemProcessorSummary struct {
+	// CoreCount The number of processor cores in the system.
+	CoreCount *int64 `json:"CoreCount"`
+
+	// Count The number of physical processors in the system.
+	Count *int64 `json:"Count"`
+
+	// LogicalProcessorCount The number of logical processors in the system.
+	LogicalProcessorCount *int64 `json:"LogicalProcessorCount"`
+
+	// Metrics A reference to a resource.
+	Metrics *OdataV4IdRef `json:"Metrics,omitempty"`
+
+	// Model The processor model for the primary or majority of processors in this system.
+	Model *string `json:"Model"`
+
+	// Status The status and health of a resource and its children.
+	Status *ResourceStatus `json:"Status,omitempty"`
+
+	// ThreadingEnabled An indication of whether threading is enabled on all processors in this system.
+	ThreadingEnabled *bool `json:"ThreadingEnabled,omitempty"`
+}
+
+// ComputerSystemReset This action resets the system.
+type ComputerSystemReset struct {
+	// Target Link to invoke action
+	Target *string `json:"target,omitempty"`
+
+	// Title Friendly action name
+	Title *string `json:"title,omitempty"`
 }
 
 // ComputerSystemResetRequestBody This action resets the system.
@@ -475,10 +563,7 @@ type ResourceStatus_State struct {
 }
 
 // ServiceRootLinks The links to other resources that are related to this resource.
-type ServiceRootLinks struct {
-	// Sessions A reference to a resource.
-	Sessions OdataV4IdRef `json:"Sessions"`
-}
+type ServiceRootLinks = map[string]interface{}
 
 // ServiceRootServiceRoot The `ServiceRoot` schema describes the root of the Redfish service, located at the '/redfish/v1' URI.  All other resources accessible through the Redfish interface on this device are linked directly or indirectly from the service root.
 type ServiceRootServiceRoot struct {
@@ -496,7 +581,7 @@ type ServiceRootServiceRoot struct {
 	Id ResourceId `json:"Id"`
 
 	// Links The links to other resources that are related to this resource.
-	Links ServiceRootLinks `json:"Links"`
+	Links *ServiceRootLinks `json:"Links,omitempty"`
 
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`
@@ -506,9 +591,6 @@ type ServiceRootServiceRoot struct {
 
 	// RedfishVersion The version of the Redfish service.
 	RedfishVersion *string `json:"RedfishVersion,omitempty"`
-
-	// Registries A reference to a resource.
-	Registries *OdataV4IdRef `json:"Registries,omitempty"`
 
 	// Systems A reference to a resource.
 	Systems *OdataV4IdRef `json:"Systems,omitempty"`
@@ -799,6 +881,68 @@ func (t ComputerSystemComputerSystem_PowerState) MarshalJSON() ([]byte, error) {
 }
 
 func (t *ComputerSystemComputerSystem_PowerState) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemMemoryMirroring returns the union data inside the ComputerSystemMemorySummary_MemoryMirroring as a ComputerSystemMemoryMirroring
+func (t ComputerSystemMemorySummary_MemoryMirroring) AsComputerSystemMemoryMirroring() (ComputerSystemMemoryMirroring, error) {
+	var body ComputerSystemMemoryMirroring
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemMemoryMirroring overwrites any union data inside the ComputerSystemMemorySummary_MemoryMirroring as the provided ComputerSystemMemoryMirroring
+func (t *ComputerSystemMemorySummary_MemoryMirroring) FromComputerSystemMemoryMirroring(v ComputerSystemMemoryMirroring) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemMemoryMirroring performs a merge with any union data inside the ComputerSystemMemorySummary_MemoryMirroring, using the provided ComputerSystemMemoryMirroring
+func (t *ComputerSystemMemorySummary_MemoryMirroring) MergeComputerSystemMemoryMirroring(v ComputerSystemMemoryMirroring) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemMemorySummaryMemoryMirroring1 returns the union data inside the ComputerSystemMemorySummary_MemoryMirroring as a ComputerSystemMemorySummaryMemoryMirroring1
+func (t ComputerSystemMemorySummary_MemoryMirroring) AsComputerSystemMemorySummaryMemoryMirroring1() (ComputerSystemMemorySummaryMemoryMirroring1, error) {
+	var body ComputerSystemMemorySummaryMemoryMirroring1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemMemorySummaryMemoryMirroring1 overwrites any union data inside the ComputerSystemMemorySummary_MemoryMirroring as the provided ComputerSystemMemorySummaryMemoryMirroring1
+func (t *ComputerSystemMemorySummary_MemoryMirroring) FromComputerSystemMemorySummaryMemoryMirroring1(v ComputerSystemMemorySummaryMemoryMirroring1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemMemorySummaryMemoryMirroring1 performs a merge with any union data inside the ComputerSystemMemorySummary_MemoryMirroring, using the provided ComputerSystemMemorySummaryMemoryMirroring1
+func (t *ComputerSystemMemorySummary_MemoryMirroring) MergeComputerSystemMemorySummaryMemoryMirroring1(v ComputerSystemMemorySummaryMemoryMirroring1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemMemorySummary_MemoryMirroring) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemMemorySummary_MemoryMirroring) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

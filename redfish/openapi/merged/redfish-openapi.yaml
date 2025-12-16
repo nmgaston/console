@@ -438,6 +438,17 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_Actions:
+      additionalProperties: false
+      description: The available actions for this resource.
+      properties:
+        '#ComputerSystem.Reset':
+          $ref: '#/components/schemas/ComputerSystem_Reset'
+      type: object
+      x-longDescription: This type shall contain the available actions for this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
     ComputerSystem_ComputerSystem:
       additionalProperties: false
       description: The `ComputerSystem` schema represents a computer or system instance
@@ -451,12 +462,36 @@ components:
           $ref: '#/components/schemas/odata-v4_id'
         '@odata.type':
           $ref: '#/components/schemas/odata-v4_type'
+        Actions:
+          $ref: '#/components/schemas/ComputerSystem_Actions'
+          description: The available actions for this resource.
+          x-longDescription: This property shall contain the available actions for
+            this resource.
+        BiosVersion:
+          description: The version of the system BIOS or primary system firmware.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the version string of the
+            currently installed and running BIOS for x86 systems.  For other systems,
+            the property may contain a version string that represents the primary
+            system firmware.
         Description:
           oneOf:
           - $ref: '#/components/schemas/Resource_Description'
           - enum:
             - null
           readOnly: true
+        HostName:
+          description: The DNS host name, without any domain information.
+          nullable: true
+          readOnly: false
+          type: string
+          x-longDescription: This property shall contain the host name for this system,
+            as reported by the operating system or hypervisor.  A service running
+            in the host operating system typically reports this value to the manager.  Modifying
+            this property may modify the `HostName` in one or more `EthernetInterface`
+            resources contained in this system.
         Id:
           $ref: '#/components/schemas/Resource_Id'
           readOnly: true
@@ -467,6 +502,11 @@ components:
           type: string
           x-longDescription: This property shall contain a value that represents the
             manufacturer of the system.
+        MemorySummary:
+          $ref: '#/components/schemas/ComputerSystem_MemorySummary'
+          description: The central memory of the system in general detail.
+          x-longDescription: This property shall describe the central memory for this
+            resource.
         Model:
           description: The product name for this system, without the manufacturer
             name.
@@ -487,6 +527,11 @@ components:
             - null
           readOnly: true
           x-longDescription: This property shall contain the power state of the system.
+        ProcessorSummary:
+          $ref: '#/components/schemas/ComputerSystem_ProcessorSummary'
+          description: The central processors of the system in general detail.
+          x-longDescription: This property shall describe the processors for this
+            resource.
         SerialNumber:
           description: The serial number for this system.
           nullable: true
@@ -514,6 +559,168 @@ components:
       type: object
       x-longDescription: This resource shall represent a computing system in the Redfish
         Specification.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_MemoryMirroring:
+      enum:
+      - System
+      - DIMM
+      - Hybrid
+      - None
+      type: string
+      x-enumDescriptions:
+        DIMM: The system supports DIMM mirroring at the DIMM level.  Individual DIMMs
+          can be mirrored.
+        Hybrid: The system supports a hybrid mirroring at the system and DIMM levels.  Individual
+          DIMMs can be mirrored.
+        None: The system does not support DIMM mirroring.
+        System: The system supports DIMM mirroring at the system level.  Individual
+          DIMMs are not paired for mirroring in this mode.
+    ComputerSystem_MemorySummary:
+      additionalProperties: false
+      description: The memory of the system in general detail.
+      properties:
+        MemoryMirroring:
+          description: The ability and type of memory mirroring that this computer
+            system supports.
+          oneOf:
+          - $ref: '#/components/schemas/ComputerSystem_MemoryMirroring'
+          - enum:
+            - null
+          readOnly: true
+          x-longDescription: This property shall contain the ability and type of memory
+            mirroring that this computer system supports.
+          x-versionAdded: v1_1_0
+        Metrics:
+          $ref: '#/components/schemas/odata-v4_idRef'
+          description: The link to the metrics associated with all memory in this
+            system.
+          readOnly: true
+          x-longDescription: This property shall contain a link to the metrics associated
+            with all memory in this system.
+          x-versionAdded: v1_8_0
+        Status:
+          $ref: '#/components/schemas/Resource_Status'
+          deprecated: true
+          description: The status and health of the resource and its subordinate or
+            dependent resources.
+          x-deprecatedReason: This property has been deprecated in favor of the `Conditions`
+            property within `Status` in the root of this resource.
+          x-longDescription: This property shall contain any status or health properties
+            of the resource.
+          x-versionDeprecated: v1_16_0
+        TotalSystemMemoryGiB:
+          description: The total configured operating system-accessible memory (RAM),
+            measured in GiB.
+          minimum: 0
+          nullable: true
+          readOnly: true
+          type: number
+          x-longDescription: This property shall contain the amount of configured
+            system general purpose volatile (RAM) memory as measured in gibibytes.
+          x-units: GiBy
+      type: object
+      x-longDescription: This type shall contain properties that describe the central
+        memory for a system.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_ProcessorSummary:
+      additionalProperties: false
+      description: The central processors of the system in general detail.
+      properties:
+        CoreCount:
+          description: The number of processor cores in the system.
+          format: int64
+          minimum: 0
+          nullable: true
+          readOnly: true
+          type: integer
+          x-longDescription: This property shall contain the total number of central
+            processor cores in the system.
+          x-versionAdded: v1_14_0
+        Count:
+          description: The number of physical processors in the system.
+          format: int64
+          minimum: 0
+          nullable: true
+          readOnly: true
+          type: integer
+          x-longDescription: This property shall contain the total number of physical
+            central processors in the system.
+        LogicalProcessorCount:
+          description: The number of logical processors in the system.
+          format: int64
+          minimum: 0
+          nullable: true
+          readOnly: true
+          type: integer
+          x-longDescription: This property shall contain the total number of logical
+            central processors in the system.
+          x-versionAdded: v1_5_0
+        Metrics:
+          $ref: '#/components/schemas/odata-v4_idRef'
+          description: The link to the metrics associated with all processors in this
+            system.
+          readOnly: true
+          x-longDescription: This property shall contain a link to the metrics associated
+            with all processors in this system.
+          x-versionAdded: v1_7_0
+        Model:
+          description: The processor model for the primary or majority of processors
+            in this system.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the processor model for the
+            central processors in the system, per the description in the Processor
+            Information - Processor Family section of the SMBIOS Specification DSP0134
+            2.8 or later.
+        Status:
+          $ref: '#/components/schemas/Resource_Status'
+          deprecated: true
+          description: The status and health of the resource and its subordinate or
+            dependent resources.
+          x-deprecatedReason: This property has been deprecated in favor of the `Conditions`
+            property within `Status` in the root of this resource.
+          x-longDescription: This property shall contain any status or health properties
+            of the resource.
+          x-versionDeprecated: v1_16_0
+        ThreadingEnabled:
+          description: An indication of whether threading is enabled on all processors
+            in this system.
+          readOnly: false
+          type: boolean
+          x-longDescription: The value of this property shall indicate that all `Processor`
+            resources in this system where the `ProcessorType` property contains `CPU`
+            have multiple threading support enabled.
+          x-versionAdded: v1_15_0
+      type: object
+      x-longDescription: This type shall contain properties that describe the central
+        processors for a system.  Processors described by this type shall be limited
+        to the processors that execute system code, and shall not include processors
+        used for offload functionality.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_Reset:
+      additionalProperties: false
+      description: This action resets the system.
+      properties:
+        target:
+          description: Link to invoke action
+          format: uri-reference
+          type: string
+        title:
+          description: Friendly action name
+          type: string
+      type: object
+      x-longDescription: This action shall reset the system represented by the resource.  For
+        systems that implement ACPI Power Button functionality, the `PushPowerButton`
+        value shall perform or emulate an ACPI Power Button Push, and the `ForceOff`
+        value shall perform an ACPI Power Button Override, commonly known as a four-second
+        hold of the power button.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
@@ -2310,15 +2517,7 @@ components:
     ServiceRoot_Links:
       additionalProperties: false
       description: The links to other resources that are related to this resource.
-      properties:
-        Sessions:
-          $ref: '#/components/schemas/odata-v4_idRef'
-          description: The link to a collection of sessions.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource collection
-            of type `SessionCollection`.
-      required:
-      - Sessions
+      properties: {}
       type: object
       x-longDescription: This Redfish Specification-described type shall contain links
         to resources that are related to but are not contained by, or subordinate
@@ -2351,6 +2550,7 @@ components:
         Links:
           $ref: '#/components/schemas/ServiceRoot_Links'
           description: The links to other resources that are related to this resource.
+          nullable: true
           x-longDescription: This property shall contain links to resources that are
             related to but are not contained by, or subordinate to, this resource.
         Name:
@@ -2372,12 +2572,6 @@ components:
           x-longDescription: This property shall represent the Redfish protocol version,
             as specified in the 'Protocol version' clause of the Redfish Specification,
             to which this service conforms.
-        Registries:
-          $ref: '#/components/schemas/odata-v4_idRef'
-          description: The link to a collection of registries.
-          readOnly: true
-          x-longDescription: This property shall contain a link to a resource collection
-            of type `MessageRegistryFileCollection`.
         Systems:
           $ref: '#/components/schemas/odata-v4_idRef'
           description: The link to a collection of systems.
@@ -2409,7 +2603,6 @@ components:
             the vendor name shall not be included in the `Product` property value.
           x-versionAdded: v1_5_0
       required:
-      - Links
       - '@odata.id'
       - '@odata.type'
       - Id

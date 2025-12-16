@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -30,6 +31,12 @@ const (
 	TypeWireless string = "Wireless"
 	TypeTLS      string = "TLS"
 	TypeWired    string = "Wired"
+)
+
+var (
+	ErrCertificateNotFound           = errors.New("certificate not found")
+	ErrCertificateAssociatedProfiles = errors.New("certificate is associated with one or more profiles")
+	ErrCertificateReadOnly           = errors.New("certificate is read-only and cannot be deleted")
 )
 
 func processConcreteDependencies(certificateHandle string, profileAssociation *dto.ProfileAssociation, dependencyItems []concrete.ConcreteDependency, securitySettings dto.SecuritySettings) {
@@ -409,21 +416,21 @@ func (uc *UseCase) DeleteCertificate(c context.Context, guid, instanceID string)
 	}
 
 	if targetCert == nil {
-		return ErrNotFound.Wrap("DeleteCertificate", "certificate not found", nil)
+		return ErrNotFound.Wrap("DeleteCertificate", "certificate not found", ErrCertificateNotFound)
 	}
 
 	// Check if the certificate is associated with any profiles
 	if len(targetCert.AssociatedProfiles) > 0 {
 		validationErr := dto.NotValidError{Console: consoleerrors.CreateConsoleError("DeleteCertificate")}
 
-		return validationErr.Wrap("DeleteCertificate", "certificate associated with profiles", nil)
+		return validationErr.Wrap("DeleteCertificate", "certificate associated with profiles", ErrCertificateAssociatedProfiles)
 	}
 
 	// Check if the certificate is read-only (cannot be deleted)
 	if targetCert.ReadOnlyCertificate {
 		validationErr := dto.NotValidError{Console: consoleerrors.CreateConsoleError("DeleteCertificate")}
 
-		return validationErr.Wrap("DeleteCertificate", "certificate is read-only", nil)
+		return validationErr.Wrap("DeleteCertificate", "certificate is read-only", ErrCertificateReadOnly)
 	}
 
 	// If the certificate is not associated with any profiles and is not read-only, proceed with deletion

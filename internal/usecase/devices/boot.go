@@ -17,7 +17,10 @@ func (uc *UseCase) GetBootSettings(c context.Context, guid string) (boot.BootSet
 		return boot.BootSettingDataResponse{}, ErrNotFound
 	}
 
-	device := uc.device.SetupWsmanClient(*item, false, true)
+	device, err := uc.device.SetupWsmanClient(*item, false, true)
+	if err != nil {
+		return boot.BootSettingDataResponse{}, err
+	}
 
 	bootData, err := device.GetBootData()
 	if err != nil {
@@ -39,7 +42,10 @@ func (uc *UseCase) SetBootSettings(c context.Context, guid string, bootData boot
 		return ErrNotFound
 	}
 
-	device := uc.device.SetupWsmanClient(*item, false, true)
+	device, err := uc.device.SetupWsmanClient(*item, false, true)
+	if err != nil {
+		return err
+	}
 
 	// Clear existing boot order
 	_, err = device.ChangeBootOrder("")
@@ -73,7 +79,10 @@ func (uc *UseCase) ChangeBootOrder(c context.Context, guid, bootSource string) e
 		return ErrNotFound
 	}
 
-	device := uc.device.SetupWsmanClient(*item, false, true)
+	device, err := uc.device.SetupWsmanClient(*item, false, true)
+	if err != nil {
+		return err
+	}
 
 	_, err = device.ChangeBootOrder(bootSource)
 

@@ -4,10 +4,14 @@
 # Config
 .env
 .DS_store
-*.pem
+#certs
+**/*.pem
+**/*.crt
+**/*.key
 **/*.yml
 **/*.yaml
 !config/config.yml
+# Redfish OpenAPI files
 !redfish/openapi/dmtf/*.yaml
 !redfish/openapi/merged/*.yaml
 # Binaries for programs and plugins
@@ -20,7 +24,7 @@ bin/
 *.db
 *.db-journal
 __debug_bin*
-
+*.app
 
 # Test binary, built with `go test -c`
 *.test
@@ -38,4 +42,3 @@ vendor/
 doc/openapi.json
 # Newman test results
 **/postman/results/
-

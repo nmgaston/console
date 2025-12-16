@@ -162,7 +162,7 @@ func (uc *UseCase) GetCertificates(c context.Context, guid string) (dto.Security
 		return dto.SecuritySettings{}, ErrNotFound
 	}
 
-	device := uc.device.SetupWsmanClient(*item, false, true)
+	device, _ := uc.device.SetupWsmanClient(*item, false, true)
 
 	response, err := device.GetCertificates()
 	if err != nil {
@@ -256,7 +256,7 @@ func (uc *UseCase) GetDeviceCertificate(c context.Context, guid string) (dto.Cer
 		return dto.Certificate{}, ErrNotFound
 	}
 
-	device := uc.device.SetupWsmanClient(*item, false, true)
+	device, _ := uc.device.SetupWsmanClient(*item, false, true)
 
 	cert1, err := device.GetDeviceCertificate()
 	if err != nil {
@@ -363,7 +363,7 @@ func (uc *UseCase) AddCertificate(c context.Context, guid string, certInfo dto.C
 
 	cleanedCert := strings.ReplaceAll(base64.StdEncoding.EncodeToString(block.Bytes), "\r\n", "")
 
-	device := uc.device.SetupWsmanClient(*item, false, true)
+	device, _ := uc.device.SetupWsmanClient(*item, false, true)
 
 	if certInfo.IsTrusted {
 		handle, err = device.AddTrustedRootCert(cleanedCert)
@@ -378,4 +378,60 @@ func (uc *UseCase) AddCertificate(c context.Context, guid string, certInfo dto.C
 	}
 
 	return handle, nil
+}
+
+func (uc *UseCase) DeleteCertificate(c context.Context, guid, instanceID string) error {
+	item, err := uc.repo.GetByID(c, guid, "")
+	if err != nil {
+		return err
+	}
+
+	if item == nil || item.GUID == "" {
+		return ErrNotFound
+	}
+
+	// First, get all certificates to check if the certificate to delete is associated with any profiles
+	securitySettings, err := uc.GetCertificates(c, guid)
+	if err != nil {
+		return err
+	}
+
+	// Find the certificate to be deleted
+	var targetCert *dto.RefinedCertificate
+
+	for i := range securitySettings.CertificateResponse.Certificates {
+		if securitySettings.CertificateResponse.Certificates[i].InstanceID == instanceID {
+			targetCert = &securitySettings.CertificateResponse.Certificates[i]
+
+			break
+		}
+	}
+
+	if targetCert == nil {
+		return ErrNotFound.Wrap("DeleteCertificate", "certificate not found", ErrCertificateNotFound)
+	}
+
+	// Check if the certificate is associated with any profiles
+	if len(targetCert.AssociatedProfiles) > 0 {
+		validationErr := dto.NotValidError{Console: consoleerrors.CreateConsoleError("DeleteCertificate")}
+
+		return validationErr.Wrap("DeleteCertificate", "certificate associated with profiles", ErrCertificateAssociatedProfiles)
+	}
+
+	// Check if the certificate is read-only (cannot be deleted)
+	if targetCert.ReadOnlyCertificate {
+		validationErr := dto.NotValidError{Console: consoleerrors.CreateConsoleError("DeleteCertificate")}
+
+		return validationErr.Wrap("DeleteCertificate", "certificate is read-only", ErrCertificateReadOnly)
+	}
+
+	// If the certificate is not associated with any profiles and is not read-only, proceed with deletion
+	device, _ := uc.device.SetupWsmanClient(*item, false, true)
+
+	err = device.DeleteCertificate(instanceID)
+	if err != nil {
+		return ErrDeviceUseCase.Wrap("DeleteCertificate", "failed to delete certificate", fmt.Errorf("failed to delete certificate %s: %w", instanceID, err))
+	}
+
+	return nil
 }

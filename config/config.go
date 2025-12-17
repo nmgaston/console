@@ -37,7 +37,6 @@ type (
 		EncryptionKey        string `yaml:"encryption_key" env:"APP_ENCRYPTION_KEY"`
 		AllowInsecureCiphers bool   `yaml:"allow_insecure_ciphers" env:"APP_ALLOW_INSECURE_CIPHERS"`
 		EnvironmentUUID      string `yaml:"environment_uuid" env:"APP_ENV_UUID"`
-		CommonName           string `yaml:"common_name" env:"APP_COMMON_NAME"`
 		DisableCIRA          bool   `yaml:"disable_cira" env:"APP_DISABLE_CIRA"`
 	}
 

@@ -3,6 +3,7 @@ package v1
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -62,7 +63,8 @@ func (h *SessionHandler) ListSessions(c *gin.Context) {
 
 	sessionList, err := h.sessionUseCase.ListSessions()
 	if err != nil {
-		InternalServerError(c, errors.New("failed to list sessions"))
+		InternalServerError(c, fmt.Errorf("failed to list sessions: %w", err))
+
 		return
 	}
 
@@ -74,12 +76,12 @@ func (h *SessionHandler) ListSessions(c *gin.Context) {
 	}
 
 	response := map[string]interface{}{
-		"@odata.context":        "/redfish/v1/$metadata#SessionCollection.SessionCollection",
-		"@odata.id":             "/redfish/v1/SessionService/Sessions",
-		"@odata.type":           "#SessionCollection.SessionCollection",
-		"Name":                  "Session Collection",
-		"Members":               members,
-		"Members@odata.count":   len(members),
+		"@odata.context":      "/redfish/v1/$metadata#SessionCollection.SessionCollection",
+		"@odata.id":           "/redfish/v1/SessionService/Sessions",
+		"@odata.type":         "#SessionCollection.SessionCollection",
+		"Name":                "Session Collection",
+		"Members":             members,
+		"Members@odata.count": len(members),
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -98,6 +100,7 @@ func (h *SessionHandler) CreateSession(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		BadRequestError(c, "Invalid request body")
+
 		return
 	}
 
@@ -112,9 +115,9 @@ func (h *SessionHandler) CreateSession(c *gin.Context) {
 		clientIP,
 		userAgent,
 	)
-
 	if err != nil {
 		UnauthorizedError(c)
+
 		return
 	}
 
@@ -134,17 +137,20 @@ func (h *SessionHandler) GetSession(c *gin.Context) {
 	sessionID := c.Param("SessionId")
 	if sessionID == "" {
 		BadRequestError(c, "Session ID required")
+
 		return
 	}
 
 	session, err := h.sessionUseCase.GetSession(sessionID)
 	if err != nil {
-		if err == sessions.ErrSessionNotFound || err == sessions.ErrSessionExpired {
+		if errors.Is(err, sessions.ErrSessionNotFound) || errors.Is(err, sessions.ErrSessionExpired) {
 			NotFoundError(c, "Session", sessionID)
+
 			return
 		}
 
-		InternalServerError(c, errors.New("failed to retrieve session"))
+		InternalServerError(c, fmt.Errorf("failed to retrieve session: %w", err))
+
 		return
 	}
 
@@ -159,17 +165,20 @@ func (h *SessionHandler) DeleteSession(c *gin.Context) {
 	sessionID := c.Param("SessionId")
 	if sessionID == "" {
 		BadRequestError(c, "Session ID required")
+
 		return
 	}
 
 	err := h.sessionUseCase.DeleteSession(sessionID)
 	if err != nil {
-		if err == sessions.ErrSessionNotFound {
+		if errors.Is(err, sessions.ErrSessionNotFound) {
 			NotFoundError(c, "Session", sessionID)
+
 			return
 		}
 
-		InternalServerError(c, errors.New("failed to delete session"))
+		InternalServerError(c, fmt.Errorf("failed to delete session: %w", err))
+
 		return
 	}
 
@@ -194,6 +203,7 @@ func SessionAuthMiddleware(sessionUseCase *sessions.UseCase) gin.HandlerFunc {
 		if token == "" {
 			UnauthorizedError(c)
 			c.Abort()
+
 			return
 		}
 
@@ -202,6 +212,7 @@ func SessionAuthMiddleware(sessionUseCase *sessions.UseCase) gin.HandlerFunc {
 		if err != nil {
 			UnauthorizedError(c)
 			c.Abort()
+
 			return
 		}
 

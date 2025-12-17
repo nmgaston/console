@@ -4,7 +4,7 @@ package entity
 import "time"
 
 // Session represents a Redfish authentication session
-// This entity bridges DMT Console's JWT authentication with Redfish SessionService
+// This entity bridges DMT Console's JWT authentication with Redfish SessionService.
 type Session struct {
 	// ID is the unique session identifier (UUID)
 	ID string `json:"id"`
@@ -35,7 +35,7 @@ type Session struct {
 	IsActive bool `json:"is_active"`
 }
 
-// IsExpired checks if the session has expired based on timeout
+// IsExpired checks if the session has expired based on timeout.
 func (s *Session) IsExpired() bool {
 	if !s.IsActive {
 		return true
@@ -47,28 +47,28 @@ func (s *Session) IsExpired() bool {
 	return time.Now().After(expirationTime)
 }
 
-// Touch updates the last access time to keep session alive
+// Touch updates the last access time to keep session alive.
 func (s *Session) Touch() {
 	s.LastAccessTime = time.Now()
 }
 
-// Invalidate marks the session as inactive
+// Invalidate marks the session as inactive.
 func (s *Session) Invalidate() {
 	s.IsActive = false
 }
 
-// ToRedfishResponse converts session to Redfish Session resource format
+// ToRedfishResponse converts session to Redfish Session resource format.
 func (s *Session) ToRedfishResponse() map[string]interface{} {
 	return map[string]interface{}{
-		"@odata.context": "/redfish/v1/$metadata#Session.Session",
-		"@odata.id":      "/redfish/v1/SessionService/Sessions/" + s.ID,
-		"@odata.type":    "#Session.v1_7_0.Session",
-		"Id":             s.ID,
-		"Name":           "User Session",
-		"Description":    "User Session for " + s.Username,
-		"UserName":       s.Username,
-		"CreatedTime":    s.CreatedTime.Format(time.RFC3339),
-		"SessionTimeout": s.TimeoutSeconds,
+		"@odata.context":        "/redfish/v1/$metadata#Session.Session",
+		"@odata.id":             "/redfish/v1/SessionService/Sessions/" + s.ID,
+		"@odata.type":           "#Session.v1_7_0.Session",
+		"Id":                    s.ID,
+		"Name":                  "User Session",
+		"Description":           "User Session for " + s.Username,
+		"UserName":              s.Username,
+		"CreatedTime":           s.CreatedTime.Format(time.RFC3339),
+		"SessionTimeout":        s.TimeoutSeconds,
 		"ClientOriginIPAddress": s.ClientIP,
 	}
 }

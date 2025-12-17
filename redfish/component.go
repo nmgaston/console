@@ -83,9 +83,16 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 
 	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
+	// Create session repository and use case
+	const sessionCleanupInterval = 5 * time.Minute
+
+	sessionRepo := sessions.NewInMemoryRepository(sessionCleanupInterval)
+	sessionUseCase := sessions.NewUseCase(sessionRepo, config)
+
 	// Initialize the Redfish server with configuration
 	server = &v1.RedfishServer{
 		ComputerSystemUC: computerSystemUC,
+		SessionUC:        sessionUseCase,
 		Config:           config,
 		Logger:           log,
 	}
@@ -180,33 +187,9 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		}
 	})
 
-	// Register SessionService routes (POC integration)
-	registerSessionServiceRoutes(router, server.Config, server.Logger)
-
 	server.Logger.Info("Redfish API routes registered successfully")
 
 	return nil
-}
-
-// registerSessionServiceRoutes registers the Redfish SessionService endpoints
-func registerSessionServiceRoutes(router *gin.Engine, cfg *dmtconfig.Config, log logger.Interface) {
-	// Create session repository with 5-minute cleanup interval
-	sessionRepo := sessions.NewInMemoryRepository(5 * time.Minute)
-
-	// Create session use case
-	sessionUseCase := sessions.NewUseCase(sessionRepo, cfg)
-
-	// Create session handler
-	sessionHandler := v1.NewSessionHandler(sessionUseCase, cfg)
-
-	// Register routes
-	router.GET("/redfish/v1/SessionService", sessionHandler.GetSessionService)
-	router.GET("/redfish/v1/SessionService/Sessions", sessionHandler.ListSessions)
-	router.POST("/redfish/v1/SessionService/Sessions", sessionHandler.CreateSession)
-	router.GET("/redfish/v1/SessionService/Sessions/:SessionId", sessionHandler.GetSession)
-	router.DELETE("/redfish/v1/SessionService/Sessions/:SessionId", sessionHandler.DeleteSession)
-
-	log.Info("Redfish SessionService routes registered successfully")
 }
 
 // createErrorHandler creates an error handler for OpenAPI-generated routes.

@@ -2,6 +2,7 @@
 package sessions
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -11,14 +12,14 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/entity"
 )
 
-// UseCase defines the session management business logic
+// UseCase defines the session management business logic.
 type UseCase struct {
 	repo           Repository
 	config         *config.Config
 	sessionTimeout int // seconds
 }
 
-// NewUseCase creates a new session use case
+// NewUseCase creates a new session use case.
 func NewUseCase(repo Repository, cfg *config.Config) *UseCase {
 	return &UseCase{
 		repo:           repo,
@@ -27,8 +28,8 @@ func NewUseCase(repo Repository, cfg *config.Config) *UseCase {
 	}
 }
 
-// CreateSession creates a new session with JWT token
-// This integrates with DMT Console's existing JWT authentication
+// CreateSession creates a new session with JWT token.
+// This integrates with DMT Console's existing JWT authentication.
 func (uc *UseCase) CreateSession(username, password, clientIP, userAgent string) (*entity.Session, string, error) {
 	// Validate credentials using DMT Console's admin credentials
 	if username != uc.config.AdminUsername || password != uc.config.AdminPassword {
@@ -48,6 +49,7 @@ func (uc *UseCase) CreateSession(username, password, clientIP, userAgent string)
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	jwtToken, err := token.SignedString([]byte(uc.config.JWTKey))
 	if err != nil {
 		return nil, "", err
@@ -74,14 +76,14 @@ func (uc *UseCase) CreateSession(username, password, clientIP, userAgent string)
 	return session, jwtToken, nil
 }
 
-// ValidateToken validates a session token (JWT)
+// ValidateToken validates a session token (JWT).
 // This can work in two modes:
-// 1. Stateless: Just validate JWT signature and expiration
-// 2. Stateful: Also check if session exists and is active
+// 1. Stateless: Just validate JWT signature and expiration.
+// 2. Stateful: Also check if session exists and is active.
 func (uc *UseCase) ValidateToken(tokenString string) (*entity.Session, error) {
 	// Parse and validate JWT
 	claims := &jwt.RegisteredClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(_ *jwt.Token) (interface{}, error) {
 		return []byte(uc.config.JWTKey), nil
 	})
 
@@ -97,27 +99,30 @@ func (uc *UseCase) ValidateToken(tokenString string) (*entity.Session, error) {
 
 	// Update last access time
 	session.Touch()
-	uc.repo.Create(session) // Update in repository
+
+	if err := uc.repo.Create(session); err != nil {
+		return nil, fmt.Errorf("failed to update session: %w", err)
+	}
 
 	return session, nil
 }
 
-// GetSession retrieves a session by ID
+// GetSession retrieves a session by ID.
 func (uc *UseCase) GetSession(sessionID string) (*entity.Session, error) {
 	return uc.repo.Get(sessionID)
 }
 
-// DeleteSession terminates a session (logout)
+// DeleteSession terminates a session (logout).
 func (uc *UseCase) DeleteSession(sessionID string) error {
 	return uc.repo.Delete(sessionID)
 }
 
-// ListSessions returns all active sessions
+// ListSessions returns all active sessions.
 func (uc *UseCase) ListSessions() ([]*entity.Session, error) {
 	return uc.repo.List()
 }
 
-// GetSessionCount returns the number of active sessions
+// GetSessionCount returns the number of active sessions.
 func (uc *UseCase) GetSessionCount() (int, error) {
 	sessions, err := uc.repo.List()
 	if err != nil {
@@ -127,7 +132,4 @@ func (uc *UseCase) GetSessionCount() (int, error) {
 	return len(sessions), nil
 }
 
-var (
-	// ErrInvalidCredentials is returned when credentials are invalid
-	ErrInvalidCredentials = ErrInvalidToken
-)
+var ErrInvalidCredentials = ErrInvalidToken // ErrInvalidCredentials is returned when credentials are invalid.

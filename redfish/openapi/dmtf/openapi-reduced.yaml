@@ -9,7 +9,7 @@ components:
             '@Message.ExtendedInfo':
               description: An array of messages describing one or more error messages.
               items:
-                $ref: Message.v1_2_1.yaml#/components/schemas/Message_v1_2_1_Message
+                $ref: http://redfish.dmtf.org/schemas/v1/Message.v1_2_1.yaml#/components/schemas/Message_v1_2_1_Message
               type: array
               x-longDescription: This property shall be an array of message objects
                 describing one or more error messages.
@@ -55,7 +55,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: ServiceRoot.v1_19_0.yaml#/components/schemas/ServiceRoot_v1_19_0_ServiceRoot
+                $ref: http://redfish.dmtf.org/schemas/v1/ServiceRoot.v1_19_0.yaml#/components/schemas/ServiceRoot_v1_19_0_ServiceRoot
           description: The response contains a representation of the ServiceRoot resource
         default:
           content:
@@ -83,7 +83,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: ComputerSystemCollection.yaml#/components/schemas/ComputerSystemCollection_ComputerSystemCollection
+                $ref: http://redfish.dmtf.org/schemas/v1/ComputerSystemCollection.yaml#/components/schemas/ComputerSystemCollection_ComputerSystemCollection
           description: The response contains a representation of the ComputerSystemCollection
             resource
         default:
@@ -99,7 +99,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: ComputerSystem.v1_26_0.yaml#/components/schemas/ComputerSystem_v1_26_0_ComputerSystem
+                $ref: http://redfish.dmtf.org/schemas/v1/ComputerSystem.v1_26_0.yaml#/components/schemas/ComputerSystem_v1_26_0_ComputerSystem
           description: The response contains a representation of the ComputerSystem
             resource
         default:
@@ -128,7 +128,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: ComputerSystem.v1_26_0.yaml#/components/schemas/ComputerSystem_v1_26_0_ResetRequestBody
+              $ref: http://redfish.dmtf.org/schemas/v1/ComputerSystem.v1_26_0.yaml#/components/schemas/ComputerSystem_v1_26_0_ResetRequestBody
         required: true
       responses:
         '200':

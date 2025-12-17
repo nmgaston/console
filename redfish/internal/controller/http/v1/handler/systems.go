@@ -3,7 +3,9 @@ package v1
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 
@@ -23,6 +25,27 @@ const (
 	// Systems path patterns
 	systemsBasePath = "/redfish/v1/Systems/"
 )
+
+var (
+	// uuidPattern matches standard UUID/GUID format (8-4-4-4-12 hex digits)
+	uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`)
+
+	errSystemIDEmpty   = errors.New("system ID cannot be empty")
+	errSystemIDInvalid = errors.New("system ID must be a valid UUID")
+)
+
+// validateSystemID validates that system ID is a valid UUID/GUID.
+func validateSystemID(systemID string) error {
+	if systemID == "" {
+		return errSystemIDEmpty
+	}
+
+	if !uuidPattern.MatchString(systemID) {
+		return errSystemIDInvalid
+	}
+
+	return nil
+}
 
 // CreateDescription creates a Description from a string using ResourceDescription.
 // If an error occurs during description creation, it logs the error and returns nil.
@@ -105,14 +128,16 @@ func (s *RedfishServer) GetRedfishV1Systems(c *gin.Context) {
 	c.JSON(http.StatusOK, collection)
 }
 
-// GetRedfishV1SystemsComputerSystemId handles GET requests for individual computer systems
+// GetRedfishV1SystemsComputerSystemId handles GET requests for individual computer systems.
+// Validates system ID parameter before retrieval to prevent injection attacks.
 //
 //revive:disable-next-line var-naming. Codegen is using openapi spec for generation which required Id to be Redfish complaint.
 func (s *RedfishServer) GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemID string) {
 	ctx := c.Request.Context()
 
-	if computerSystemID == "" {
-		BadRequestError(c, "Computer system ID is required")
+	// Validate system ID to prevent injection attacks
+	if err := validateSystemID(computerSystemID); err != nil {
+		BadRequestError(c, fmt.Sprintf("Invalid system ID: %s", err.Error()))
 
 		return
 	}

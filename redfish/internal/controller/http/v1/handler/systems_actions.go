@@ -14,10 +14,18 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
 
-// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset handles the reset action for a computer system
+// PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset handles reset action for a computer system.
+// Validates system ID and reset type before executing power state change.
 //
 //nolint:revive // Method name is generated from OpenAPI spec and cannot be changed
 func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, computerSystemID string) {
+	// Validate system ID to prevent injection attacks
+	if err := validateSystemID(computerSystemID); err != nil {
+		BadRequestError(c, fmt.Sprintf("Invalid system ID: %s", err.Error()))
+
+		return
+	}
+
 	var req generated.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody
 
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -157,7 +157,7 @@ func TestGetRedfishV1SystemsComputerSystemId(t *testing.T) {
 
 	// Setup
 	testRepo := NewTestComputerSystemRepository()
-	testRepo.AddSystem("System1", createTestSystemData("System1", "Test System", "Test Manufacturer", "Test Model", "SN123456"))
+	testRepo.AddSystem("550e8400-e29b-41d4-a716-446655440001", createTestSystemData("550e8400-e29b-41d4-a716-446655440001", "Test System", "Test Manufacturer", "Test Model", "SN123456"))
 
 	useCase := &usecase.ComputerSystemUseCase{
 		Repo: testRepo,
@@ -168,7 +168,7 @@ func TestGetRedfishV1SystemsComputerSystemId(t *testing.T) {
 	}
 
 	router := setupTestRouterForSystemByID(server)
-	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/redfish/v1/Systems/System1", http.NoBody)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/redfish/v1/Systems/550e8400-e29b-41d4-a716-446655440001", http.NoBody)
 	w := httptest.NewRecorder()
 
 	// Execute
@@ -179,6 +179,6 @@ func TestGetRedfishV1SystemsComputerSystemId(t *testing.T) {
 	assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
 
 	// Additional assertions for concrete implementation
-	assert.Contains(t, w.Body.String(), "System1")
+	assert.Contains(t, w.Body.String(), "550e8400-e29b-41d4-a716-446655440001")
 	assert.Contains(t, w.Body.String(), "ComputerSystem")
 }

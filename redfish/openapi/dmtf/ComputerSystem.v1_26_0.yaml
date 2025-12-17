@@ -19,11 +19,11 @@ components:
         or subsystems are also linked through this resource.
       properties:
         '@odata.context':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_context
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_context
         '@odata.id':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_id
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_id
         '@odata.type':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_type
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_type
         Actions:
           $ref: '#/components/schemas/ComputerSystem_v1_26_0_Actions'
           description: The available actions for this resource.
@@ -40,7 +40,7 @@ components:
             system firmware.
         Description:
           oneOf:
-          - $ref: Resource.yaml#/components/schemas/Resource_Description
+          - $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Description
           - enum:
             - null
           readOnly: true
@@ -55,7 +55,7 @@ components:
             this property may modify the `HostName` in one or more `EthernetInterface`
             resources contained in this system.
         Id:
-          $ref: Resource.yaml#/components/schemas/Resource_Id
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Id
           readOnly: true
         Manufacturer:
           description: The manufacturer or OEM of this system.
@@ -79,12 +79,12 @@ components:
             to this system.  Typically, this value is the product name for this system
             without the manufacturer name.
         Name:
-          $ref: Resource.yaml#/components/schemas/Resource_Name
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Name
           readOnly: true
         PowerState:
           description: The current power state of the system.
           oneOf:
-          - $ref: Resource.yaml#/components/schemas/Resource_PowerState
+          - $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_PowerState
           - enum:
             - null
           readOnly: true
@@ -102,7 +102,7 @@ components:
           x-longDescription: This property shall contain the serial number for the
             system.
         Status:
-          $ref: Resource.yaml#/components/schemas/Resource_Status
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Status
           description: The status and health of the resource and its subordinate or
             dependent resources.
           x-longDescription: This property shall contain any status or health properties
@@ -155,7 +155,7 @@ components:
             mirroring that this computer system supports.
           x-versionAdded: v1_1_0
         Metrics:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_idRef
           description: The link to the metrics associated with all memory in this
             system.
           readOnly: true
@@ -163,7 +163,7 @@ components:
             with all memory in this system.
           x-versionAdded: v1_8_0
         Status:
-          $ref: Resource.yaml#/components/schemas/Resource_Status
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Status
           deprecated: true
           description: The status and health of the resource and its subordinate or
             dependent resources.
@@ -222,7 +222,7 @@ components:
             central processors in the system.
           x-versionAdded: v1_5_0
         Metrics:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_idRef
           description: The link to the metrics associated with all processors in this
             system.
           readOnly: true
@@ -240,7 +240,7 @@ components:
             Information - Processor Family section of the SMBIOS Specification DSP0134
             2.8 or later.
         Status:
-          $ref: Resource.yaml#/components/schemas/Resource_Status
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Status
           deprecated: true
           description: The status and health of the resource and its subordinate or
             dependent resources.
@@ -291,7 +291,7 @@ components:
       description: This action resets the system.
       properties:
         ResetType:
-          $ref: Resource.yaml#/components/schemas/Resource_ResetType
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_ResetType
           description: The type of reset.
           x-longDescription: This parameter shall contain the type of reset.  The
             service can accept a request without the parameter and perform an implementation-specific

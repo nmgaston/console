@@ -5,36 +5,36 @@ components:
       description: The collection of `ComputerSystem` resource instances.
       properties:
         '@odata.context':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_context
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_context
         '@odata.etag':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_etag
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_etag
         '@odata.id':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_id
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_id
         '@odata.type':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_type
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_type
         Description:
           oneOf:
-          - $ref: Resource.yaml#/components/schemas/Resource_Description
+          - $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Description
           - enum:
             - null
           readOnly: true
         Members:
           description: The members of this collection.
           items:
-            $ref: odata-v4.yaml#/components/schemas/odata-v4_idRef
+            $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_idRef
           readOnly: true
           type: array
           x-longDescription: This property shall contain an array of links to the
             members of this collection.
         Members@odata.count:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_count
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_count
         Members@odata.nextLink:
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_nextLink
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_nextLink
         Name:
-          $ref: Resource.yaml#/components/schemas/Resource_Name
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Name
           readOnly: true
         Oem:
-          $ref: Resource.yaml#/components/schemas/Resource_Oem
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
           x-longDescription: This property shall contain the OEM extensions.  All
             values for properties contained in this object shall conform to the Redfish

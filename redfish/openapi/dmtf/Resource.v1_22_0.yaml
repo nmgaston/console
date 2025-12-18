@@ -224,7 +224,7 @@ components:
           x-units: deg
           x-versionAdded: v1_6_0
         Oem:
-          $ref: Resource.yaml#/components/schemas/Resource_Oem
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
           x-longDescription: This property shall contain the OEM extensions.  All
             values for properties contained in this object shall conform to the Redfish
@@ -877,7 +877,7 @@ components:
       description: The base type for addressable members of an array.
       properties:
         '@odata.id':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_id
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_id
         MemberId:
           description: The unique identifier for the member within an array.
           readOnly: true
@@ -886,7 +886,7 @@ components:
             this member within an array.  For services supporting Redfish v1.6 or
             higher, this value shall contain the zero-based array index.
         Oem:
-          $ref: Resource.yaml#/components/schemas/Resource_Oem
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
           x-longDescription: This property shall contain the OEM extensions.  All
             values for properties that this object contains shall conform to the Redfish
@@ -906,27 +906,27 @@ components:
       description: The base type for resources and members that can be linked to.
       properties:
         '@odata.context':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_context
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_context
         '@odata.etag':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_etag
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_etag
         '@odata.id':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_id
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_id
         '@odata.type':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_type
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_type
         Description:
           oneOf:
-          - $ref: Resource.yaml#/components/schemas/Resource_Description
+          - $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Description
           - enum:
             - null
           readOnly: true
         Id:
-          $ref: Resource.yaml#/components/schemas/Resource_Id
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Id
           readOnly: true
         Name:
-          $ref: Resource.yaml#/components/schemas/Resource_Name
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Name
           readOnly: true
         Oem:
-          $ref: Resource.yaml#/components/schemas/Resource_Oem
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
           x-longDescription: This property shall contain the OEM extensions.  All
             values for properties that this object contains shall conform to the Redfish
@@ -944,24 +944,24 @@ components:
       additionalProperties: false
       properties:
         '@odata.context':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_context
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_context
         '@odata.etag':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_etag
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_etag
         '@odata.id':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_id
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_id
         '@odata.type':
-          $ref: odata-v4.yaml#/components/schemas/odata-v4_type
+          $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_type
         Description:
           oneOf:
-          - $ref: Resource.yaml#/components/schemas/Resource_Description
+          - $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Description
           - enum:
             - null
           readOnly: true
         Name:
-          $ref: Resource.yaml#/components/schemas/Resource_Name
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Name
           readOnly: true
         Oem:
-          $ref: Resource.yaml#/components/schemas/Resource_Oem
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
           x-longDescription: This property shall contain the OEM extensions.  All
             values for properties contained in this object shall conform to the Redfish

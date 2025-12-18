@@ -17,16 +17,23 @@ def convert_file_refs_to_internal(obj):
         new_obj = {}
         for key, value in obj.items():
             if key == '$ref' and isinstance(value, str):
+                # Handle HTTP URLs like "http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Health"
+                # First, strip the HTTP URL prefix if present
+                ref_value = value
+                if ref_value.startswith('http://redfish.dmtf.org/schemas/v1/'):
+                    # Remove the HTTP URL prefix, keeping just the filename and schema reference
+                    ref_value = ref_value.replace('http://redfish.dmtf.org/schemas/v1/', '')
+                
                 # Convert file references like "Resource.yaml#/components/schemas/Resource_Health"
                 # to internal references like "#/components/schemas/Resource_Health"
-                if '.yaml#/components/schemas/' in value:
-                    schema_name = value.split('#/components/schemas/')[-1]
+                if '.yaml#/components/schemas/' in ref_value:
+                    schema_name = ref_value.split('#/components/schemas/')[-1]
                     # Clean the schema name by removing version info
                     clean_schema_name = remove_version_from_schema_name(schema_name)
                     new_obj[key] = f"#/components/schemas/{clean_schema_name}"
-                elif value.startswith('#/components/schemas/'):
+                elif ref_value.startswith('#/components/schemas/'):
                     # Also clean internal references
-                    schema_name = value.split('#/components/schemas/')[-1]
+                    schema_name = ref_value.split('#/components/schemas/')[-1]
                     clean_schema_name = remove_version_from_schema_name(schema_name)
                     new_obj[key] = f"#/components/schemas/{clean_schema_name}"
                 else:

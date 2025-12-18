@@ -8,7 +8,7 @@ components:
           description: The parameters of the action URI for a resolution step.
           items:
             oneOf:
-            - $ref: ActionInfo.yaml#/components/schemas/ActionInfo_Parameters
+            - $ref: http://redfish.dmtf.org/schemas/v1/ActionInfo.yaml#/components/schemas/ActionInfo_Parameters
             - enum:
               - null
           type: array
@@ -22,7 +22,7 @@ components:
           x-longDescription: This property shall contain the action URI for a resolution
             step.
         Oem:
-          $ref: Resource.yaml#/components/schemas/Resource_Oem
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
           x-longDescription: This property shall contain the OEM extensions.  All
             values for properties contained in this object shall conform to the Redfish

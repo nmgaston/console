@@ -29,7 +29,7 @@ components:
           x-longDescription: This property shall contain a `MessageId`, as defined
             in the 'MessageId format' clause of the Redfish Specification.
         MessageSeverity:
-          $ref: Resource.yaml#/components/schemas/Resource_Health
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Health
           description: The severity of the message.
           readOnly: true
           x-longDescription: This property shall contain the severity of the message.  Services
@@ -37,7 +37,7 @@ components:
             applicable to the implementation.
           x-versionAdded: v1_1_0
         Oem:
-          $ref: Resource.yaml#/components/schemas/Resource_Oem
+          $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
           x-longDescription: This property shall contain the OEM extensions.  All
             values for properties contained in this object shall conform to the Redfish
@@ -63,7 +63,7 @@ components:
           description: The list of recommended steps to resolve the situation that
             caused the message.
           items:
-            $ref: ResolutionStep.yaml#/components/schemas/ResolutionStep_ResolutionStep
+            $ref: http://redfish.dmtf.org/schemas/v1/ResolutionStep.yaml#/components/schemas/ResolutionStep_ResolutionStep
           type: array
           x-longDescription: This property shall contain an array of recommended steps
             to resolve the situation that caused the message.  This property shall

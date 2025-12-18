@@ -1,7 +1,7 @@
 components:
   schemas:
     ResolutionStep_ResolutionStep:
-      $ref: ResolutionStep.v1_0_1.yaml#/components/schemas/ResolutionStep_v1_0_1_ResolutionStep
+      $ref: http://redfish.dmtf.org/schemas/v1/ResolutionStep.v1_0_1.yaml#/components/schemas/ResolutionStep_v1_0_1_ResolutionStep
       description: This type describes a recommended step of the service-defined resolution.
       x-longDescription: This type shall describe a recommended step of the service-defined
         resolution.  The set of recommended steps are used to resolve the cause of

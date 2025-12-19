@@ -2,10 +2,13 @@
 package v1
 
 import (
+	"github.com/gin-gonic/gin"
+
 	dmtconfig "github.com/device-management-toolkit/console/config"
 	"github.com/device-management-toolkit/console/pkg/logger"
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
+	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
 
 const (
@@ -25,6 +28,7 @@ const (
 // RedfishServer implements the Redfish API handlers and delegates operations to specialized handlers
 type RedfishServer struct {
 	ComputerSystemUC *usecase.ComputerSystemUseCase
+	SessionUC        *sessions.UseCase
 	Config           *dmtconfig.Config
 	Logger           logger.Interface
 	Services         []ODataService // Cached OData services loaded from OpenAPI spec
@@ -56,4 +60,43 @@ func BoolPtr(b bool) *bool {
 // SystemTypePtr creates a pointer to a ComputerSystemSystemType value.
 func SystemTypePtr(st generated.ComputerSystemSystemType) *generated.ComputerSystemSystemType {
 	return &st
+}
+
+// Session endpoint implementations - delegates to session use case
+// These methods satisfy the generated.ServerInterface
+
+// GetRedfishV1SessionService handles GET /redfish/v1/SessionService
+func (r *RedfishServer) GetRedfishV1SessionService(c *gin.Context) {
+	handler := NewSessionHandler(r.SessionUC, r.Config)
+	handler.GetSessionService(c)
+}
+
+// GetRedfishV1SessionServiceSessions handles GET /redfish/v1/SessionService/Sessions
+func (r *RedfishServer) GetRedfishV1SessionServiceSessions(c *gin.Context) {
+	handler := NewSessionHandler(r.SessionUC, r.Config)
+	handler.ListSessions(c)
+}
+
+// PostRedfishV1SessionServiceSessions handles POST /redfish/v1/SessionService/Sessions
+func (r *RedfishServer) PostRedfishV1SessionServiceSessions(c *gin.Context) {
+	handler := NewSessionHandler(r.SessionUC, r.Config)
+	handler.CreateSession(c)
+}
+
+// GetRedfishV1SessionServiceSessionsSessionId handles GET /redfish/v1/SessionService/Sessions/{SessionId}.
+//
+//nolint:revive // Method name must match OpenAPI-generated interface
+func (r *RedfishServer) GetRedfishV1SessionServiceSessionsSessionId(c *gin.Context, sessionId string) {
+	c.Params = append(c.Params, gin.Param{Key: "SessionId", Value: sessionId})
+	handler := NewSessionHandler(r.SessionUC, r.Config)
+	handler.GetSession(c)
+}
+
+// DeleteRedfishV1SessionServiceSessionsSessionId handles DELETE /redfish/v1/SessionService/Sessions/{SessionId}.
+//
+//nolint:revive // Method name must match OpenAPI-generated interface
+func (r *RedfishServer) DeleteRedfishV1SessionServiceSessionsSessionId(c *gin.Context, sessionId string) {
+	c.Params = append(c.Params, gin.Param{Key: "SessionId", Value: sessionId})
+	handler := NewSessionHandler(r.SessionUC, r.Config)
+	handler.DeleteSession(c)
 }

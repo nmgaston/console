@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -18,6 +19,7 @@ import (
 	v1 "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
 	"github.com/device-management-toolkit/console/redfish/internal/mocks"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
+	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
 
 // Embed the OpenAPI specification at build time
@@ -81,9 +83,16 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 
 	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
+	// Create session repository and use case
+	const sessionCleanupInterval = 5 * time.Minute
+
+	sessionRepo := sessions.NewInMemoryRepository(sessionCleanupInterval)
+	sessionUseCase := sessions.NewUseCase(sessionRepo, config)
+
 	// Initialize the Redfish server with configuration
 	server = &v1.RedfishServer{
 		ComputerSystemUC: computerSystemUC,
+		SessionUC:        sessionUseCase,
 		Config:           config,
 		Logger:           log,
 	}

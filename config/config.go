@@ -26,6 +26,7 @@ type (
 		DB      `yaml:"postgres"`
 		EA      `yaml:"ea"`
 		Auth    `yaml:"auth"`
+		Redfish `yaml:"redfish"`
 	}
 
 	// App -.
@@ -36,7 +37,6 @@ type (
 		CommonName           string `env-required:"true" yaml:"common_name" env:"APP_COMMON_NAME"`
 		EncryptionKey        string `yaml:"encryption_key" env:"APP_ENCRYPTION_KEY"`
 		AllowInsecureCiphers bool   `yaml:"allow_insecure_ciphers" env:"APP_ALLOW_INSECURE_CIPHERS"`
-		EnvironmentUUID      string `yaml:"environment_uuid" env:"APP_ENV_UUID"`
 		DisableCIRA          bool   `yaml:"disable_cira" env:"APP_DISABLE_CIRA"`
 	}
 
@@ -104,6 +104,11 @@ type (
 		ResponseType                      string `yaml:"responseType"`
 		RequireHTTPS                      bool   `yaml:"requireHttps"`
 		StrictDiscoveryDocumentValidation bool   `yaml:"strictDiscoveryDocumentValidation"`
+	}
+
+	// Redfish -.
+	Redfish struct {
+		EnvironmentUUID string `yaml:"environment_uuid" env:"REDFISH_ENV_UUID"`
 	}
 )
 
@@ -188,6 +193,9 @@ func defaultConfig() *Config {
 				RequireHTTPS:                      false,
 				StrictDiscoveryDocumentValidation: true,
 			},
+		},
+		Redfish: Redfish{
+			EnvironmentUUID: "",
 		},
 	}
 }

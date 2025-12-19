@@ -156,7 +156,7 @@ func loadOrCreateUUID(appName string) (string, error) {
 // generateServiceUUID generates or retrieves the service instance UUID.
 // Per Redfish specification, this UUID should be consistent across service restarts.
 // Priority order:
-// 1. Environment UUID from configuration (APP_ENVIRONMENT_UUID)
+// 1. Environment UUID from configuration (REDFISH_ENV_UUID)
 // 2. Cached UUID in memory (for process lifetime)
 // 3. Persisted UUID from config file
 // 4. Newly generated UUID (saved to config file for future use)

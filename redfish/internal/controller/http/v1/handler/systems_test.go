@@ -124,6 +124,23 @@ func (r *TestSystemsComputerSystemRepository) UpdatePowerState(_ context.Context
 	return usecase.ErrSystemNotFound
 }
 
+func (r *TestSystemsComputerSystemRepository) GetBootSettings(_ context.Context, systemID string) (*generated.ComputerSystemBoot, error) {
+	if _, exists := r.systems[systemID]; exists {
+		// Return empty boot settings for tests
+		return &generated.ComputerSystemBoot{}, nil
+	}
+
+	return nil, usecase.ErrSystemNotFound
+}
+
+func (r *TestSystemsComputerSystemRepository) UpdateBootSettings(_ context.Context, systemID string, _ *generated.ComputerSystemBoot) error {
+	if _, exists := r.systems[systemID]; exists {
+		return nil
+	}
+
+	return usecase.ErrSystemNotFound
+}
+
 // TestCase represents a generic test case structure
 type SystemsTestCase[T any] struct {
 	name           string

@@ -291,7 +291,7 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 		Id:             serviceRootID,
 		Name:           serviceRootName,
 		RedfishVersion: StringPtr(redfishVersion),
-		UUID:           StringPtr(generateServiceUUID(s.Config.EnvironmentUUID)),
+		UUID:           StringPtr(generateServiceUUID(s.Config.Redfish.EnvironmentUUID)),
 		Product:        StringPtr("Device Management Toolkit - Redfish Service"),
 		Vendor:         StringPtr("Device Management Toolkit"),
 		Links:          &generated.ServiceRootLinks{},

@@ -133,6 +133,7 @@ func loadOrCreateUUID(appName string) (string, error) {
 		storedUUID := string(data)
 		// Validate it's a proper UUID
 		if _, err := uuid.Parse(storedUUID); err == nil {
+      log.Infof("UUID read from file:%s => %s", file, storedUUID)
 			return storedUUID, nil
 		}
 
@@ -150,6 +151,7 @@ func loadOrCreateUUID(appName string) (string, error) {
 		// Continue with the generated UUID even if save fails
 	}
 
+  log.Infof("UUID generated into file:%s => %s", file, newUUID)
 	return newUUID, nil
 }
 
@@ -164,12 +166,13 @@ func generateServiceUUID(envUUID string) string {
 	uuidMutex.Lock()
 	defer uuidMutex.Unlock()
 
+
 	// Priority 1: Use environment UUID if configured
 	if envUUID != "" {
 		// Validate it's a proper UUID
 		if _, err := uuid.Parse(envUUID); err == nil {
 			cachedUUID = envUUID
-
+      log.Infof("UUID used from environment: %s", envUUID)
 			return envUUID
 		}
 

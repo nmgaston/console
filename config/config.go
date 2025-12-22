@@ -26,6 +26,7 @@ type (
 		DB      `yaml:"postgres"`
 		EA      `yaml:"ea"`
 		Auth    `yaml:"auth"`
+		Redfish `yaml:"redfish"`
 	}
 
 	// App -.
@@ -103,6 +104,11 @@ type (
 		ResponseType                      string `yaml:"responseType"`
 		RequireHTTPS                      bool   `yaml:"requireHttps"`
 		StrictDiscoveryDocumentValidation bool   `yaml:"strictDiscoveryDocumentValidation"`
+	}
+
+	// Redfish -.
+	Redfish struct {
+		EnvironmentUUID string `yaml:"environment_uuid" env:"REDFISH_ENV_UUID"`
 	}
 )
 
@@ -187,6 +193,9 @@ func defaultConfig() *Config {
 				RequireHTTPS:                      false,
 				StrictDiscoveryDocumentValidation: true,
 			},
+		},
+		Redfish: Redfish{
+			EnvironmentUUID: "",
 		},
 	}
 }

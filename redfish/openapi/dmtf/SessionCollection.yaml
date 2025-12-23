@@ -24,7 +24,8 @@ components:
             $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_idRef
           readOnly: true
           type: array
-          x-longDescription: This property shall contain an array of links to the members of this collection.
+          x-longDescription: This property shall contain an array of links to the
+            members of this collection.
         Members@odata.count:
           $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_count
         Members@odata.nextLink:
@@ -35,7 +36,9 @@ components:
         Oem:
           $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions. All values for properties contained in this object shall conform to the Redfish Specification-described requirements.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties contained in this object shall conform to the Redfish
+            Specification-described requirements.
       required:
         - Members
         - Members@odata.count
@@ -43,7 +46,8 @@ components:
         - '@odata.type'
         - Name
       type: object
-      x-longDescription: This resource shall represent a resource collection of `Session` instances for a Redfish implementation.
+      x-longDescription: This resource shall represent a resource collection of `Session`
+        instances for a Redfish implementation.
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.

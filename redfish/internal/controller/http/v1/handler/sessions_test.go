@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/device-management-toolkit/console/config"
+	sessioninfra "github.com/device-management-toolkit/console/redfish/internal/infrastructure/sessions"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
 
@@ -32,7 +33,7 @@ func setupTestEnvironment() (*gin.Engine, *SessionHandler) {
 	}
 
 	// Create session repository and use case
-	repo := sessions.NewInMemoryRepository(1 * time.Minute)
+	repo := sessioninfra.NewInMemoryRepository(1 * time.Minute)
 	useCase := sessions.NewUseCase(repo, cfg)
 
 	// Create handler

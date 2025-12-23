@@ -17,6 +17,7 @@ import (
 	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishgenerated "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	v1 "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
+	sessioninfra "github.com/device-management-toolkit/console/redfish/internal/infrastructure/sessions"
 	"github.com/device-management-toolkit/console/redfish/internal/mocks"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
@@ -86,7 +87,7 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 	// Create session repository and use case
 	const sessionCleanupInterval = 5 * time.Minute
 
-	sessionRepo := sessions.NewInMemoryRepository(sessionCleanupInterval)
+	sessionRepo := sessioninfra.NewInMemoryRepository(sessionCleanupInterval)
 	sessionUseCase := sessions.NewUseCase(sessionRepo, config)
 
 	// Initialize the Redfish server with configuration

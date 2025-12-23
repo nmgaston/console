@@ -2764,9 +2764,9 @@ components:
         Oem:
           $ref: '#/components/schemas/Resource_Oem'
           description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions. All values
-            for properties contained in this object shall conform to the Redfish Specification-described
-            requirements.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties contained in this object shall conform to the Redfish
+            Specification-described requirements.
       required:
       - Members
       - Members@odata.count
@@ -2807,19 +2807,19 @@ components:
         Oem:
           $ref: '#/components/schemas/Resource_Oem'
           description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions. All values
-            for properties that this object contains shall conform to the Redfish
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties that this object contains shall conform to the Redfish
             Specification-described requirements.
         ServiceEnabled:
-          description: An indication of whether this service is enabled. If `true`,
-            this service is enabled. If `false`, it is disabled, and new sessions
+          description: An indication of whether this service is enabled.  If `true`,
+            this service is enabled.  If `false`, it is disabled, and new sessions
             cannot be created, old sessions cannot be deleted, and established sessions
             can continue operating.
           nullable: true
           readOnly: false
           type: boolean
           x-longDescription: This property shall indicate whether this service is
-            enabled. If `true`, this service is enabled. If `false`, it is disabled,
+            enabled.  If `true`, this service is enabled.  If `false`, it is disabled,
             and new sessions shall not be created, old sessions shall not be deleted,
             and established sessions can continue operating.
         SessionTimeout:
@@ -2832,7 +2832,7 @@ components:
           type: integer
           x-longDescription: This property shall contain the threshold of time in
             seconds between requests on a specific session at which point the session
-            service shall close the session due to inactivity. The session service
+            service shall close the session due to inactivity.  The session service
             shall support any value between the schema-specified minimum and maximum
             terms.
           x-units: s
@@ -2902,32 +2902,22 @@ components:
         Oem:
           $ref: '#/components/schemas/Resource_Oem'
           description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions. All values
-            for properties that this object contains shall conform to the Redfish
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties that this object contains shall conform to the Redfish
             Specification-described requirements.
         Password:
-          description: The password for this session. The value is `null` in responses.
+          description: The password for this session.  The value is `null` in responses.
           nullable: true
           readOnly: true
           type: string
           writeOnly: false
-          x-longDescription: This property shall contain the password for this session.
-            The value shall be `null` in responses.
+          x-longDescription: This property shall contain the password for this session.  The
+            value shall be `null` in responses.
         SessionType:
+          $ref: '#/components/schemas/Session_SessionTypes'
           description: The active session type.
-          enum:
-          - HostConsole
-          - ManagerConsole
-          - IPMI
-          - KVMIP
-          - OEM
-          - Redfish
-          - VirtualMedia
-          - WebUI
-          - OutboundConnection
           nullable: true
           readOnly: true
-          type: string
           x-longDescription: This property shall represent the type of session that
             is currently active.
           x-versionAdded: v1_2_0
@@ -2951,6 +2941,68 @@ components:
       x-requiredOnCreate:
       - UserName
       - Password
+    Session_SessionTypes:
+      enum:
+      - HostConsole
+      - ManagerConsole
+      - IPMI
+      - KVMIP
+      - OEM
+      - Redfish
+      - VirtualMedia
+      - WebUI
+      - OutboundConnection
+      type: string
+      x-enumDescriptions:
+        HostConsole: The host's console, which could be connected through Telnet,
+          SSH, or other protocol.
+        IPMI: Intelligent Platform Management Interface.
+        KVMIP: A Keyboard-Video-Mouse over IP session.
+        ManagerConsole: The manager's console, which could be connected through Telnet,
+          SSH, SM CLP, or other protocol.
+        OEM: OEM type.  For OEM session types, see the OemSessionType property.
+        OutboundConnection: A Redfish Specification-defined outbound connection.  See
+          the 'Outbound connections' clause of the Redfish Specification.
+        Redfish: A Redfish session.
+        VirtualMedia: Virtual media.
+        WebUI: A non-Redfish web user interface session, such as a graphical interface
+          or another web-based protocol.
+      x-enumLongDescriptions:
+        HostConsole: This value shall indicate the session is the host's console,
+          which could be connected through Telnet, SSH, or other protocol.  If this
+          session is terminated or deleted, the service shall close the connection
+          for the respective host console session.
+        IPMI: This value shall indicate the session is an Intelligent Platform Management
+          Interface session.  If this session is terminated or deleted, the service
+          shall close the connection for the respective IPMI session.
+        KVMIP: This value shall indicate the session is a Keyboard-Video-Mouse over
+          IP session.  If this session is terminated or deleted, the service shall
+          close the connection for the respective KVMIP session.
+        ManagerConsole: This value shall indicate the session is the manager's console,
+          which could be connected through Telnet, SSH, SM CLP, or other protocol.  If
+          this session is terminated or deleted, the service shall close the connection
+          for the respective manager console session.
+        OEM: This value shall indicate the session is an OEM-specific session and
+          is further described by the OemSessionType property.
+        OutboundConnection: This value shall indicate the session is an outbound connection
+          defined by the 'Outbound connections' clause of the Redfish Specification.  The
+          `OutboundConnection` property inside the `Links` property shall contain
+          the link to the outbound connection configuration.  If this session is terminated
+          or deleted, the service shall disable the associated `OutboundConnection`
+          resource.
+        Redfish: This value shall indicate the session is a Redfish session defined
+          by the 'Redfish session login authentication' clause of the Redfish Specification.  If
+          this session is terminated or deleted, the service shall invalidate the
+          respective session token.
+        VirtualMedia: This value shall indicate the session is virtual media session.  If
+          this session is terminated or deleted, the service shall close the connection
+          for the respective virtual media session and make the media inaccessible
+          to the host.
+        WebUI: This value shall indicate the session is a non-Redfish web user interface
+          session.  If this session is terminated or deleted, the service shall invalidate
+          the respective session token.
+      x-enumVersionAdded:
+        OutboundConnection: v1_7_0
     odata-v4_context:
       description: The OData description of a payload.
       format: uri-reference

@@ -89,6 +89,7 @@ func (r *RedfishServer) GetRedfishV1SessionServiceSessions(c *gin.Context) {
 	sessionList, err := r.SessionUC.ListSessions()
 	if err != nil {
 		InternalServerError(c, fmt.Errorf("failed to list sessions: %w", err))
+
 		return
 	}
 
@@ -123,6 +124,7 @@ func (r *RedfishServer) PostRedfishV1SessionServiceSessions(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		BadRequestError(c, "Invalid request body")
+
 		return
 	}
 
@@ -139,6 +141,7 @@ func (r *RedfishServer) PostRedfishV1SessionServiceSessions(c *gin.Context) {
 	)
 	if err != nil {
 		UnauthorizedError(c)
+
 		return
 	}
 
@@ -158,6 +161,7 @@ func (r *RedfishServer) GetRedfishV1SessionServiceSessionsSessionId(c *gin.Conte
 
 	if sessionId == "" {
 		BadRequestError(c, "Session ID required")
+
 		return
 	}
 
@@ -165,10 +169,12 @@ func (r *RedfishServer) GetRedfishV1SessionServiceSessionsSessionId(c *gin.Conte
 	if err != nil {
 		if errors.Is(err, sessions.ErrSessionNotFound) || errors.Is(err, sessions.ErrSessionExpired) {
 			NotFoundError(c, "Session", sessionId)
+
 			return
 		}
 
 		InternalServerError(c, fmt.Errorf("failed to retrieve session: %w", err))
+
 		return
 	}
 
@@ -183,6 +189,7 @@ func (r *RedfishServer) DeleteRedfishV1SessionServiceSessionsSessionId(c *gin.Co
 
 	if sessionId == "" {
 		BadRequestError(c, "Session ID required")
+
 		return
 	}
 
@@ -190,10 +197,12 @@ func (r *RedfishServer) DeleteRedfishV1SessionServiceSessionsSessionId(c *gin.Co
 	if err != nil {
 		if errors.Is(err, sessions.ErrSessionNotFound) {
 			NotFoundError(c, "Session", sessionId)
+
 			return
 		}
 
 		InternalServerError(c, fmt.Errorf("failed to delete session: %w", err))
+
 		return
 	}
 

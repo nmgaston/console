@@ -141,7 +141,12 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 			path := c.Request.URL.Path
 
 			// Public endpoints as defined in OpenAPI spec (security: [{}])
-			if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" || path == "/redfish/v1/odata" {
+			// - ServiceRoot, Metadata, OData (read-only discovery endpoints)
+			// - SessionService Sessions POST (login endpoint - must be unauthenticated)
+			if path == "/redfish/v1/" ||
+				path == "/redfish/v1/$metadata" ||
+				path == "/redfish/v1/odata" ||
+				(path == "/redfish/v1/SessionService/Sessions" && c.Request.Method == "POST") {
 				c.Next()
 
 				return

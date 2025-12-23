@@ -268,12 +268,19 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 	// Set Redfish-compliant headers
 	SetRedfishHeaders(c)
 
-	type ServiceRootWithSessions struct {
+	type ServiceRootWithSessionService struct {
 		generated.ServiceRootServiceRoot
-		Sessions *generated.OdataV4IdRef `json:"Sessions,omitempty"`
+		SessionService *generated.OdataV4IdRef `json:"SessionService,omitempty"`
 	}
 
-	serviceRoot := ServiceRootWithSessions{
+	// Create Links with Sessions for redfishtool compatibility
+	links := generated.ServiceRootLinks{
+		"Sessions": map[string]interface{}{
+			"@odata.id": "/redfish/v1/SessionService/Sessions",
+		},
+	}
+
+	serviceRoot := ServiceRootWithSessionService{
 		ServiceRootServiceRoot: generated.ServiceRootServiceRoot{
 			OdataContext:   StringPtr(odataContextServiceRoot),
 			OdataId:        StringPtr(odataIDServiceRoot),
@@ -284,13 +291,13 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 			UUID:           StringPtr(generateServiceUUID()),
 			Product:        StringPtr("Device Management Toolkit - Redfish Service"),
 			Vendor:         StringPtr("Device Management Toolkit"),
-			Links:          &generated.ServiceRootLinks{},
+			Links:          &links,
 			Systems: &generated.OdataV4IdRef{
 				OdataId: StringPtr("/redfish/v1/Systems"),
 			},
 		},
-		Sessions: &generated.OdataV4IdRef{
-			OdataId: StringPtr("/redfish/v1/SessionService/Sessions"),
+		SessionService: &generated.OdataV4IdRef{
+			OdataId: StringPtr("/redfish/v1/SessionService"),
 		},
 	}
 

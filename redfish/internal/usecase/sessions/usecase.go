@@ -31,8 +31,10 @@ func NewUseCase(repo Repository, cfg *config.Config) *UseCase {
 // CreateSession creates a new session with JWT token.
 // This integrates with DMT Console's existing JWT authentication.
 func (uc *UseCase) CreateSession(username, password, clientIP, userAgent string) (*entity.Session, string, error) {
+  fmt.Printf("Invoking Session Creation with [%s,%s]", username, password)
 	// Validate credentials using DMT Console's admin credentials
 	if username != uc.config.AdminUsername || password != uc.config.AdminPassword {
+    fmt.Printf("Invalid Credentials : Expected [%s,%s] Got [%s,%s]\n", uc.config.AdminUsername, uc.config.AdminPassword, username, password)
 		return nil, "", ErrInvalidCredentials
 	}
 

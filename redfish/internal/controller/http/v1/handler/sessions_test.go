@@ -18,8 +18,8 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
 
-// setupTestEnvironment creates a test environment with session handler.
-func setupTestEnvironment() (*gin.Engine, *SessionHandler) {
+// setupTestEnvironment creates a test environment with RedfishServer.
+func setupTestEnvironment() (*gin.Engine, *RedfishServer) {
 	gin.SetMode(gin.TestMode)
 
 	// Create test config
@@ -36,25 +36,32 @@ func setupTestEnvironment() (*gin.Engine, *SessionHandler) {
 	repo := sessioninfra.NewInMemoryRepository(1 * time.Minute)
 	useCase := sessions.NewUseCase(repo, cfg)
 
-	// Create handler
-	handler := NewSessionHandler(useCase, cfg)
+	// Create RedfishServer
+	server := &RedfishServer{
+		SessionUC: useCase,
+		Config:    cfg,
+	}
 
 	// Setup router
 	router := gin.New()
 
-	return router, handler
+	return router, server
 }
 
 // TestSessionLifecycle tests the complete session lifecycle.
 func TestSessionLifecycle(t *testing.T) {
 	t.Parallel()
 
-	router, handler := setupTestEnvironment()
+	router, server := setupTestEnvironment()
 
 	// Register routes
-	router.POST("/redfish/v1/SessionService/Sessions", handler.CreateSession)
-	router.GET("/redfish/v1/SessionService/Sessions/:SessionId", handler.GetSession)
-	router.DELETE("/redfish/v1/SessionService/Sessions/:SessionId", handler.DeleteSession)
+	router.POST("/redfish/v1/SessionService/Sessions", server.PostRedfishV1SessionServiceSessions)
+	router.GET("/redfish/v1/SessionService/Sessions/:SessionId", func(c *gin.Context) {
+		server.GetRedfishV1SessionServiceSessionsSessionId(c, c.Param("SessionId"))
+	})
+	router.DELETE("/redfish/v1/SessionService/Sessions/:SessionId", func(c *gin.Context) {
+		server.DeleteRedfishV1SessionServiceSessionsSessionId(c, c.Param("SessionId"))
+	})
 
 	// Step 1: Create session
 	createReq := map[string]string{
@@ -134,8 +141,8 @@ func TestSessionLifecycle(t *testing.T) {
 func TestCreateSessionInvalidCredentials(t *testing.T) {
 	t.Parallel()
 
-	router, handler := setupTestEnvironment()
-	router.POST("/redfish/v1/SessionService/Sessions", handler.CreateSession)
+	router, server := setupTestEnvironment()
+	router.POST("/redfish/v1/SessionService/Sessions", server.PostRedfishV1SessionServiceSessions)
 
 	createReq := map[string]string{
 		"UserName": "admin",
@@ -158,10 +165,10 @@ func TestCreateSessionInvalidCredentials(t *testing.T) {
 func TestSessionAuthMiddleware(t *testing.T) {
 	t.Parallel()
 
-	router, handler := setupTestEnvironment()
+	router, server := setupTestEnvironment()
 
 	// Create session first
-	router.POST("/redfish/v1/SessionService/Sessions", handler.CreateSession)
+	router.POST("/redfish/v1/SessionService/Sessions", server.PostRedfishV1SessionServiceSessions)
 
 	createReq := map[string]string{
 		"UserName": "admin",
@@ -179,7 +186,7 @@ func TestSessionAuthMiddleware(t *testing.T) {
 	require.NotEmpty(t, token)
 
 	// Test middleware with valid token
-	router.GET("/test/protected", SessionAuthMiddleware(handler.sessionUseCase), func(c *gin.Context) {
+	router.GET("/test/protected", SessionAuthMiddleware(server.SessionUC), func(c *gin.Context) {
 		username, _ := c.Get("username")
 		c.JSON(http.StatusOK, gin.H{"user": username})
 	})
@@ -210,8 +217,8 @@ func TestSessionAuthMiddleware(t *testing.T) {
 func TestSessionServiceEndpoint(t *testing.T) {
 	t.Parallel()
 
-	router, handler := setupTestEnvironment()
-	router.GET("/redfish/v1/SessionService", handler.GetSessionService)
+	router, server := setupTestEnvironment()
+	router.GET("/redfish/v1/SessionService", server.GetRedfishV1SessionService)
 
 	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/SessionService", http.NoBody)
 	w := httptest.NewRecorder()
@@ -236,10 +243,10 @@ func TestSessionServiceEndpoint(t *testing.T) {
 func TestListSessions(t *testing.T) {
 	t.Parallel()
 
-	router, handler := setupTestEnvironment()
+	router, server := setupTestEnvironment()
 
-	router.POST("/redfish/v1/SessionService/Sessions", handler.CreateSession)
-	router.GET("/redfish/v1/SessionService/Sessions", handler.ListSessions)
+	router.POST("/redfish/v1/SessionService/Sessions", server.PostRedfishV1SessionServiceSessions)
+	router.GET("/redfish/v1/SessionService/Sessions", server.GetRedfishV1SessionServiceSessions)
 
 	// Create two sessions
 	for i := 0; i < 2; i++ {
@@ -280,10 +287,10 @@ func TestListSessions(t *testing.T) {
 func TestTokenCompatibility(t *testing.T) {
 	t.Parallel()
 
-	router, handler := setupTestEnvironment()
+	router, server := setupTestEnvironment()
 
 	// Create session
-	router.POST("/redfish/v1/SessionService/Sessions", handler.CreateSession)
+	router.POST("/redfish/v1/SessionService/Sessions", server.PostRedfishV1SessionServiceSessions)
 
 	createReq := map[string]string{
 		"UserName": "admin",
@@ -300,7 +307,7 @@ func TestTokenCompatibility(t *testing.T) {
 	token := w.Header().Get("X-Auth-Token")
 
 	// Test with Bearer token format
-	router.GET("/test/protected", SessionAuthMiddleware(handler.sessionUseCase), func(c *gin.Context) {
+	router.GET("/test/protected", SessionAuthMiddleware(server.SessionUC), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": true})
 	})
 
@@ -318,8 +325,8 @@ func TestTokenCompatibility(t *testing.T) {
 func TestJWTIntegration(t *testing.T) {
 	t.Parallel()
 
-	router, handler := setupTestEnvironment()
-	router.POST("/redfish/v1/SessionService/Sessions", handler.CreateSession)
+	router, server := setupTestEnvironment()
+	router.POST("/redfish/v1/SessionService/Sessions", server.PostRedfishV1SessionServiceSessions)
 
 	createReq := map[string]string{
 		"UserName": "admin",

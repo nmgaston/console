@@ -47,4 +47,9 @@ auth:
     responseType: "code"
     requireHttps: false
     strictDiscoveryDocumentValidation: true
+redfish:
+  # Optional: Set a fixed UUID for this Redfish service instance
+  # If not set, a persistent UUID will be auto-generated and stored in ~/.config/dmt-redfish-service/service_uuid
+  # environment_uuid: ""
+
 

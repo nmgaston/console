@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	dmtconfig "github.com/device-management-toolkit/console/config"
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 )
 
@@ -33,7 +34,7 @@ func setupMetadataTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1/$metadata", server.GetRedfishV1Metadata)
 
 	return router
@@ -296,7 +297,11 @@ func TestGetRedfishV1ServiceRoot(t *testing.T) {
 
 	// Setup router
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{
+		Config: &dmtconfig.Config{
+			App: dmtconfig.App{},
+		},
+	}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	// Execute request
@@ -353,7 +358,7 @@ func TestGetRedfishV1ServiceRootUUIDConsistency(t *testing.T) {
 
 	// Setup router
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	// Make multiple requests
@@ -390,7 +395,7 @@ func TestGetRedfishV1ServiceRootNoAuthentication(t *testing.T) {
 
 	// Setup router without authentication middleware
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	// Execute request without Authorization header
@@ -412,7 +417,7 @@ func TestGetRedfishV1ServiceRootRedfishCompliance(t *testing.T) {
 
 	// Setup router
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	// Execute request
@@ -463,7 +468,7 @@ func TestGetRedfishV1ServiceRootConcurrentRequests(t *testing.T) {
 
 	// Setup router
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	// Execute multiple concurrent requests
@@ -493,7 +498,7 @@ func TestGetRedfishV1Odata(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
 
 	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
@@ -512,7 +517,7 @@ func TestGetRedfishV1OdataResponseStructure(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
 
 	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
@@ -549,7 +554,7 @@ func TestGetRedfishV1OdataRequiredServices(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
 
 	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
@@ -594,7 +599,7 @@ func TestGetRedfishV1OdataNoAuthentication(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
 
 	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/odata", http.NoBody)
@@ -610,7 +615,7 @@ func TestGetRedfishV1OdataConcurrentRequests(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
 
 	const numRequests = 10
@@ -641,7 +646,7 @@ func TestGetRedfishV1ServiceRootResponseStructure(t *testing.T) {
 
 	// Setup router
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	// Execute request
@@ -677,13 +682,13 @@ func TestGetRedfishV1ServiceRootResponseStructure(t *testing.T) {
 }
 
 // TestGenerateServiceUUID tests the UUID generation
+//
+//nolint:tparallel // Cannot use t.Parallel() - subtests modify global cachedUUID
 func TestGenerateServiceUUID(t *testing.T) {
-	t.Parallel()
-
 	t.Run("returns valid UUID format", func(t *testing.T) {
 		t.Parallel()
 
-		generatedUUID := generateServiceUUID()
+		generatedUUID := generateServiceUUID("")
 
 		// Should be valid UUID format
 		_, err := uuid.Parse(generatedUUID)
@@ -694,11 +699,40 @@ func TestGenerateServiceUUID(t *testing.T) {
 	t.Run("returns consistent UUID across calls", func(t *testing.T) {
 		t.Parallel()
 
-		uuid1 := generateServiceUUID()
-		uuid2 := generateServiceUUID()
+		uuid1 := generateServiceUUID("")
+		uuid2 := generateServiceUUID("")
 
 		// Should be the same UUID (file persistence still active)
 		assert.Equal(t, uuid1, uuid2, "UUID should be consistent across calls")
+	})
+
+	//nolint:paralleltest // Cannot run in parallel - modifies global cachedUUID
+	t.Run("uses configured UUID when provided", func(t *testing.T) {
+		// Note: Cannot use t.Parallel() because it modifies global cachedUUID
+
+		// Reset cache
+		cachedUUID = ""
+
+		configUUID := "12345678-1234-5678-1234-567812345678"
+		resultUUID := generateServiceUUID(configUUID)
+
+		assert.Equal(t, configUUID, resultUUID, "should use configured UUID")
+	})
+
+	//nolint:paralleltest // Cannot run in parallel - modifies global cachedUUID
+	t.Run("ignores invalid configured UUID", func(t *testing.T) {
+		// Note: Cannot use t.Parallel() because it modifies global cachedUUID
+
+		// Reset cache
+		cachedUUID = ""
+
+		invalidUUID := "not-a-valid-uuid"
+		resultUUID := generateServiceUUID(invalidUUID)
+
+		// Should fall back to generated UUID
+		assert.NotEqual(t, invalidUUID, resultUUID, "should not use invalid UUID")
+		_, err := uuid.Parse(resultUUID)
+		assert.NoError(t, err, "should generate valid UUID as fallback")
 	})
 }
 
@@ -838,7 +872,7 @@ func BenchmarkGetRedfishV1Odata(b *testing.B) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1/odata", server.GetRedfishV1Odata)
 
 	b.ResetTimer()
@@ -1086,7 +1120,7 @@ func TestGetRedfishV1ServiceRootHTTPMethods(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	testCases := []struct {
@@ -1140,7 +1174,7 @@ func TestGetRedfishV1ServiceRootHeaders(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	req := httptest.NewRequest(http.MethodGet, "/redfish/v1", http.NoBody)
@@ -1161,7 +1195,7 @@ func TestGetRedfishV1ServiceRootAllFields(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	server := &RedfishServer{}
+	server := &RedfishServer{Config: &dmtconfig.Config{App: dmtconfig.App{}}}
 	router.GET("/redfish/v1", server.GetRedfishV1)
 
 	req := httptest.NewRequest(http.MethodGet, "/redfish/v1", http.NoBody)
@@ -1221,7 +1255,7 @@ func TestGenerateServiceUUIDFallback(t *testing.T) {
 	t.Parallel()
 
 	// Test that UUID generation doesn't panic even in worst case
-	uuidStr := generateServiceUUID()
+	uuidStr := generateServiceUUID("")
 
 	assert.NotEmpty(t, uuidStr)
 

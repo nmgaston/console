@@ -156,19 +156,32 @@ func loadOrCreateUUID(appName string) (string, error) {
 // generateServiceUUID generates or retrieves the service instance UUID.
 // Per Redfish specification, this UUID should be consistent across service restarts.
 // Priority order:
-// 1. Cached UUID in memory (for process lifetime)
-// 2. Persisted UUID from config file
-// 3. Newly generated UUID (saved to config file for future use)
-func generateServiceUUID() string {
+// 1. Environment UUID from configuration (REDFISH_ENV_UUID)
+// 2. Cached UUID in memory (for process lifetime)
+// 3. Persisted UUID from config file
+// 4. Newly generated UUID (saved to config file for future use)
+func generateServiceUUID(envUUID string) string {
 	uuidMutex.Lock()
 	defer uuidMutex.Unlock()
 
-	// Return cached UUID if available
+	// Priority 1: Use environment UUID if configured
+	if envUUID != "" {
+		// Validate it's a proper UUID
+		if _, err := uuid.Parse(envUUID); err == nil {
+			cachedUUID = envUUID
+
+			return envUUID
+		}
+
+		log.Warnf("Invalid environment UUID configured: %s, falling back to persistent UUID", envUUID)
+	}
+
+	// Priority 2: Return cached UUID if available
 	if cachedUUID != "" {
 		return cachedUUID
 	}
 
-	// Load or create persistent UUID
+	// Priority 3: Load or create persistent UUID
 	serviceUUID, err := loadOrCreateUUID("dmt-redfish-service")
 	if err != nil {
 		log.Warnf("Failed to load/create persistent UUID: %v, generating temporary UUID", err)

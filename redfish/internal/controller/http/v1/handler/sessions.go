@@ -9,181 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/device-management-toolkit/console/config"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
-
-// SessionHandler handles Redfish SessionService requests
-type SessionHandler struct {
-	sessionUseCase *sessions.UseCase
-	config         *config.Config
-}
-
-// NewSessionHandler creates a new session handler
-func NewSessionHandler(useCase *sessions.UseCase, cfg *config.Config) *SessionHandler {
-	return &SessionHandler{
-		sessionUseCase: useCase,
-		config:         cfg,
-	}
-}
-
-// GetSessionService returns the SessionService resource
-// GET /redfish/v1/SessionService
-func (h *SessionHandler) GetSessionService(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	sessionCount, _ := h.sessionUseCase.GetSessionCount()
-
-	response := map[string]interface{}{
-		"@odata.context": "/redfish/v1/$metadata#SessionService.SessionService",
-		"@odata.id":      "/redfish/v1/SessionService",
-		"@odata.type":    "#SessionService.v1_1_9.SessionService",
-		"Id":             "SessionService",
-		"Name":           "Session Service",
-		"Description":    "Session Service for DMT Console Redfish API",
-		"Status": map[string]interface{}{
-			"State":  "Enabled",
-			"Health": "OK",
-		},
-		"ServiceEnabled": true,
-		"SessionTimeout": 1800,
-		"Sessions": map[string]interface{}{
-			"@odata.id": "/redfish/v1/SessionService/Sessions",
-		},
-		"SessionsCount": sessionCount,
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-// ListSessions returns the collection of active sessions
-// GET /redfish/v1/SessionService/Sessions
-func (h *SessionHandler) ListSessions(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	sessionList, err := h.sessionUseCase.ListSessions()
-	if err != nil {
-		InternalServerError(c, fmt.Errorf("failed to list sessions: %w", err))
-
-		return
-	}
-
-	members := make([]map[string]interface{}, 0, len(sessionList))
-	for _, session := range sessionList {
-		members = append(members, map[string]interface{}{
-			"@odata.id": "/redfish/v1/SessionService/Sessions/" + session.ID,
-		})
-	}
-
-	response := map[string]interface{}{
-		"@odata.context":      "/redfish/v1/$metadata#SessionCollection.SessionCollection",
-		"@odata.id":           "/redfish/v1/SessionService/Sessions",
-		"@odata.type":         "#SessionCollection.SessionCollection",
-		"Name":                "Session Collection",
-		"Members":             members,
-		"Members@odata.count": len(members),
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-// CreateSession creates a new session
-// POST /redfish/v1/SessionService/Sessions
-func (h *SessionHandler) CreateSession(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	// Parse request body
-	var request struct {
-		UserName string `json:"UserName" binding:"required"`
-		Password string `json:"Password" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&request); err != nil {
-		BadRequestError(c, "Invalid request body")
-
-		return
-	}
-
-	// Get client info
-	clientIP := c.ClientIP()
-	userAgent := c.GetHeader("User-Agent")
-
-	// Create session
-	session, token, err := h.sessionUseCase.CreateSession(
-		request.UserName,
-		request.Password,
-		clientIP,
-		userAgent,
-	)
-	if err != nil {
-		UnauthorizedError(c)
-
-		return
-	}
-
-	// Set response headers
-	c.Header("X-Auth-Token", token)
-	c.Header("Location", "/redfish/v1/SessionService/Sessions/"+session.ID)
-
-	// Return session resource
-	c.JSON(http.StatusCreated, session.ToRedfishResponse())
-}
-
-// GetSession returns details of a specific session
-// GET /redfish/v1/SessionService/Sessions/{SessionId}
-func (h *SessionHandler) GetSession(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	sessionID := c.Param("SessionId")
-	if sessionID == "" {
-		BadRequestError(c, "Session ID required")
-
-		return
-	}
-
-	session, err := h.sessionUseCase.GetSession(sessionID)
-	if err != nil {
-		if errors.Is(err, sessions.ErrSessionNotFound) || errors.Is(err, sessions.ErrSessionExpired) {
-			NotFoundError(c, "Session", sessionID)
-
-			return
-		}
-
-		InternalServerError(c, fmt.Errorf("failed to retrieve session: %w", err))
-
-		return
-	}
-
-	c.JSON(http.StatusOK, session.ToRedfishResponse())
-}
-
-// DeleteSession terminates a session (logout)
-// DELETE /redfish/v1/SessionService/Sessions/{SessionId}
-func (h *SessionHandler) DeleteSession(c *gin.Context) {
-	SetRedfishHeaders(c)
-
-	sessionID := c.Param("SessionId")
-	if sessionID == "" {
-		BadRequestError(c, "Session ID required")
-
-		return
-	}
-
-	err := h.sessionUseCase.DeleteSession(sessionID)
-	if err != nil {
-		if errors.Is(err, sessions.ErrSessionNotFound) {
-			NotFoundError(c, "Session", sessionID)
-
-			return
-		}
-
-		InternalServerError(c, fmt.Errorf("failed to delete session: %w", err))
-
-		return
-	}
-
-	c.Status(http.StatusNoContent)
-}
 
 // SessionAuthMiddleware validates X-Auth-Token header
 // This middleware integrates DMT JWT tokens with Redfish session authentication
@@ -222,4 +49,162 @@ func SessionAuthMiddleware(sessionUseCase *sessions.UseCase) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+// RedfishServer session endpoint implementations
+// These methods are part of RedfishServer to satisfy the generated.ServerInterface
+
+// GetRedfishV1SessionService handles GET /redfish/v1/SessionService
+func (r *RedfishServer) GetRedfishV1SessionService(c *gin.Context) {
+	SetRedfishHeaders(c)
+
+	sessionCount, _ := r.SessionUC.GetSessionCount()
+
+	response := map[string]interface{}{
+		"@odata.context": "/redfish/v1/$metadata#SessionService.SessionService",
+		"@odata.id":      "/redfish/v1/SessionService",
+		"@odata.type":    "#SessionService.v1_1_9.SessionService",
+		"Id":             "SessionService",
+		"Name":           "Session Service",
+		"Description":    "Session Service for DMT Console Redfish API",
+		"Status": map[string]interface{}{
+			"State":  "Enabled",
+			"Health": "OK",
+		},
+		"ServiceEnabled": true,
+		"SessionTimeout": 1800,
+		"Sessions": map[string]interface{}{
+			"@odata.id": "/redfish/v1/SessionService/Sessions",
+		},
+		"SessionsCount": sessionCount,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetRedfishV1SessionServiceSessions handles GET /redfish/v1/SessionService/Sessions
+func (r *RedfishServer) GetRedfishV1SessionServiceSessions(c *gin.Context) {
+	SetRedfishHeaders(c)
+
+	sessionList, err := r.SessionUC.ListSessions()
+	if err != nil {
+		InternalServerError(c, fmt.Errorf("failed to list sessions: %w", err))
+
+		return
+	}
+
+	members := make([]map[string]interface{}, 0, len(sessionList))
+	for _, session := range sessionList {
+		members = append(members, map[string]interface{}{
+			"@odata.id": "/redfish/v1/SessionService/Sessions/" + session.ID,
+		})
+	}
+
+	response := map[string]interface{}{
+		"@odata.context":      "/redfish/v1/$metadata#SessionCollection.SessionCollection",
+		"@odata.id":           "/redfish/v1/SessionService/Sessions",
+		"@odata.type":         "#SessionCollection.SessionCollection",
+		"Name":                "Session Collection",
+		"Members":             members,
+		"Members@odata.count": len(members),
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// PostRedfishV1SessionServiceSessions handles POST /redfish/v1/SessionService/Sessions
+func (r *RedfishServer) PostRedfishV1SessionServiceSessions(c *gin.Context) {
+	SetRedfishHeaders(c)
+
+	// Parse request body
+	var request struct {
+		UserName string `json:"UserName" binding:"required"`
+		Password string `json:"Password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		BadRequestError(c, "Invalid request body")
+
+		return
+	}
+
+	// Get client info
+	clientIP := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
+	// Create session
+	session, token, err := r.SessionUC.CreateSession(
+		request.UserName,
+		request.Password,
+		clientIP,
+		userAgent,
+	)
+	if err != nil {
+		UnauthorizedError(c)
+
+		return
+	}
+
+	// Set response headers
+	c.Header("X-Auth-Token", token)
+	c.Header("Location", "/redfish/v1/SessionService/Sessions/"+session.ID)
+
+	// Return session resource
+	c.JSON(http.StatusCreated, session.ToRedfishResponse())
+}
+
+// GetRedfishV1SessionServiceSessionsSessionId handles GET /redfish/v1/SessionService/Sessions/{SessionId}.
+//
+//nolint:revive // Method name must match OpenAPI-generated interface
+func (r *RedfishServer) GetRedfishV1SessionServiceSessionsSessionId(c *gin.Context, sessionId string) {
+	SetRedfishHeaders(c)
+
+	if sessionId == "" {
+		BadRequestError(c, "Session ID required")
+
+		return
+	}
+
+	session, err := r.SessionUC.GetSession(sessionId)
+	if err != nil {
+		if errors.Is(err, sessions.ErrSessionNotFound) || errors.Is(err, sessions.ErrSessionExpired) {
+			NotFoundError(c, "Session", sessionId)
+
+			return
+		}
+
+		InternalServerError(c, fmt.Errorf("failed to retrieve session: %w", err))
+
+		return
+	}
+
+	c.JSON(http.StatusOK, session.ToRedfishResponse())
+}
+
+// DeleteRedfishV1SessionServiceSessionsSessionId handles DELETE /redfish/v1/SessionService/Sessions/{SessionId}.
+//
+//nolint:revive // Method name must match OpenAPI-generated interface
+func (r *RedfishServer) DeleteRedfishV1SessionServiceSessionsSessionId(c *gin.Context, sessionId string) {
+	SetRedfishHeaders(c)
+
+	if sessionId == "" {
+		BadRequestError(c, "Session ID required")
+
+		return
+	}
+
+	err := r.SessionUC.DeleteSession(sessionId)
+	if err != nil {
+		if errors.Is(err, sessions.ErrSessionNotFound) {
+			NotFoundError(c, "Session", sessionId)
+
+			return
+		}
+
+		InternalServerError(c, fmt.Errorf("failed to delete session: %w", err))
+
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }

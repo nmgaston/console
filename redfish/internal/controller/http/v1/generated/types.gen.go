@@ -113,17 +113,17 @@ const (
 	Updating           ResourceState = "Updating"
 )
 
-// Defines values for SessionSessionSessionType.
+// Defines values for SessionSessionTypes.
 const (
-	HostConsole        SessionSessionSessionType = "HostConsole"
-	IPMI               SessionSessionSessionType = "IPMI"
-	KVMIP              SessionSessionSessionType = "KVMIP"
-	ManagerConsole     SessionSessionSessionType = "ManagerConsole"
-	OEM                SessionSessionSessionType = "OEM"
-	OutboundConnection SessionSessionSessionType = "OutboundConnection"
-	Redfish            SessionSessionSessionType = "Redfish"
-	VirtualMedia       SessionSessionSessionType = "VirtualMedia"
-	WebUI              SessionSessionSessionType = "WebUI"
+	HostConsole        SessionSessionTypes = "HostConsole"
+	IPMI               SessionSessionTypes = "IPMI"
+	KVMIP              SessionSessionTypes = "KVMIP"
+	ManagerConsole     SessionSessionTypes = "ManagerConsole"
+	OEM                SessionSessionTypes = "OEM"
+	OutboundConnection SessionSessionTypes = "OutboundConnection"
+	Redfish            SessionSessionTypes = "Redfish"
+	VirtualMedia       SessionSessionTypes = "VirtualMedia"
+	WebUI              SessionSessionTypes = "WebUI"
 )
 
 // ActionInfoParameterTypes defines model for ActionInfo_ParameterTypes.
@@ -740,17 +740,15 @@ type SessionSession struct {
 	Oem *ResourceOem `json:"Oem,omitempty"`
 
 	// Password The password for this session. The value is `null` in responses.
-	Password *string `json:"Password"`
-
-	// SessionType The active session type.
-	SessionType *SessionSessionSessionType `json:"SessionType"`
+	Password    *string              `json:"Password"`
+	SessionType *SessionSessionTypes `json:"SessionType,omitempty"`
 
 	// UserName The username for the account for this session.
 	UserName *string `json:"UserName"`
 }
 
-// SessionSessionSessionType The active session type.
-type SessionSessionSessionType string
+// SessionSessionTypes defines model for Session_SessionTypes.
+type SessionSessionTypes string
 
 // OdataV4Context The OData description of a payload.
 type OdataV4Context = string

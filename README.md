@@ -167,15 +167,38 @@ UI_EXTERNAL_URL=https://your-ui-domain.com ./console-noui
 
 **Build commands:**
 ```sh
-# Headless build (no UI)
+# Default build (with UI) for current platform
+make build
+
+# Headless build (no UI) for current platform
 make build-noui
+
+# Cross-compile for all platforms (Linux, Windows, macOS)
+# Produces binaries in dist/ directory for distribution
+make build-all-platforms
 ```
 
 **Manual build examples:**
 ```sh
-# Headless build (no UI)
+# Build for current platform
+go build -o console ./cmd/app
 go build -tags=noui -o console-noui ./cmd/app
+
+# Cross-compilation examples (CGO_ENABLED=0 produces static binaries)
+# Linux
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o console-linux ./cmd/app
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags=noui -o console-linux-headless ./cmd/app
+
+# Windows
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o console.exe ./cmd/app
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -tags=noui -o console-headless.exe ./cmd/app
+
+# macOS
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o console-macos ./cmd/app
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags=noui -o console-macos-headless ./cmd/app
 ```
+
+> **Note**: With `CGO_ENABLED=0`, Go produces statically-linked binaries that are cross-platform compatible. You can build binaries for any target platform from any development machine.
 
 ### 4. Running the Frontend
 

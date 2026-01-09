@@ -126,9 +126,11 @@ func isPublicEndpoint(path, method string) bool {
 }
 
 // createAuthMiddleware creates the authentication middleware for protected endpoints.
+// Supports both X-Auth-Token (Redfish session) and Basic Auth.
 func createAuthMiddleware() redfishgenerated.MiddlewareFunc {
 	auth := server.Config.Auth
 	basicAuthMiddleware := v1.BasicAuthValidator(auth.AdminUsername, auth.AdminPassword)
+	sessionAuthMiddleware := v1.SessionAuthMiddleware(server.SessionUC)
 
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
@@ -139,8 +141,17 @@ func createAuthMiddleware() redfishgenerated.MiddlewareFunc {
 			return
 		}
 
-		// Protected endpoints use Basic Auth
+		// Protected endpoints: support both X-Auth-Token and Basic Auth
+		// Per Redfish spec, X-Auth-Token takes precedence
 		if strings.HasPrefix(path, "/redfish/v1/") {
+			// Check for X-Auth-Token first (Redfish session authentication)
+			if token := c.GetHeader("X-Auth-Token"); token != "" {
+				sessionAuthMiddleware(c)
+
+				return
+			}
+
+			// Fallback to Basic Auth
 			basicAuthMiddleware(c)
 
 			return

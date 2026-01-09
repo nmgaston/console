@@ -1,0 +1,90 @@
+package devices
+
+import (
+	"context"
+
+	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/amt/boot"
+)
+
+// GetBootSettings retrieves the current boot settings from a device.
+func (uc *UseCase) GetBootSettings(c context.Context, guid string) (boot.BootSettingDataResponse, error) {
+	item, err := uc.repo.GetByID(c, guid, "")
+	if err != nil {
+		return boot.BootSettingDataResponse{}, err
+	}
+
+	if item == nil || item.GUID == "" {
+		return boot.BootSettingDataResponse{}, ErrNotFound
+	}
+
+	device, err := uc.device.SetupWsmanClient(*item, false, true)
+	if err != nil {
+		return boot.BootSettingDataResponse{}, err
+	}
+
+	bootData, err := device.GetBootData()
+	if err != nil {
+		return boot.BootSettingDataResponse{}, err
+	}
+
+	return bootData, nil
+}
+
+// SetBootSettings configures boot settings for a device.
+// This is a simplified wrapper around SetBootOptions for basic boot configuration.
+func (uc *UseCase) SetBootSettings(c context.Context, guid string, bootData boot.BootSettingDataRequest) error {
+	item, err := uc.repo.GetByID(c, guid, "")
+	if err != nil {
+		return err
+	}
+
+	if item == nil || item.GUID == "" {
+		return ErrNotFound
+	}
+
+	device, err := uc.device.SetupWsmanClient(*item, false, true)
+	if err != nil {
+		return err
+	}
+
+	// Clear existing boot order
+	_, err = device.ChangeBootOrder("")
+	if err != nil {
+		return err
+	}
+
+	// Set new boot data
+	_, err = device.SetBootData(bootData)
+	if err != nil {
+		return err
+	}
+
+	// Enable boot configuration
+	_, err = device.SetBootConfigRole(1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ChangeBootOrder sets the boot order for a device.
+func (uc *UseCase) ChangeBootOrder(c context.Context, guid, bootSource string) error {
+	item, err := uc.repo.GetByID(c, guid, "")
+	if err != nil {
+		return err
+	}
+
+	if item == nil || item.GUID == "" {
+		return ErrNotFound
+	}
+
+	device, err := uc.device.SetupWsmanClient(*item, false, true)
+	if err != nil {
+		return err
+	}
+
+	_, err = device.ChangeBootOrder(bootSource)
+
+	return err
+}

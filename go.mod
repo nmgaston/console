@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/getkin/kin-openapi v0.133.0
-	github.com/device-management-toolkit/go-wsman-messages/v2 v2.36.0
+	github.com/device-management-toolkit/go-wsman-messages/v2 v2.36.1
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-contrib/pprof v1.5.3
 	github.com/gin-gonic/gin v1.11.0
@@ -26,7 +26,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 	gopkg.in/yaml.v2 v2.4.0
-	modernc.org/sqlite v1.42.2
+	modernc.org/sqlite v1.43.0
 	software.sslmate.com/src/go-pkcs12 v0.7.0
 )
 

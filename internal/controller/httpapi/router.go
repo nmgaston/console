@@ -2,13 +2,7 @@
 package httpapi
 
 import (
-	"embed"
-	"io/fs"
-	"log"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -50,41 +44,9 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 	// Public routes
 	login := v1.NewLoginRoute(cfg)
 	handler.POST("/api/v1/authorize", login.Login)
-	// Static files
-	// Serve static assets (js, css, images, etc.)
-	// Create subdirectory view of the embedded file system
-	staticFiles, err := fs.Sub(content, "ui")
-	if err != nil {
-		l.Fatal(err)
-	}
 
-	handler.StaticFileFS("/", "./", http.FS(staticFiles)) // Serve static files from "/" route
-
-	modifiedMainJS := injectConfigToMainJS(l, cfg)
-	handler.StaticFile("/main.js", modifiedMainJS)
-
-	handler.StaticFileFS("/polyfills.js", "./polyfills.js", http.FS(staticFiles))
-	handler.StaticFileFS("/media/kJEhBvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oFsI.woff2", "./media/kJEhBvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oFsI.woff2", http.FS(staticFiles))
-	handler.StaticFileFS("/runtime.js", "./runtime.js", http.FS(staticFiles))
-	handler.StaticFileFS("/styles.css", "./styles.css", http.FS(staticFiles))
-	handler.StaticFileFS("/vendor.js", "./vendor.js", http.FS(staticFiles))
-	handler.StaticFileFS("/favicon.ico", "./favicon.ico", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/logo.png", "./assets/logo.png", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/monaco/min/vs/loader.js", "./assets/monaco/min/vs/loader.js", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/monaco/min/vs/editor/editor.main.js", "./assets/monaco/min/vs/editor/editor.main.js", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/monaco/min/vs/editor/editor.main.css", "./assets/monaco/min/vs/editor/editor.main.css", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/monaco/min/vs/editor/editor.main.nls.js", "./assets/monaco/min/vs/editor/editor.main.nls.js", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/monaco/min/vs/base/worker/workerMain.js", "./assets/monaco/min/vs/base/worker/workerMain.js", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/monaco/min/vs/base/common/worker/simpleWorker.nls.js", "./assets/monaco/min/vs/base/common/worker/simpleWorker.nls.js", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/monaco/min/vs/base/browser/ui/codicons/codicon/codicon.ttf", "./assets/monaco/min/vs/base/browser/ui/codicons/codicon/codicon.ttf", http.FS(staticFiles))
-	handler.StaticFileFS("/assets/monaco/min/vs/basic-languages/xml/xml.js", "./assets/monaco/min/vs/basic-languages/xml/xml.js", http.FS(staticFiles))
-
-	langs := []string{"en", "fr", "de", "ar", "es", "fi", "he", "it", "ja", "nl", "ru", "sv"}
-	for _, lang := range langs {
-		relativePath := "/assets/i18n/" + lang + ".json"
-		filePath := "." + relativePath
-		handler.StaticFileFS(relativePath, filePath, http.FS(staticFiles))
-	}
+	// Setup UI routes (no-op in noui builds)
+	setupUIRoutes(handler, l, cfg)
 
 	// K8s probe
 	handler.GET("/healthz", func(c *gin.Context) { c.Status(http.StatusOK) })

@@ -17,16 +17,8 @@ import (
 	redfish "github.com/device-management-toolkit/console/redfish"
 )
 
-//go:embed all:ui
-var content embed.FS
-
-const (
-	protocolHTTP  = "http://"
-	protocolHTTPS = "https://"
-)
-
 // NewRouter sets up the HTTP router with redfish support.
-func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg *config.Config, database *db.SQL) { //nolint:funlen // This function is responsible for setting up the router, so it's expected to be long
+func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg *config.Config, database *db.SQL) {
 	// Options
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
@@ -92,72 +84,4 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Usecases, cfg 
 	if err := redfish.RegisterRoutes(handler, l); err != nil {
 		l.Fatal("Failed to register redfish routes: " + err.Error())
 	}
-
-	// Setup default NoRoute handler for SPA
-	handler.NoRoute(func(c *gin.Context) {
-		c.FileFromFS("./", http.FS(staticFiles))
-	})
-}
-
-func injectConfigToMainJS(l logger.Interface, cfg *config.Config) string {
-	data, err := fs.ReadFile(content, "ui/main.js")
-	if err != nil {
-		l.Warn("Could not read embedded main.js: %v", err)
-
-		return ""
-	}
-
-	protocol := protocolHTTP
-
-	requireHTTPSReplacement := ",requireHttps:!1"
-	if cfg.UI.RequireHTTPS {
-		requireHTTPSReplacement = ",requireHttps:!0"
-		protocol = protocolHTTPS
-	}
-
-	if cfg.TLS.Enabled {
-		protocol = protocolHTTPS
-	}
-
-	// if there is a clientID, we assume oauth will be configured, so inject UI config values from YAML
-	if cfg.ClientID != "" {
-		strictDiscoveryReplacement := ",strictDiscoveryDocumentValidation:!1"
-		if cfg.UI.StrictDiscoveryDocumentValidation {
-			strictDiscoveryReplacement = ",strictDiscoveryDocumentValidation:!0"
-		}
-
-		data = injectPlaceholders(data, map[string]string{
-			",useOAuth:!1,":                         ",useOAuth:!0,",
-			",requireHttps:!0":                      requireHTTPSReplacement,
-			",strictDiscoveryDocumentValidation:!0": strictDiscoveryReplacement,
-			"##CLIENTID##":                          cfg.UI.ClientID,
-			"##ISSUER##":                            cfg.UI.Issuer,
-			"##SCOPE##":                             cfg.UI.Scope,
-			"##REDIRECTURI##":                       cfg.UI.RedirectURI,
-		})
-	}
-
-	data = injectPlaceholders(data, map[string]string{
-		"##CONSOLE_SERVER_API##": protocol + cfg.Host + ":" + cfg.Port,
-	})
-
-	// Write to /tmp
-	permissions := 0o600
-
-	tempFile := filepath.Join(os.TempDir(), "main.js")
-
-	if err := os.WriteFile(tempFile, data, os.FileMode(permissions)); err != nil {
-		log.Fatalf("Could not write modified main.js: %v", err)
-	}
-
-	return tempFile
-}
-
-func injectPlaceholders(content []byte, replacements map[string]string) []byte {
-	result := string(content)
-	for placeholder, value := range replacements {
-		result = strings.ReplaceAll(result, placeholder, value)
-	}
-
-	return []byte(result)
 }

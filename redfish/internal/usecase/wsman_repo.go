@@ -5,15 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 
 	amtBoot "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/amt/boot"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/bios"
 	cimBoot "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/boot"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chip"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/physical"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/processor"
-	"reflect"
 
 	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
@@ -86,9 +81,6 @@ const (
 var (
 	// ErrGetAllNotImplemented is returned when GetAll is called (not yet implemented).
 	ErrGetAllNotImplemented = errors.New("GetAll not implemented")
-  
-	// ErrSystemNotFound is returned when a system is not found.
-	ErrSystemNotFound = errors.New("system not found")
 
 	// ErrUnsupportedPowerState is returned when an unsupported power state is requested.
 	ErrUnsupportedPowerState = errors.New("unsupported power state")

@@ -1104,7 +1104,7 @@ func (r *WsmanComputerSystemRepo) UpdatePowerState(ctx context.Context, systemID
 // GetBootSettings retrieves the current boot configuration for a system.
 func (r *WsmanComputerSystemRepo) GetBootSettings(ctx context.Context, systemID string) (*generated.ComputerSystemBoot, error) {
 	// Get current boot data from AMT via devices use case
-	bootData, err := r.usecase.GetBootSettings(ctx, systemID)
+	bootData, err := r.usecase.GetBootData(ctx, systemID)
 	if err != nil {
 		if r.isDeviceNotFoundError(err) {
 			return nil, ErrSystemNotFound
@@ -1168,7 +1168,7 @@ func (r *WsmanComputerSystemRepo) GetBootSettings(ctx context.Context, systemID 
 // UpdateBootSettings updates the boot configuration for a system.
 func (r *WsmanComputerSystemRepo) UpdateBootSettings(ctx context.Context, systemID string, boot *generated.ComputerSystemBoot) error {
 	// Get current boot data to preserve settings
-	bootData, err := r.usecase.GetBootSettings(ctx, systemID)
+	bootData, err := r.usecase.GetBootData(ctx, systemID)
 	if err != nil {
 		if r.isDeviceNotFoundError(err) {
 			return ErrSystemNotFound
@@ -1190,7 +1190,7 @@ func (r *WsmanComputerSystemRepo) UpdateBootSettings(ctx context.Context, system
 	r.applyBootMode(boot, systemID)
 
 	// Use devices use case methods to configure boot
-	if err := r.usecase.SetBootSettings(ctx, systemID, newBootData); err != nil {
+	if err := r.usecase.SetBootData(ctx, systemID, newBootData); err != nil {
 		return fmt.Errorf("failed to set boot settings: %w", err)
 	}
 

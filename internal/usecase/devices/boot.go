@@ -6,8 +6,8 @@ import (
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/amt/boot"
 )
 
-// GetBootSettings retrieves the current boot settings from a device.
-func (uc *UseCase) GetBootSettings(c context.Context, guid string) (boot.BootSettingDataResponse, error) {
+// GetBootData retrieves the current boot settings from a device.
+func (uc *UseCase) GetBootData(c context.Context, guid string) (boot.BootSettingDataResponse, error) {
 	item, err := uc.repo.GetByID(c, guid, "")
 	if err != nil {
 		return boot.BootSettingDataResponse{}, err
@@ -30,9 +30,8 @@ func (uc *UseCase) GetBootSettings(c context.Context, guid string) (boot.BootSet
 	return bootData, nil
 }
 
-// SetBootSettings configures boot settings for a device.
-// This is a simplified wrapper around SetBootOptions for basic boot configuration.
-func (uc *UseCase) SetBootSettings(c context.Context, guid string, bootData boot.BootSettingDataRequest) error {
+// SetBootData configures boot settings for a device.
+func (uc *UseCase) SetBootData(c context.Context, guid string, bootData boot.BootSettingDataRequest) error {
 	item, err := uc.repo.GetByID(c, guid, "")
 	if err != nil {
 		return err

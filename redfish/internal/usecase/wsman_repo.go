@@ -4,12 +4,7 @@ package usecase
 import (
 	"context"
 	"errors"
-
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/bios"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chassis"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/chip"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/physical"
-	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/processor"
+	"reflect"
 
 	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
@@ -26,6 +21,10 @@ const (
 	powerActionPowerCycle = 5  // Power Cycle (off then on)
 	powerActionPowerDown  = 8  // Power Down (soft off)
 	powerActionReset      = 10 // Reset (reboot)
+
+	// Common constants to eliminate magic values.
+	bytesPerGiB          = 1024 * 1024 * 1024
+	maxEnabledStateValue = 32767
 
 	// maxSystemsList is the maximum number of systems to retrieve in a single request.
 	maxSystemsList = 100
@@ -72,17 +71,11 @@ const (
 
 	// Maximum items to process in arrays to prevent hangs.
 	maxArrayItems = 10
-
-	// CIM property name constants.
-	cimPropertyVersion = "Version"
 )
 
 var (
 	// ErrSystemNotFound is returned when a system is not found.
 	ErrSystemNotFound = errors.New("system not found")
-
-	// ErrGetAllNotImplemented is returned when GetAll is called (not yet implemented).
-	ErrGetAllNotImplemented = errors.New("GetAll not implemented")
 
 	// ErrUnsupportedPowerState is returned when an unsupported power state is requested.
 	ErrUnsupportedPowerState = errors.New("unsupported power state")
@@ -107,14 +100,9 @@ type PropertyExtractor func(interface{}) interface{}
 type CIMPropertyConfig struct {
 	CIMObject    CIMObjectType     // Which CIM object to extract from
 	CIMProperty  string            // The property name in the CIM object
-	StructField  string            // Field name when response is a struct (optional, defaults to CIMProperty)
+	StructField  string            // Optional: key name for storing in results map (defaults to CIMProperty)
 	Transformer  PropertyExtractor // Optional transformation function
 	UseFirstItem bool              // For array responses, use first item (default: true)
-}
-
-// CIMExtractorFramework provides a generic framework for extracting properties from CIM objects.
-type CIMExtractorFramework struct {
-	repo *WsmanComputerSystemRepo
 }
 
 // WsmanComputerSystemRepo implements ComputerSystemRepository using WSMAN backend.
@@ -125,10 +113,8 @@ type WsmanComputerSystemRepo struct {
 
 // Forward declarations for transformer functions.
 var (
-	healthStateTransformer    PropertyExtractor
-	enabledStateTransformer   PropertyExtractor
-	memoryCapacityTransformer PropertyExtractor
-	memoryStatusTransformer   PropertyExtractor
+	healthStateTransformer  PropertyExtractor
+	enabledStateTransformer PropertyExtractor
 )
 
 // allCIMConfigs defines the complete set of CIM property configurations for computer system data extraction.
@@ -157,18 +143,34 @@ var allCIMConfigs = []CIMPropertyConfig{
 	{CIMObject: CIMObjectChip, CIMProperty: "Version", StructField: "ChipVersion", UseFirstItem: true},
 }
 
-// NewWsmanComputerSystemRepo creates a new WSMAN-backed computer system repository.
+// extractStringFromMap safely extracts a string value from a map, returning the value and whether it exists.
+func extractStringFromMap(data map[string]interface{}, key string) (string, bool) {
+	if value, exists := data[key]; exists {
+		if strValue, ok := value.(string); ok {
+			return strValue, true
+		}
+	}
+
+	return "", false
+}
+
+// convertToInt safely converts interface{} values to int, handling both int and float64 types.
+func convertToInt(value interface{}) (int, bool) {
+	switch v := value.(type) {
+	case int:
+		return v, true
+	case float64:
+		return int(v), true
+	default:
+		return 0, false
+	}
+}
+
 // createHealthStateTransformer creates the health state transformation function.
 func createHealthStateTransformer() PropertyExtractor {
 	return func(value interface{}) interface{} {
-		var healthState int
-
-		switch v := value.(type) {
-		case int:
-			healthState = v
-		case float64:
-			healthState = int(v)
-		default:
+		healthState, ok := convertToInt(value)
+		if !ok {
 			return nil
 		}
 
@@ -197,19 +199,13 @@ func createHealthStateTransformer() PropertyExtractor {
 // createEnabledStateTransformer creates the enabled state transformation function.
 func createEnabledStateTransformer() PropertyExtractor {
 	return func(value interface{}) interface{} {
-		var enabledState int
-
-		switch v := value.(type) {
-		case int:
-			enabledState = v
-		case float64:
-			enabledState = int(v)
-		default:
+		enabledState, ok := convertToInt(value)
+		if !ok {
 			return nil
 		}
 
 		// Use constants for validation and conversion
-		if enabledState < 0 || enabledState > 32767 {
+		if enabledState < 0 || enabledState > maxEnabledStateValue {
 			return nil // Invalid range
 		}
 
@@ -232,56 +228,16 @@ func createEnabledStateTransformer() PropertyExtractor {
 	}
 }
 
-// createMemoryCapacityTransformer creates the memory capacity transformation function.
-func createMemoryCapacityTransformer() PropertyExtractor {
-	return func(value interface{}) interface{} {
-		// This will be handled by aggregation logic in buildComputerSystemFromCIMData
-		// Just return the raw capacity values for processing
-		return value
-	}
-}
-
-// createMemoryStatusTransformer creates the memory status transformation function.
-func createMemoryStatusTransformer() PropertyExtractor {
-	return func(value interface{}) interface{} {
-		// Convert CIM operational status to Redfish health state
-		// CIM Operational Status values: 2=OK, 3=Degraded, 6=Error, etc.
-		var operationalStatus int
-
-		switch v := value.(type) {
-		case int:
-			operationalStatus = v
-		case float64:
-			operationalStatus = int(v)
-		default:
-			return nil
-		}
-
-		switch operationalStatus {
-		case CIMStatusOK:
-			return healthStateOK
-		case CIMStatusDegraded, CIMStatusStressed:
-			return healthStateWarning
-		case CIMStatusError, CIMStatusNonRecoverableError:
-			return healthStateCritical
-		default:
-			return nil
-		}
-	}
-}
-
 // initializeTransformers initializes the global transformer functions.
 func initializeTransformers() {
 	healthStateTransformer = createHealthStateTransformer()
 	enabledStateTransformer = createEnabledStateTransformer()
-	memoryCapacityTransformer = createMemoryCapacityTransformer()
-	memoryStatusTransformer = createMemoryStatusTransformer()
 }
 
 // NewWsmanComputerSystemRepo creates a new WSMAN-backed computer system repository.
 func NewWsmanComputerSystemRepo(uc *devices.UseCase, log logger.Interface) *WsmanComputerSystemRepo {
 	// Ensure transformers are initialized
-	if healthStateTransformer == nil || enabledStateTransformer == nil || memoryCapacityTransformer == nil || memoryStatusTransformer == nil {
+	if healthStateTransformer == nil || enabledStateTransformer == nil {
 		initializeTransformers()
 	}
 
@@ -291,60 +247,67 @@ func NewWsmanComputerSystemRepo(uc *devices.UseCase, log logger.Interface) *Wsma
 	}
 }
 
-// newCIMExtractor creates a new CIM property extraction framework.
-func (r *WsmanComputerSystemRepo) newCIMExtractor() *CIMExtractorFramework {
-	return &CIMExtractorFramework{repo: r}
-}
+// getCIMProperties extracts multiple CIM properties in a single call.
+func (r *WsmanComputerSystemRepo) getCIMProperties(ctx context.Context, systemID string, configs []CIMPropertyConfig) (map[string]interface{}, dto.HardwareInfo, error) {
+	results := make(map[string]interface{})
 
-// getCIMProperties extracts multiple CIM properties in a single call using the configured extraction framework.
-func (r *WsmanComputerSystemRepo) getCIMProperties(ctx context.Context, systemID string, configs []CIMPropertyConfig) map[string]interface{} {
-	extractor := r.newCIMExtractor()
+	// Get hardware info only once to avoid multiple WSMAN calls
+	hwInfo, err := r.usecase.GetHardwareInfo(ctx, systemID)
+	if err != nil {
+		r.log.Error("Failed to get hardware info", "systemID", systemID, "error", err)
 
-	return extractor.extractMultipleProperties(ctx, systemID, configs)
+		return results, hwInfo, err
+	}
+
+	for _, config := range configs {
+		if value := r.extractPropertyFromHardwareInfo(hwInfo, config); value != nil {
+			// Use StructField as key if specified, otherwise use CIMProperty
+			key := config.CIMProperty
+			if config.StructField != "" {
+				key = config.StructField
+			}
+
+			results[key] = value
+		}
+	}
+
+	return results, hwInfo, nil
 }
 
 // extractPropertyFromHardwareInfo extracts a single property from pre-fetched hardware info.
-func (f *CIMExtractorFramework) extractPropertyFromHardwareInfo(hwInfo dto.HardwareInfo, config CIMPropertyConfig) interface{} {
+func (r *WsmanComputerSystemRepo) extractPropertyFromHardwareInfo(hwInfo dto.HardwareInfo, config CIMPropertyConfig) interface{} {
 	// Select the appropriate CIM object
-	response := f.selectCIMObject(hwInfo, config)
+	response := r.selectCIMObject(hwInfo, config)
 	if response == nil {
 		return nil
 	}
 
-	// Extract the property value
-	value := f.extractFromResponse(response, config)
+	// Extract the property value using optimized method
+	value := r.extractFromResponse(response, config)
 
 	// Apply transformation if provided
 	if config.Transformer != nil && value != nil {
 		if transformed := config.Transformer(value); transformed != nil {
 			return transformed
 		}
-		// If transformer returns nil, log warning and return original value
-		f.repo.log.Warn("Transformer returned nil", "property", config.CIMProperty, "original_value", value)
+
+		r.log.Warn("Transformer returned nil", "property", config.CIMProperty, "original_value", value)
 	}
 
 	return value
 }
 
 // selectCIMObject selects the appropriate CIM object from hardware info based on config.
-func (f *CIMExtractorFramework) selectCIMObject(hwInfo dto.HardwareInfo, config CIMPropertyConfig) interface{} {
+func (r *WsmanComputerSystemRepo) selectCIMObject(hwInfo dto.HardwareInfo, config CIMPropertyConfig) interface{} {
 	switch config.CIMObject {
 	case CIMObjectChassis:
-		if hwInfo.CIMChassis.Response != nil {
-			return hwInfo.CIMChassis.Response
-		}
+		return hwInfo.CIMChassis.Response
 	case CIMObjectComputerSystemPackage:
-		if hwInfo.CIMComputerSystemPackage.Response != nil {
-			return hwInfo.CIMComputerSystemPackage.Response
-		}
+		return hwInfo.CIMComputerSystemPackage.Response
 	case CIMObjectBIOSElement:
-		if hwInfo.CIMBIOSElement.Response != nil {
-			return hwInfo.CIMBIOSElement.Response
-		}
+		return hwInfo.CIMBIOSElement.Response
 	case CIMObjectPhysicalMemory:
-		if hwInfo.CIMPhysicalMemory.Response != nil {
-			return hwInfo.CIMPhysicalMemory.Response
-		}
+		return hwInfo.CIMPhysicalMemory.Response
 	case CIMObjectProcessor:
 		if len(hwInfo.CIMProcessor.Responses) > 0 {
 			return hwInfo.CIMProcessor.Responses
@@ -354,158 +317,64 @@ func (f *CIMExtractorFramework) selectCIMObject(hwInfo dto.HardwareInfo, config 
 			return hwInfo.CIMChip.Responses
 		}
 	default:
-		f.repo.log.Warn("Unknown CIM object type", "type", config.CIMObject, "property", config.CIMProperty)
+		r.log.Warn("Unknown CIM object type", "type", config.CIMObject, "property", config.CIMProperty)
 	}
 
 	return nil
 }
 
-// extractFromResponse handles both struct and map response formats.
-func (f *CIMExtractorFramework) extractFromResponse(response interface{}, config CIMPropertyConfig) interface{} {
-	// Try specific type handling for known CIM structs first
-	if value := f.extractFromSpecificTypes(response, config); value != nil {
+// extractFromResponse handles both struct and map response formats using a unified approach.
+func (r *WsmanComputerSystemRepo) extractFromResponse(response interface{}, config CIMPropertyConfig) interface{} {
+	// Handle array responses - respect UseFirstItem configuration
+	if responseArray, ok := response.([]interface{}); ok && len(responseArray) > 0 {
+		if config.UseFirstItem {
+			// Extract from first item only
+			return r.extractFromSingleResponse(responseArray[0], config)
+		}
+		// Process all items (existing behavior for non-UseFirstItem)
+		return r.processItemsArray(responseArray, config.CIMProperty)
+	}
+
+	// Handle single responses
+	return r.extractFromSingleResponse(response, config)
+}
+
+// extractFromSingleResponse handles extraction from a single response (not array).
+func (r *WsmanComputerSystemRepo) extractFromSingleResponse(response interface{}, config CIMPropertyConfig) interface{} {
+	// First try reflection-based extraction (works for structs)
+	if value := r.extractUsingReflection(response, config.CIMProperty); value != nil {
 		return value
 	}
-
-	// Fall back to map access for generic structures
-	return f.extractFromMap(response, config)
+	// Fall back to map-based extraction for generic structures
+	return r.extractFromMap(response, config)
 }
 
-// extractFromSpecificTypes handles known CIM struct types with specific type assertions.
-func (f *CIMExtractorFramework) extractFromSpecificTypes(response interface{}, config CIMPropertyConfig) interface{} {
-	switch config.CIMObject {
-	case CIMObjectChassis:
-		return f.extractFromChassis(response, config)
-	case CIMObjectBIOSElement:
-		return f.extractFromBIOS(response, config)
-	case CIMObjectPhysicalMemory:
-		return f.extractFromPhysicalMemory(response, config)
-	case CIMObjectProcessor:
-		return f.extractFromProcessor(response, config)
-	case CIMObjectComputerSystemPackage:
-		// Note: CIMObjectComputerSystemPackage doesn't have a specific struct type in the CIM messages
-		// It uses generic map structures, so it will fall back to map extraction
-		return nil
-	case CIMObjectChip:
-		return f.extractFromChip(response, config)
-	default:
+// extractUsingReflection extracts a property using reflection.
+func (r *WsmanComputerSystemRepo) extractUsingReflection(response interface{}, fieldName string) interface{} {
+	responseValue := reflect.ValueOf(response)
+	// Handle pointer types by dereferencing
+	if responseValue.Kind() == reflect.Ptr {
+		if responseValue.IsNil() {
+			return nil
+		}
+
+		responseValue = responseValue.Elem()
+	}
+	// Ensure we have a struct
+	if responseValue.Kind() != reflect.Struct {
 		return nil
 	}
-}
-
-// extractFromChassis extracts properties from chassis response.
-func (f *CIMExtractorFramework) extractFromChassis(response interface{}, config CIMPropertyConfig) interface{} {
-	if chassisResp, ok := response.(chassis.PackageResponse); ok {
-		switch config.CIMProperty {
-		case "Manufacturer":
-			return chassisResp.Manufacturer
-		case "Model":
-			return chassisResp.Model
-		case "SerialNumber":
-			return chassisResp.SerialNumber
-		case cimPropertyVersion:
-			return chassisResp.Version
-		}
-	}
-
-	return nil
-}
-
-// extractFromBIOS extracts properties from BIOS response.
-func (f *CIMExtractorFramework) extractFromBIOS(response interface{}, config CIMPropertyConfig) interface{} {
-	if biosResp, ok := response.(bios.BiosElement); ok {
-		if config.CIMProperty == cimPropertyVersion {
-			return biosResp.Version
-		}
-	}
-
-	return nil
-}
-
-// extractFromPhysicalMemory extracts properties from physical memory response.
-func (f *CIMExtractorFramework) extractFromPhysicalMemory(response interface{}, config CIMPropertyConfig) interface{} {
-	if memoryResp, ok := response.(physical.PhysicalMemory); ok {
-		switch config.CIMProperty {
-		case "Capacity":
-			return memoryResp.Capacity
-		case "OperationalStatus":
-			// Return first operational status for health mapping
-			if len(memoryResp.OperationalStatus) > 0 {
-				return int(memoryResp.OperationalStatus[0])
-			}
-		}
-	}
-
-	return nil
-}
-
-// extractFromProcessor extracts properties from processor response.
-func (f *CIMExtractorFramework) extractFromProcessor(response interface{}, config CIMPropertyConfig) interface{} {
-	// Handle both single processor response and multiple processor responses
-	switch resp := response.(type) {
-	case []interface{}:
-		// Multiple processors - extract from first one for now
-		if len(resp) > 0 {
-			if processorResp, ok := resp[0].(processor.PackageResponse); ok {
-				return f.extractSingleProcessorProperty(processorResp, config)
-			}
-		}
-	case processor.PackageResponse:
-		// Single processor response
-		return f.extractSingleProcessorProperty(resp, config)
-	}
-
-	return nil
-}
-
-// extractSingleProcessorProperty extracts a property from a single processor response.
-func (f *CIMExtractorFramework) extractSingleProcessorProperty(processorResp processor.PackageResponse, config CIMPropertyConfig) interface{} {
-	switch config.CIMProperty {
-	case "HealthState":
-		// Return HealthState value for direct health mapping
-		return int(processorResp.HealthState)
-	case "EnabledState":
-		// Return EnabledState value for state mapping
-		return int(processorResp.EnabledState)
-	}
-
-	return nil
-}
-
-// extractFromChip extracts properties from chip response.
-func (f *CIMExtractorFramework) extractFromChip(response interface{}, config CIMPropertyConfig) interface{} {
-	// Handle array response (multiple chip items)
-	if responseArray, ok := response.([]interface{}); ok {
-		for _, item := range responseArray {
-			if chipResp, ok := item.(chip.PackageResponse); ok {
-				if value := f.extractSingleChipProperty(chipResp, config); value != nil {
-					return value
-				}
-			}
-		}
-
+	// Get the field by name
+	fieldValue := responseValue.FieldByName(fieldName)
+	if !fieldValue.IsValid() || !fieldValue.CanInterface() {
 		return nil
 	}
 
-	// Handle single chip response
-	if chipResp, ok := response.(chip.PackageResponse); ok {
-		return f.extractSingleChipProperty(chipResp, config)
-	}
-
-	return nil
-}
-
-// extractSingleChipProperty extracts a property from a single chip response.
-func (f *CIMExtractorFramework) extractSingleChipProperty(chipResp chip.PackageResponse, config CIMPropertyConfig) interface{} {
-	if config.CIMProperty == "Version" {
-		return chipResp.Version
-	}
-
-	return nil
+	return fieldValue.Interface()
 }
 
 // extractFromSingleItem extracts property from a single map item.
-func (f *CIMExtractorFramework) extractFromSingleItem(itemMap map[string]interface{}, propertyName string) interface{} {
+func (r *WsmanComputerSystemRepo) extractFromSingleItem(itemMap map[string]interface{}, propertyName string) interface{} {
 	if len(itemMap) == 0 {
 		return nil
 	}
@@ -518,11 +387,10 @@ func (f *CIMExtractorFramework) extractFromSingleItem(itemMap map[string]interfa
 }
 
 // processItemsArray processes an array of items and returns the first matching property.
-func (f *CIMExtractorFramework) processItemsArray(items []interface{}, propertyName string) interface{} {
+func (r *WsmanComputerSystemRepo) processItemsArray(items []interface{}, propertyName string) interface{} {
 	if len(items) == 0 {
 		return nil
 	}
-
 	// Limit iterations to prevent hanging on large arrays
 	for i, item := range items {
 		if i >= maxArrayItems {
@@ -530,7 +398,7 @@ func (f *CIMExtractorFramework) processItemsArray(items []interface{}, propertyN
 		}
 
 		if itemMap, ok := item.(map[string]interface{}); ok {
-			if value := f.extractFromSingleItem(itemMap, propertyName); value != nil {
+			if value := r.extractFromSingleItem(itemMap, propertyName); value != nil {
 				return value
 			}
 		}
@@ -539,103 +407,56 @@ func (f *CIMExtractorFramework) processItemsArray(items []interface{}, propertyN
 	return nil
 }
 
-// extractFromPullResponse extracts property from PullResponse structure.
-func (f *CIMExtractorFramework) extractFromPullResponse(responseMap map[string]interface{}, propertyName string) interface{} {
-	if pullResponse, ok := responseMap["PullResponse"].(map[string]interface{}); ok {
-		if items, ok := pullResponse["Items"].([]interface{}); ok {
-			return f.processItemsArray(items, propertyName)
-		}
-	}
-
-	return nil
-}
-
-// extractFromDirectItems extracts property from direct Items array.
-func (f *CIMExtractorFramework) extractFromDirectItems(responseMap map[string]interface{}, propertyName string) interface{} {
-	if items, ok := responseMap["Items"].([]interface{}); ok {
-		return f.processItemsArray(items, propertyName)
-	}
-
-	return nil
-}
-
-// extractFromNestedBody extracts property from Body -> PullResponse -> Items structure.
-func (f *CIMExtractorFramework) extractFromNestedBody(responseMap map[string]interface{}, propertyName string) interface{} {
-	if body, ok := responseMap["Body"].(map[string]interface{}); ok {
-		if pullResponse, ok := body["PullResponse"].(map[string]interface{}); ok {
-			if items, ok := pullResponse["Items"].([]interface{}); ok {
-				return f.processItemsArray(items, propertyName)
-			}
-		}
-	}
-
-	return nil
-}
-
-// extractFromMap extracts property from map or nested map structures.
-func (f *CIMExtractorFramework) extractFromMap(response interface{}, config CIMPropertyConfig) interface{} {
+// extractFromMap extracts specific CIM property values from a WSMAN response.
+// It handles multiple response formats:
+//   - Direct array responses containing CIM items
+//   - Map responses with nested structures following common CIM response patterns
+//   - Single item responses without array wrapping
+//
+// The function attempts to locate the Items array by traversing common CIM response
+// paths (PullResponse, Body.PullResponse, etc.). If an Items array is found, it
+// processes each item to extract the specified CIM property. Otherwise, it falls
+// back to extracting the property from a single item response.
+//
+// Parameters:
+//   - response: The raw WSMAN response, typically a map[string]interface{} or []interface{}
+//   - config: Configuration specifying which CIM property to extract
+//
+// Returns:
+//   - The extracted property value(s), or nil if the response is invalid or the property is not found
+func (r *WsmanComputerSystemRepo) extractFromMap(response interface{}, config CIMPropertyConfig) interface{} {
 	if response == nil {
 		return nil
 	}
-
 	// Handle array response directly
 	if itemsArray, ok := response.([]interface{}); ok {
-		return f.processItemsArray(itemsArray, config.CIMProperty)
+		return r.processItemsArray(itemsArray, config.CIMProperty)
 	}
-
-	return f.extractFromMapResponse(response, config.CIMProperty)
-}
-
-// extractFromMapResponse handles map-based responses with reduced complexity.
-func (f *CIMExtractorFramework) extractFromMapResponse(response interface{}, propertyName string) interface{} {
+	// Handle map response
 	responseMap, ok := response.(map[string]interface{})
 	if !ok {
 		return nil
 	}
-
-	// Define extraction methods in order of preference
-	extractionMethods := []func(map[string]interface{}, string) interface{}{
-		f.extractFromPullResponse,
-		f.extractFromDirectItems,
-		f.extractFromNestedBody,
-		f.extractFromSingleItem,
-	}
-
-	// Try each extraction method
-	for _, method := range extractionMethods {
-		if value := method(responseMap, propertyName); value != nil {
-			return value
-		}
-	}
-
-	return nil
-}
-
-// extractMultipleProperties extracts multiple properties in a single call for efficiency.
-func (f *CIMExtractorFramework) extractMultipleProperties(ctx context.Context, systemID string, configs []CIMPropertyConfig) map[string]interface{} {
-	results := make(map[string]interface{})
-
-	// Get hardware info only once to avoid multiple WSMAN calls
-	hwInfo, err := f.repo.usecase.GetHardwareInfo(ctx, systemID)
-	if err != nil {
-		f.repo.log.Error("Failed to get hardware info", "systemID", systemID, "error", err)
-
-		return results
-	}
-
-	for _, config := range configs {
-		if value := f.extractPropertyFromHardwareInfo(hwInfo, config); value != nil {
-			// Use StructField as key if specified, otherwise use CIMProperty
-			key := config.CIMProperty
-			if config.StructField != "" {
-				key = config.StructField
+	// Try common CIM response paths
+	paths := [][]string{{"PullResponse"}, {}, {"Body", "PullResponse"}}
+	for _, path := range paths {
+		current := responseMap
+		for _, key := range path {
+			if next, ok := current[key].(map[string]interface{}); ok {
+				current = next
+			} else {
+				goto nextPath
 			}
-
-			results[key] = value
 		}
-	}
 
-	return results
+		if items, ok := current["Items"].([]interface{}); ok {
+			return r.processItemsArray(items, config.CIMProperty)
+		}
+
+	nextPath:
+	}
+	// Fallback to single item extraction
+	return r.extractFromSingleItem(responseMap, config.CIMProperty)
 }
 
 // isDeviceNotFoundError checks if the error indicates a device was not found.
@@ -682,39 +503,20 @@ func (r *WsmanComputerSystemRepo) mapRedfishPowerStateToAction(state redfishv1.P
 	}
 }
 
-// buildStatusFromCIMData creates a Redfish Status object from extracted CIM health and state data.
-func (r *WsmanComputerSystemRepo) buildStatusFromCIMData(cimData map[string]interface{}) *redfishv1.Status {
-	health, hasHealth := cimData["HealthState"].(string)
-	state, hasState := cimData["EnabledState"].(string)
-
-	if (!hasHealth || health == "") && (!hasState || state == "") {
-		return nil
-	}
-
-	status := &redfishv1.Status{}
-	if hasHealth && health != "" {
-		status.Health = health
-	}
-
-	if hasState && state != "" {
-		status.State = state
-	}
-
-	return status
-}
-
-// buildComputerSystemFromCIMData creates a ComputerSystem entity from CIM data only.
+// buildComputerSystemFromCIMData creates a ComputerSystem entity from CIM data and hardware info.
 func (r *WsmanComputerSystemRepo) buildComputerSystemFromCIMData(systemID string, powerState redfishv1.PowerState, cimData map[string]interface{}, hwInfo dto.HardwareInfo) *redfishv1.ComputerSystem {
-	// Extract CIM properties
-	manufacturer, _ := cimData["Manufacturer"].(string)
-	model, _ := cimData["Model"].(string)
-	serialNumber, _ := cimData["SerialNumber"].(string)
-	description, _ := cimData["Description"].(string)
-	biosVersion, _ := cimData["Version"].(string)
-	hostNameFromCIM, _ := cimData["DNSHostName"].(string)
+	// Extract CIM properties using helper function
+	manufacturer, _ := extractStringFromMap(cimData, "Manufacturer")
+	model, _ := extractStringFromMap(cimData, "Model")
+	serialNumber, _ := extractStringFromMap(cimData, "SerialNumber")
+	description, _ := extractStringFromMap(cimData, "Description")
+	biosVersion, _ := extractStringFromMap(cimData, "Version")
+	hostNameFromCIM, _ := extractStringFromMap(cimData, "DNSHostName")
 
-	// Build Status from extracted health and state data
-	status := r.buildStatusFromCIMData(cimData)
+	// Build Status from extracted health and state data using common function
+	health, hasHealth := extractStringFromMap(cimData, "HealthState")
+	state, hasState := extractStringFromMap(cimData, "EnabledState")
+	status := r.buildComponentStatus(health, hasHealth, state, hasState, false, string(CIMObjectComputerSystemPackage))
 
 	// Build ComputerSystem using only CIM data
 	system := &redfishv1.ComputerSystem{
@@ -766,16 +568,14 @@ func (r *WsmanComputerSystemRepo) buildMemorySummaryFromCIMData(cimData map[stri
 		return nil // No memory data available
 	}
 
-	var totalMemoryGiB float32
-
-	memoryHealth := healthStateOK // Default to OK
-
 	// Process capacity data to calculate total memory in GiB
+	var totalMemoryGiB float32
 	if hasCapacity {
 		totalMemoryGiB = r.calculateTotalMemoryGiB(capacityData)
 	}
 
 	// Process operational status to determine worst health state
+	var memoryHealth string
 	if hasStatus {
 		memoryHealth = r.calculateMemoryHealth(operationalStatusData)
 	}
@@ -791,11 +591,12 @@ func (r *WsmanComputerSystemRepo) buildMemorySummaryFromCIMData(cimData map[stri
 	// MemoryMirroring is not set as AMT doesn't provide this information
 	// It will remain empty unless we have actual mirroring data from hardware
 
-	// Add Status only if we have health information
-	if memoryHealth != "" {
+	// Build status only if we have actual CIM status data (OperationalStatus)
+	// Don't create status just because we have capacity data
+	if hasStatus && memoryHealth != "" {
 		memorySummary.Status = &redfishv1.Status{
 			Health: memoryHealth,
-			State:  enabledStateEnabled, // Memory is typically enabled if present
+			// State is left empty as PhysicalMemory CIM doesn't provide EnabledState
 		}
 	}
 
@@ -814,57 +615,46 @@ func (r *WsmanComputerSystemRepo) calculateTotalMemoryGiB(capacityData interface
 	switch data := capacityData.(type) {
 	case []interface{}:
 		for _, capacity := range data {
-			switch v := capacity.(type) {
-			case int:
-				totalBytes += int64(v)
-			case float64:
-				totalBytes += int64(v)
+			if bytes, ok := convertToInt(capacity); ok {
+				totalBytes += int64(bytes)
 			}
 		}
-	case int:
-		totalBytes = int64(data)
-	case float64:
-		totalBytes = int64(data)
+	default:
+		if bytes, ok := convertToInt(data); ok {
+			totalBytes = int64(bytes)
+		}
 	}
 
-	// Convert bytes to GiB (1 GiB = 1024^3 bytes)
-	const bytesPerGiB = 1024 * 1024 * 1024
-
+	// Convert bytes to GiB using constant
 	return float32(totalBytes) / bytesPerGiB
 }
 
 // calculateMemoryHealth determines the worst health state from all memory modules.
 func (r *WsmanComputerSystemRepo) calculateMemoryHealth(statusData interface{}) string {
-	worstHealth := healthStateOK
+	var worstHealth string
 
 	switch data := statusData.(type) {
 	case []interface{}:
 		for _, status := range data {
-			health := r.convertOperationalStatusToHealth(status)
-			if health != "" {
-				worstHealth = r.getWorseHealth(worstHealth, health)
+			if health := r.convertOperationalStatusToHealth(status); health != "" {
+				if worstHealth == "" {
+					worstHealth = health
+				} else {
+					worstHealth = r.getWorseHealth(worstHealth, health)
+				}
 			}
 		}
 	default:
-		health := r.convertOperationalStatusToHealth(statusData)
-		if health != "" {
-			worstHealth = health
-		}
+		worstHealth = r.convertOperationalStatusToHealth(statusData)
 	}
 
-	return worstHealth
+	return worstHealth // Returns empty string if no valid CIM data found
 }
 
 // convertOperationalStatusToHealth converts CIM operational status to Redfish health.
 func (r *WsmanComputerSystemRepo) convertOperationalStatusToHealth(status interface{}) string {
-	var operationalStatus int
-
-	switch v := status.(type) {
-	case int:
-		operationalStatus = v
-	case float64:
-		operationalStatus = int(v)
-	default:
+	operationalStatus, ok := convertToInt(status)
+	if !ok {
 		return ""
 	}
 
@@ -876,7 +666,7 @@ func (r *WsmanComputerSystemRepo) convertOperationalStatusToHealth(status interf
 	case CIMStatusError, CIMStatusNonRecoverableError:
 		return healthStateCritical
 	default:
-		return healthStateOK // Default to OK for unknown states
+		return "" // Unknown status - don't default to any value
 	}
 }
 
@@ -896,23 +686,45 @@ func (r *WsmanComputerSystemRepo) getWorseHealth(current, next string) string {
 
 // buildProcessorSummaryFromCIMData creates a ProcessorSummary from CIM processor data.
 func (r *WsmanComputerSystemRepo) buildProcessorSummaryFromCIMData(cimData map[string]interface{}, hwInfo dto.HardwareInfo) *redfishv1.ComputerSystemProcessorSummary {
-	// Extract processor data from actual CIM properties
+	// Extract processor health and state data from CIM properties
 	healthStateData, hasHealthState := cimData["HealthState"]
 	enabledStateData, hasEnabledState := cimData["EnabledState"]
 
-	// Check if we have any processor data available (status info, count info, or model info)
-	hasProcessorCount := len(hwInfo.CIMProcessor.Responses) > 0
+	// Compute processor count from actual hardware enumeration
+	processorCount := len(hwInfo.CIMProcessor.Responses)
+	hasProcessorCount := processorCount > 0
 
-	hasProcessorModel := len(hwInfo.CIMChip.Responses) > 0
+	// Check processor model availability from CIM_Chip.Version
+	_, hasProcessorModel := cimData["ChipVersion"]
+
+	// Check if we have any processor data available (status info, count info, or model info)
 	if !hasHealthState && !hasEnabledState && !hasProcessorCount && !hasProcessorModel {
 		return nil // No processor data available
 	}
 
-	// Initialize processor summary with CIM data
-	processorSummary := r.initializeProcessorSummary(cimData, hwInfo)
+	// Initialize processor summary with basic properties
+	processorSummary := &redfishv1.ComputerSystemProcessorSummary{
+		// CoreCount, LogicalProcessorCount, and ThreadingEnabled are set to nil
+		// because CIM_Processor doesn't provide these properties in Intel AMT WSMAN
+		CoreCount:             nil,
+		LogicalProcessorCount: nil,
+		ThreadingEnabled:      nil,
+	}
 
-	// Build status from CIM data
-	processorSummary.Status = r.buildProcessorStatus(healthStateData, hasHealthState, enabledStateData, hasEnabledState, hasProcessorCount)
+	// Extract processor model from pre-extracted CIM_Chip.Version data
+	if processorModel, ok := cimData["ChipVersion"].(string); ok && processorModel != "" {
+		processorSummary.Model = &processorModel
+	} else {
+		processorSummary.Model = nil
+	}
+
+	// Set processor count if available
+	if hasProcessorCount {
+		processorSummary.Count = &processorCount
+	}
+
+	// Build status from CIM data using the common function
+	processorSummary.Status = r.buildComponentStatus(healthStateData, hasHealthState, enabledStateData, hasEnabledState, hasProcessorCount, string(CIMObjectProcessor))
 
 	// Set Redfish deprecation annotation for Status property
 	deprecationMessage := "Please migrate to use Status in the individual Processor resources"
@@ -926,73 +738,57 @@ func (r *WsmanComputerSystemRepo) buildProcessorSummaryFromCIMData(cimData map[s
 	return processorSummary
 }
 
-// initializeProcessorSummary creates and initializes a processor summary with basic properties.
-func (r *WsmanComputerSystemRepo) initializeProcessorSummary(cimData map[string]interface{}, hwInfo dto.HardwareInfo) *redfishv1.ComputerSystemProcessorSummary {
-	processorSummary := &redfishv1.ComputerSystemProcessorSummary{}
+// buildComponentStatus creates a common status object with health and state information.
+// This eliminates code duplication between memory and processor status builders.
+func (r *WsmanComputerSystemRepo) buildComponentStatus(healthData interface{}, hasHealth bool, stateData interface{}, hasState, hasComponentData bool, componentName string) *redfishv1.Status {
+	componentHealth, componentState := r.extractHealthAndState(healthData, hasHealth, stateData, hasState)
 
-	// Extract processor model from pre-extracted CIM_Chip.Version data
-	if processorModel, ok := cimData["ChipVersion"].(string); ok && processorModel != "" {
-		processorSummary.Model = &processorModel
-	} else {
-		processorSummary.Model = nil
-	}
-
-	// Compute processor count from actual hardware enumeration
-	// Each CIM_Processor instance in the Responses array represents a physical processor
-	processorCount := len(hwInfo.CIMProcessor.Responses)
-	if processorCount > 0 {
-		processorSummary.Count = &processorCount
-	}
-
-	// CoreCount, LogicalProcessorCount, ThreadingEnabled, and Metrics are set to nil
-	// because CIM_Processor doesn't provide NumberOfCores, NumberOfLogicalProcessors,
-	// ThreadingEnabled, or processor metrics in the available Intel AMT WSMAN implementation.
-	// Only populate these if actual CIM data becomes available in the future.
-	processorSummary.CoreCount = nil
-	processorSummary.LogicalProcessorCount = nil
-	processorSummary.ThreadingEnabled = nil
-	processorSummary.Metrics = nil
-
-	return processorSummary
+	return r.buildStatusWithDefaults(componentHealth, componentState, hasHealth, hasState, hasComponentData, componentName)
 }
 
-// buildProcessorStatus builds processor status from CIM health and enabled state data.
-func (r *WsmanComputerSystemRepo) buildProcessorStatus(healthStateData interface{}, hasHealthState bool, enabledStateData interface{}, hasEnabledState, hasProcessorCount bool) *redfishv1.Status {
-	var processorHealth string
-
-	var processorState string
-
-	// Map Health from CIM_Processor.HealthState
-	if hasHealthState {
-		if health, ok := healthStateData.(string); ok && health != "" {
-			processorHealth = health
+// extractHealthAndState extracts health and state strings from interface data.
+func (r *WsmanComputerSystemRepo) extractHealthAndState(healthData interface{}, hasHealth bool, stateData interface{}, hasState bool) (componentHealth, componentState string) {
+	if hasHealth {
+		if health, ok := healthData.(string); ok && health != "" {
+			componentHealth = health
 		}
 	}
 
-	// Map State from CIM_Processor.EnabledState
-	if hasEnabledState {
-		if state, ok := enabledStateData.(string); ok && state != "" {
-			processorState = state
+	if hasState {
+		if state, ok := stateData.(string); ok && state != "" {
+			componentState = state
 		}
 	}
 
+	return componentHealth, componentState
+}
+
+// buildStatusWithDefaults creates status object with optional defaults for processors.
+func (r *WsmanComputerSystemRepo) buildStatusWithDefaults(componentHealth, componentState string, hasHealth, hasState, hasComponentData bool, componentName string) *redfishv1.Status {
 	// If we have valid health or state data, return complete status
-	if processorHealth != "" || processorState != "" {
-		return &redfishv1.Status{
-			Health:       processorHealth,
-			HealthRollup: processorHealth, // Set HealthRollup to same as Health
-			State:        processorState,
+	if componentHealth != "" || componentState != "" {
+		status := &redfishv1.Status{Health: componentHealth, State: componentState}
+		// Set HealthRollup for processors
+		if componentName == string(CIMObjectProcessor) && componentHealth != "" {
+			status.HealthRollup = componentHealth
 		}
+
+		return status
 	}
 
-	// If we have processor count but no CIM status data, provide default status
-	// This ensures Status is shown even when CIM health/state data is unavailable
-	if hasProcessorCount {
-		return &redfishv1.Status{
-			Health:       healthStateOK,
-			HealthRollup: healthStateOK,
-			State:        enabledStateEnabled,
+	// For processors, provide default status if we have processor count but no CIM status data
+	if hasComponentData && componentName == string(CIMObjectProcessor) {
+		status := &redfishv1.Status{}
+		if !hasHealth {
+			status.Health = healthStateOK
+			status.HealthRollup = healthStateOK
 		}
+
+		if !hasState {
+			status.State = enabledStateEnabled
+		}
+
+		return status
 	}
 
 	return nil
@@ -1047,14 +843,11 @@ func (r *WsmanComputerSystemRepo) GetByID(ctx context.Context, systemID string) 
 	// Map the integer power state to Redfish PowerState
 	redfishPowerState := r.mapCIMPowerStateToRedfish(powerState.PowerState)
 
-	// Get hardware info to compute processor count correctly
-	hwInfo, err := r.usecase.GetHardwareInfo(ctx, systemID)
+	// Extract CIM data using the global configuration with static transformers
+	cimData, hwInfo, err := r.getCIMProperties(ctx, systemID, allCIMConfigs)
 	if err != nil {
 		return nil, err
 	}
-
-	// Extract CIM data using the global configuration with static transformers
-	cimData := r.getCIMProperties(ctx, systemID, allCIMConfigs)
 
 	// Build and return the complete ComputerSystem using CIM data and hardware info
 	system := r.buildComputerSystemFromCIMData(systemID, redfishPowerState, cimData, hwInfo)

@@ -383,6 +383,7 @@ func createTestSystemEntityData(systemID, name, manufacturer, model, serialNumbe
 		ID:           systemID,
 		Name:         name,
 		BiosVersion:  "1.2.3.4",
+		SystemType:   redfishv1.SystemTypePhysical, // Default to Physical for test systems
 		Manufacturer: manufacturer,
 		Model:        model,
 		SerialNumber: serialNumber,
@@ -398,6 +399,7 @@ func createTestSystemEntityDataWithAllProperties(systemID, name, manufacturer, m
 		Description: "Computer System managed by Intel AMT",
 		BiosVersion: "2.4.6.8",
 		HostName:    "amt-" + systemID + ".example.com",
+		SystemType:  redfishv1.SystemTypePhysical, // Default to Physical for AMT systems
 		Status: &redfishv1.Status{
 			State:  "Enabled",
 			Health: "OK",
@@ -414,6 +416,7 @@ func createTestSystemEntityDataMinimal(systemID, name string) *redfishv1.Compute
 	return &redfishv1.ComputerSystem{
 		ID:           systemID,
 		Name:         name,
+		SystemType:   redfishv1.SystemTypePhysical, // Default to Physical
 		Manufacturer: "Intel Corporation",
 		Model:        "Test Model",
 		SerialNumber: "MIN001",
@@ -472,6 +475,12 @@ func validateSystemResponseDataTest(t *testing.T, w *httptest.ResponseRecorder, 
 	// Validate BiosVersion property
 	assert.NotNil(t, response.BiosVersion)
 	assert.Equal(t, "1.2.3.4", *response.BiosVersion)
+	// Validate SystemType property (defaults to Physical for test systems)
+	if response.SystemType != nil {
+		// SystemType is directly accessible as a string type
+		assert.Contains(t, []string{"Physical", "Virtual"}, string(*response.SystemType))
+	}
+
 	assert.NotNil(t, response.OdataId)
 	assert.Equal(t, fmt.Sprintf("%s/%s", systemsEndpointTest, systemID), *response.OdataId)
 	assert.NotNil(t, response.OdataType)
@@ -732,6 +741,10 @@ func TestSystemsHandler_GetSystemByID(t *testing.T) {
 		{"Success - System with Memory and Processor Summaries", setupSystemWithMemoryAndProcessorMockTest, "GET", http.StatusOK, validateSystemWithMemoryAndProcessorResponseTest, testUUID7},
 		{"Success - System with All Properties and Summaries", setupSystemWithFullPropertiesMockTest, "GET", http.StatusOK, validateSystemWithFullPropertiesResponseTest, testUUID8},
 
+		{"Success - SystemType Always Physical (Dell System)", setupPhysicalSystemMockTest, "GET", http.StatusOK, validateSystemTypeAlwaysPhysicalTest, testUUID9},
+		{"Success - SystemType Always Physical (VMware System)", setupVirtualSystemMockTest, "GET", http.StatusOK, validateSystemTypeAlwaysPhysicalTest, testUUID10},
+		{"Success - System with MemoryMirroring", setupSystemWithMemoryMirroringMockTest, "GET", http.StatusOK, validateSystemWithMemoryMirroringResponseTest, testUUID9},
+
 		{"Error - Empty System ID", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateBadRequestResponseTest, ""},
 		{"Error - Invalid System ID Format - Not UUID", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateInvalidUUIDFormatResponseTest, "invalid-system-id"},
 		{"Error - Invalid System ID Format - Missing Hyphens", setupNoSystemMockTest, "GET", http.StatusBadRequest, validateInvalidUUIDFormatResponseTest, "550e8400e29b41d4a716446655440001"},
@@ -946,6 +959,34 @@ func setupSystemWithFullPropertiesMockTest(repo *TestSystemsComputerSystemReposi
 	repo.AddSystem(systemID, system)
 }
 
+// createTestSystemEntityDataWithSystemType creates a test system entity with specific SystemType
+func createTestSystemEntityDataWithSystemType(systemID, name, manufacturer, model, serialNumber string, systemType redfishv1.SystemType) *redfishv1.ComputerSystem {
+	system := createTestSystemEntityData(systemID, name, manufacturer, model, serialNumber)
+	system.SystemType = systemType
+
+	return system
+}
+
+// setupPhysicalSystemMockTest sets up a physical system for testing SystemType property
+func setupPhysicalSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithSystemType(systemID, "Physical Test System", "Dell Inc.", "OptiPlex 7090", "PHY123456", redfishv1.SystemTypePhysical)
+	repo.AddSystem(systemID, system)
+}
+
+// setupVirtualSystemMockTest sets up a virtual system for testing SystemType property
+func setupVirtualSystemMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithSystemType(systemID, "Virtual Test System", "VMware, Inc.", "VMware Virtual Platform", "VIR123456", redfishv1.SystemTypeVirtual)
+	repo.AddSystem(systemID, system)
+}
+
+// setupSystemWithMemoryMirroringMockTest sets up a system with MemoryMirroring for testing
+func setupSystemWithMemoryMirroringMockTest(repo *TestSystemsComputerSystemRepository, systemID string) {
+	system := createTestSystemEntityDataWithMemory(systemID, "System with Memory Mirroring", "Intel Corporation", "NUC Model", "MIR123456")
+	// Add MemoryMirroring to existing MemorySummary
+	system.MemorySummary.MemoryMirroring = redfishv1.MemoryMirroringSystem
+	repo.AddSystem(systemID, system)
+}
+
 // validateSystemWithProcessorResponseTest validates system response includes ProcessorSummary
 func validateSystemWithProcessorResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
 	t.Helper()
@@ -1048,6 +1089,53 @@ func validateSystemWithFullPropertiesResponseTest(t *testing.T, w *httptest.Resp
 	assert.Equal(t, "OK", response.ProcessorSummary.Status.Health, "Processor health should be OK")
 	assert.Equal(t, "Enabled", response.ProcessorSummary.Status.State, "Processor state should be Enabled")
 	// Note: StatusRedfishDeprecated is not available in HTTP responses due to generated types limitation
+}
+
+// validateSystemTypeAlwaysPhysicalTest validates that SystemType is always Physical in API response
+// This test verifies the current implementation behavior where SystemType is hardcoded to "Physical"
+// regardless of what the entity contains
+func validateSystemTypeAlwaysPhysicalTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+	validateJSONContentTypeTest(t, w)
+
+	var response generated.ComputerSystemComputerSystem
+	unmarshalJSONResponseTest(t, w, &response)
+
+	// Validate that SystemType is always Physical in API response
+	// This is the current implementation behavior - SystemType is hardcoded to "Physical"
+	assert.NotNil(t, response.SystemType)
+	assert.Equal(t, "Physical", string(*response.SystemType), "SystemType should always be Physical in current implementation")
+
+	// Validate other basic properties to ensure the system data is returned correctly
+	assert.Equal(t, systemID, response.Id)
+	assert.NotNil(t, response.Name)
+	assert.NotNil(t, response.Manufacturer)
+	assert.NotNil(t, response.Model)
+	assert.NotNil(t, response.SerialNumber)
+}
+
+// validateSystemWithMemoryMirroringResponseTest validates system response includes MemoryMirroring
+func validateSystemWithMemoryMirroringResponseTest(t *testing.T, w *httptest.ResponseRecorder, systemID string) {
+	t.Helper()
+
+	validateSystemResponseDataTest(t, w, systemID, "System with Memory Mirroring", "Intel Corporation", "NUC Model", "MIR123456")
+
+	// Additional validation for MemoryMirroring
+	var response redfishv1.ComputerSystem
+
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	// Verify MemorySummary is present and correct
+	assert.NotNil(t, response.MemorySummary, "MemorySummary should be present")
+	assert.NotNil(t, response.MemorySummary.TotalSystemMemoryGiB, "TotalSystemMemoryGiB should be set")
+	assert.Equal(t, float32(16.0), *response.MemorySummary.TotalSystemMemoryGiB, "Memory should be 16.0 GiB")
+	assert.NotNil(t, response.MemorySummary.Status, "MemorySummary Status should be set")
+	assert.Equal(t, "OK", response.MemorySummary.Status.Health, "Memory health should be OK")
+	assert.Equal(t, "Enabled", response.MemorySummary.Status.State, "Memory state should be Enabled")
+
+	// Validate MemoryMirroring is set correctly
+	assert.Equal(t, redfishv1.MemoryMirroringSystem, response.MemorySummary.MemoryMirroring, "MemoryMirroring should be System")
 }
 
 func TestValidateSystemID(t *testing.T) {

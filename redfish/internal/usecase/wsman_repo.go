@@ -407,7 +407,23 @@ func (r *WsmanComputerSystemRepo) processItemsArray(items []interface{}, propert
 	return nil
 }
 
-// extractFromMap extracts property from map or nested map structures.
+// extractFromMap extracts specific CIM property values from a WSMAN response.
+// It handles multiple response formats:
+//   - Direct array responses containing CIM items
+//   - Map responses with nested structures following common CIM response patterns
+//   - Single item responses without array wrapping
+//
+// The function attempts to locate the Items array by traversing common CIM response
+// paths (PullResponse, Body.PullResponse, etc.). If an Items array is found, it
+// processes each item to extract the specified CIM property. Otherwise, it falls
+// back to extracting the property from a single item response.
+//
+// Parameters:
+//   - response: The raw WSMAN response, typically a map[string]interface{} or []interface{}
+//   - config: Configuration specifying which CIM property to extract
+//
+// Returns:
+//   - The extracted property value(s), or nil if the response is invalid or the property is not found
 func (r *WsmanComputerSystemRepo) extractFromMap(response interface{}, config CIMPropertyConfig) interface{} {
 	if response == nil {
 		return nil

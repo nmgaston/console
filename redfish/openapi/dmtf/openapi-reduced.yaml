@@ -108,39 +108,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
-    patch:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: ComputerSystem.v1_26_0.yaml#/components/schemas/ComputerSystem_v1_26_0_ComputerSystem
-        required: true
-      responses:
-        '204':
-          description: Success - No Content. The resource was updated successfully.
-          headers:
-            Location:
-              description: Link to the updated resource
-              schema:
-                type: string
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RedfishError'
-          description: Bad Request - Invalid input
-        '404':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RedfishError'
-          description: Not Found - System does not exist
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RedfishError'
-          description: Error condition
     parameters:
     - description: The value of the Id property of the ComputerSystem resource
       in: path

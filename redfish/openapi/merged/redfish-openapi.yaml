@@ -593,16 +593,16 @@ components:
           $ref: '#/components/schemas/odata-v4_id'
         '@odata.type':
           $ref: '#/components/schemas/odata-v4_type'
-        Boot:
-          $ref: '#/components/schemas/ComputerSystem_Boot'
-          description: The boot settings for this system.
-          x-longDescription: This property shall contain the boot settings for this
-            system.
         Actions:
           $ref: '#/components/schemas/ComputerSystem_Actions'
           description: The available actions for this resource.
           x-longDescription: This property shall contain the available actions for
             this resource.
+        Boot:
+          $ref: '#/components/schemas/ComputerSystem_Boot'
+          description: The boot settings for this system.
+          x-longDescription: This property shall contain the boot settings for this
+            system.
         BiosVersion:
           description: The version of the system BIOS or primary system firmware.
           nullable: true

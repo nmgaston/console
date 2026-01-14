@@ -170,7 +170,7 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		middlewares = append(middlewares, createAuthMiddleware())
 	}
 
-	// Register handlers with middleware
+	// Register handlers with OpenAPI-spec-compliant middleware
 	redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
 		BaseURL:      "",
 		ErrorHandler: createErrorHandler(),

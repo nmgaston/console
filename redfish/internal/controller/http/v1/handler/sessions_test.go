@@ -233,7 +233,7 @@ func TestSessionServiceEndpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "SessionService", resp["Id"])
-	assert.Equal(t, "#SessionService.v1_1_9.SessionService", resp["@odata.type"])
+	assert.Equal(t, "#SessionService.v1_2_0.SessionService", resp["@odata.type"])
 	serviceEnabled, ok := resp["ServiceEnabled"].(bool)
 	require.True(t, ok, "ServiceEnabled should be a bool")
 	assert.True(t, serviceEnabled)

@@ -27,6 +27,12 @@ type ServerInterface interface {
 	// (GET /redfish/v1/SessionService)
 	GetRedfishV1SessionService(c *gin.Context)
 
+	// (PATCH /redfish/v1/SessionService)
+	PatchRedfishV1SessionService(c *gin.Context)
+
+	// (PUT /redfish/v1/SessionService)
+	PutRedfishV1SessionService(c *gin.Context)
+
 	// (GET /redfish/v1/SessionService/Sessions)
 	GetRedfishV1SessionServiceSessions(c *gin.Context)
 
@@ -100,6 +106,36 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SessionService(c *gin.Context) {
 	}
 
 	siw.Handler.GetRedfishV1SessionService(c)
+}
+
+// PatchRedfishV1SessionService operation middleware
+func (siw *ServerInterfaceWrapper) PatchRedfishV1SessionService(c *gin.Context) {
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PatchRedfishV1SessionService(c)
+}
+
+// PutRedfishV1SessionService operation middleware
+func (siw *ServerInterfaceWrapper) PutRedfishV1SessionService(c *gin.Context) {
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PutRedfishV1SessionService(c)
 }
 
 // GetRedfishV1SessionServiceSessions operation middleware
@@ -294,6 +330,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/redfish/v1/", wrapper.GetRedfishV1)
 	router.GET(options.BaseURL+"/redfish/v1/$metadata", wrapper.GetRedfishV1Metadata)
 	router.GET(options.BaseURL+"/redfish/v1/SessionService", wrapper.GetRedfishV1SessionService)
+	router.PATCH(options.BaseURL+"/redfish/v1/SessionService", wrapper.PatchRedfishV1SessionService)
+	router.PUT(options.BaseURL+"/redfish/v1/SessionService", wrapper.PutRedfishV1SessionService)
 	router.GET(options.BaseURL+"/redfish/v1/SessionService/Sessions", wrapper.GetRedfishV1SessionServiceSessions)
 	router.POST(options.BaseURL+"/redfish/v1/SessionService/Sessions", wrapper.PostRedfishV1SessionServiceSessions)
 	router.DELETE(options.BaseURL+"/redfish/v1/SessionService/Sessions/:SessionId", wrapper.DeleteRedfishV1SessionServiceSessionsSessionId)
@@ -398,6 +436,80 @@ func (response GetRedfishV1SessionServicedefaultJSONResponse) VisitGetRedfishV1S
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type PatchRedfishV1SessionServiceRequestObject struct {
+	Body *PatchRedfishV1SessionServiceJSONRequestBody
+}
+
+type PatchRedfishV1SessionServiceResponseObject interface {
+	VisitPatchRedfishV1SessionServiceResponse(w http.ResponseWriter) error
+}
+
+type PatchRedfishV1SessionService200JSONResponse SessionServiceSessionService
+
+func (response PatchRedfishV1SessionService200JSONResponse) VisitPatchRedfishV1SessionServiceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PatchRedfishV1SessionService204Response struct {
+}
+
+func (response PatchRedfishV1SessionService204Response) VisitPatchRedfishV1SessionServiceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PatchRedfishV1SessionServicedefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response PatchRedfishV1SessionServicedefaultJSONResponse) VisitPatchRedfishV1SessionServiceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type PutRedfishV1SessionServiceRequestObject struct {
+	Body *PutRedfishV1SessionServiceJSONRequestBody
+}
+
+type PutRedfishV1SessionServiceResponseObject interface {
+	VisitPutRedfishV1SessionServiceResponse(w http.ResponseWriter) error
+}
+
+type PutRedfishV1SessionService200JSONResponse SessionServiceSessionService
+
+func (response PutRedfishV1SessionService200JSONResponse) VisitPutRedfishV1SessionServiceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutRedfishV1SessionService204Response struct {
+}
+
+func (response PutRedfishV1SessionService204Response) VisitPutRedfishV1SessionServiceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PutRedfishV1SessionServicedefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response PutRedfishV1SessionServicedefaultJSONResponse) VisitPutRedfishV1SessionServiceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 type GetRedfishV1SessionServiceSessionsRequestObject struct {
 }
 
@@ -434,23 +546,21 @@ type PostRedfishV1SessionServiceSessionsResponseObject interface {
 	VisitPostRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error
 }
 
-type PostRedfishV1SessionServiceSessions201ResponseHeaders struct {
-	Location   string
-	XAuthToken string
-}
-
-type PostRedfishV1SessionServiceSessions201JSONResponse struct {
-	Body    SessionSession
-	Headers PostRedfishV1SessionServiceSessions201ResponseHeaders
-}
+type PostRedfishV1SessionServiceSessions201JSONResponse SessionSession
 
 func (response PostRedfishV1SessionServiceSessions201JSONResponse) VisitPostRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
-	w.Header().Set("X-Auth-Token", fmt.Sprint(response.Headers.XAuthToken))
 	w.WriteHeader(201)
 
-	return json.NewEncoder(w).Encode(response.Body)
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostRedfishV1SessionServiceSessions204Response struct {
+}
+
+func (response PostRedfishV1SessionServiceSessions204Response) VisitPostRedfishV1SessionServiceSessionsResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
 }
 
 type PostRedfishV1SessionServiceSessionsdefaultJSONResponse struct {
@@ -471,6 +581,15 @@ type DeleteRedfishV1SessionServiceSessionsSessionIdRequestObject struct {
 
 type DeleteRedfishV1SessionServiceSessionsSessionIdResponseObject interface {
 	VisitDeleteRedfishV1SessionServiceSessionsSessionIdResponse(w http.ResponseWriter) error
+}
+
+type DeleteRedfishV1SessionServiceSessionsSessionId200JSONResponse SessionSession
+
+func (response DeleteRedfishV1SessionServiceSessionsSessionId200JSONResponse) VisitDeleteRedfishV1SessionServiceSessionsSessionIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type DeleteRedfishV1SessionServiceSessionsSessionId204Response struct {
@@ -664,6 +783,12 @@ type StrictServerInterface interface {
 	// (GET /redfish/v1/SessionService)
 	GetRedfishV1SessionService(ctx context.Context, request GetRedfishV1SessionServiceRequestObject) (GetRedfishV1SessionServiceResponseObject, error)
 
+	// (PATCH /redfish/v1/SessionService)
+	PatchRedfishV1SessionService(ctx context.Context, request PatchRedfishV1SessionServiceRequestObject) (PatchRedfishV1SessionServiceResponseObject, error)
+
+	// (PUT /redfish/v1/SessionService)
+	PutRedfishV1SessionService(ctx context.Context, request PutRedfishV1SessionServiceRequestObject) (PutRedfishV1SessionServiceResponseObject, error)
+
 	// (GET /redfish/v1/SessionService/Sessions)
 	GetRedfishV1SessionServiceSessions(ctx context.Context, request GetRedfishV1SessionServiceSessionsRequestObject) (GetRedfishV1SessionServiceSessionsResponseObject, error)
 
@@ -769,6 +894,72 @@ func (sh *strictHandler) GetRedfishV1SessionService(ctx *gin.Context) {
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(GetRedfishV1SessionServiceResponseObject); ok {
 		if err := validResponse.VisitGetRedfishV1SessionServiceResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchRedfishV1SessionService operation middleware
+func (sh *strictHandler) PatchRedfishV1SessionService(ctx *gin.Context) {
+	var request PatchRedfishV1SessionServiceRequestObject
+
+	var body PatchRedfishV1SessionServiceJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchRedfishV1SessionService(ctx, request.(PatchRedfishV1SessionServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchRedfishV1SessionService")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(PatchRedfishV1SessionServiceResponseObject); ok {
+		if err := validResponse.VisitPatchRedfishV1SessionServiceResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutRedfishV1SessionService operation middleware
+func (sh *strictHandler) PutRedfishV1SessionService(ctx *gin.Context) {
+	var request PutRedfishV1SessionServiceRequestObject
+
+	var body PutRedfishV1SessionServiceJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PutRedfishV1SessionService(ctx, request.(PutRedfishV1SessionServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutRedfishV1SessionService")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(PutRedfishV1SessionServiceResponseObject); ok {
+		if err := validResponse.VisitPutRedfishV1SessionServiceResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

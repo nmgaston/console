@@ -62,7 +62,7 @@ func (s *Session) ToRedfishResponse() map[string]interface{} {
 	return map[string]interface{}{
 		"@odata.context":        "/redfish/v1/$metadata#Session.Session",
 		"@odata.id":             "/redfish/v1/SessionService/Sessions/" + s.ID,
-		"@odata.type":           "#Session.v1_7_0.Session",
+		"@odata.type":           "#Session.v1_8_0.Session",
 		"Id":                    s.ID,
 		"Name":                  "User Session",
 		"Description":           "User Session for " + s.Username,

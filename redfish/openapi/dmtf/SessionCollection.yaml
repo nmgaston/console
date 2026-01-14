@@ -14,9 +14,9 @@ components:
           $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_type
         Description:
           oneOf:
-            - $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Description
-            - enum:
-                - null
+          - $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Description
+          - enum:
+            - null
           readOnly: true
         Members:
           description: The members of this collection.
@@ -36,15 +36,15 @@ components:
         Oem:
           $ref: http://redfish.dmtf.org/schemas/v1/Resource.yaml#/components/schemas/Resource_Oem
           description: The OEM extension property.
-          x-longDescription: This property shall contain the OEM extensions. All
+          x-longDescription: This property shall contain the OEM extensions.  All
             values for properties contained in this object shall conform to the Redfish
             Specification-described requirements.
       required:
-        - Members
-        - Members@odata.count
-        - '@odata.id'
-        - '@odata.type'
-        - Name
+      - Members
+      - Members@odata.count
+      - '@odata.id'
+      - '@odata.type'
+      - Name
       type: object
       x-longDescription: This resource shall represent a resource collection of `Session`
         instances for a Redfish implementation.

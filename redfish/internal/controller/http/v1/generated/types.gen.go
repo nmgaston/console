@@ -662,6 +662,9 @@ type SessionCollectionSessionCollection_Description struct {
 	union json.RawMessage
 }
 
+// SessionServiceActions The available actions for this resource.
+type SessionServiceActions = map[string]interface{}
+
 // SessionServiceSessionService The `SessionService` schema describes the session service and its properties, with links to the actual list of sessions.
 type SessionServiceSessionService struct {
 	// OdataContext The OData description of a payload.
@@ -674,7 +677,16 @@ type SessionServiceSessionService struct {
 	OdataId *OdataV4Id `json:"@odata.id,omitempty"`
 
 	// OdataType The type of a resource.
-	OdataType   *OdataV4Type                              `json:"@odata.type,omitempty"`
+	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
+
+	// AbsoluteSessionTimeout The maximum number of seconds that a session is open before the service closes the session regardless of activity.
+	AbsoluteSessionTimeout *int64 `json:"AbsoluteSessionTimeout,omitempty"`
+
+	// AbsoluteSessionTimeoutEnabled An indication of whether an absolute session timeout is applied to sessions.
+	AbsoluteSessionTimeoutEnabled *bool `json:"AbsoluteSessionTimeoutEnabled,omitempty"`
+
+	// Actions The available actions for this resource.
+	Actions     *SessionServiceActions                    `json:"Actions,omitempty"`
 	Description *SessionServiceSessionService_Description `json:"Description,omitempty"`
 
 	// Id The unique identifier for this resource within the collection of similar resources.
@@ -683,10 +695,7 @@ type SessionServiceSessionService struct {
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`
 
-	// Oem The OEM extension.
-	Oem *ResourceOem `json:"Oem,omitempty"`
-
-	// ServiceEnabled An indication of whether this service is enabled. If `true`, this service is enabled. If `false`, it is disabled, and new sessions cannot be created, old sessions cannot be deleted, and established sessions can continue operating.
+	// ServiceEnabled An indication of whether this service is enabled.  If `true`, this service is enabled.  If `false`, it is disabled, and new sessions cannot be created, old sessions cannot be deleted, and established sessions can continue operating.
 	ServiceEnabled *bool `json:"ServiceEnabled"`
 
 	// SessionTimeout The number of seconds of inactivity that a session can have before the session service closes the session due to inactivity.
@@ -707,7 +716,16 @@ type SessionServiceSessionService_Description struct {
 	union json.RawMessage
 }
 
-// SessionSession The Session resource describes a single connection (session) between a client and a Redfish service instance.
+// SessionActions The available actions for this resource.
+type SessionActions = map[string]interface{}
+
+// SessionLinks The links to other resources that are related to this resource.
+type SessionLinks struct {
+	// OutboundConnection A reference to a resource.
+	OutboundConnection *OdataV4IdRef `json:"OutboundConnection,omitempty"`
+}
+
+// SessionSession The `Session` resource describes a single connection (session) between a client and a Redfish service instance.
 type SessionSession struct {
 	// OdataContext The OData description of a payload.
 	OdataContext *OdataV4Context `json:"@odata.context,omitempty"`
@@ -721,30 +739,61 @@ type SessionSession struct {
 	// OdataType The type of a resource.
 	OdataType *OdataV4Type `json:"@odata.type,omitempty"`
 
+	// Actions The available actions for this resource.
+	Actions *SessionActions `json:"Actions,omitempty"`
+
 	// ClientOriginIPAddress The IP address of the client that created the session.
 	ClientOriginIPAddress *string `json:"ClientOriginIPAddress"`
 
-	// CreatedTime The date and time when the session was created.
-	CreatedTime *time.Time `json:"CreatedTime"`
+	// Context A client-supplied string that is stored with the session.
+	Context *string `json:"Context"`
 
-	// Description The description of this resource.  Used for commonality in the schema definitions.
-	Description *ResourceDescription `json:"Description,omitempty"`
+	// CreatedTime The date and time when the session was created.
+	CreatedTime *time.Time                  `json:"CreatedTime"`
+	Description *SessionSession_Description `json:"Description,omitempty"`
+
+	// ExpirationTime The date and time when the session expires regardless of session activity.
+	ExpirationTime *time.Time `json:"ExpirationTime,omitempty"`
 
 	// Id The unique identifier for this resource within the collection of similar resources.
 	Id ResourceId `json:"Id"`
 
+	// Links The links to other resources that are related to this resource.
+	Links *SessionLinks `json:"Links,omitempty"`
+
 	// Name The name of the resource or array member.
 	Name ResourceName `json:"Name"`
 
-	// Oem The OEM extension.
-	Oem *ResourceOem `json:"Oem,omitempty"`
+	// Password The password for this session.  The value is `null` in responses.
+	Password *string `json:"Password"`
 
-	// Password The password for this session. The value is `null` in responses.
-	Password    *string              `json:"Password"`
-	SessionType *SessionSessionTypes `json:"SessionType,omitempty"`
+	// Roles The Redfish roles that contain the privileges of this session.
+	Roles *[]string `json:"Roles,omitempty"`
+
+	// SessionType The active session type.
+	SessionType *SessionSession_SessionType `json:"SessionType,omitempty"`
+
+	// Token The multi-factor authentication token for this session.  The value is `null` in responses.
+	Token *string `json:"Token"`
 
 	// UserName The username for the account for this session.
 	UserName *string `json:"UserName"`
+}
+
+// SessionSessionDescription1 defines model for .
+type SessionSessionDescription1 = interface{}
+
+// SessionSession_Description defines model for SessionSession.Description.
+type SessionSession_Description struct {
+	union json.RawMessage
+}
+
+// SessionSessionSessionType1 defines model for .
+type SessionSessionSessionType1 = interface{}
+
+// SessionSession_SessionType The active session type.
+type SessionSession_SessionType struct {
+	union json.RawMessage
 }
 
 // SessionSessionTypes defines model for Session_SessionTypes.
@@ -774,17 +823,14 @@ type OdataV4NextLink = string
 // OdataV4Type The type of a resource.
 type OdataV4Type = string
 
-// PostRedfishV1SessionServiceSessionsJSONBody defines parameters for PostRedfishV1SessionServiceSessions.
-type PostRedfishV1SessionServiceSessionsJSONBody struct {
-	// Password Password for authentication
-	Password string `json:"Password"`
+// PatchRedfishV1SessionServiceJSONRequestBody defines body for PatchRedfishV1SessionService for application/json ContentType.
+type PatchRedfishV1SessionServiceJSONRequestBody = SessionServiceSessionService
 
-	// UserName Username for authentication
-	UserName string `json:"UserName"`
-}
+// PutRedfishV1SessionServiceJSONRequestBody defines body for PutRedfishV1SessionService for application/json ContentType.
+type PutRedfishV1SessionServiceJSONRequestBody = SessionServiceSessionService
 
 // PostRedfishV1SessionServiceSessionsJSONRequestBody defines body for PostRedfishV1SessionServiceSessions for application/json ContentType.
-type PostRedfishV1SessionServiceSessionsJSONRequestBody PostRedfishV1SessionServiceSessionsJSONBody
+type PostRedfishV1SessionServiceSessionsJSONRequestBody = SessionSession
 
 // PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody defines body for PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset for application/json ContentType.
 type PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody = ComputerSystemResetRequestBody
@@ -1715,6 +1761,130 @@ func (t SessionServiceSessionService_Description) MarshalJSON() ([]byte, error) 
 }
 
 func (t *SessionServiceSessionService_Description) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsResourceDescription returns the union data inside the SessionSession_Description as a ResourceDescription
+func (t SessionSession_Description) AsResourceDescription() (ResourceDescription, error) {
+	var body ResourceDescription
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResourceDescription overwrites any union data inside the SessionSession_Description as the provided ResourceDescription
+func (t *SessionSession_Description) FromResourceDescription(v ResourceDescription) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResourceDescription performs a merge with any union data inside the SessionSession_Description, using the provided ResourceDescription
+func (t *SessionSession_Description) MergeResourceDescription(v ResourceDescription) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionSessionDescription1 returns the union data inside the SessionSession_Description as a SessionSessionDescription1
+func (t SessionSession_Description) AsSessionSessionDescription1() (SessionSessionDescription1, error) {
+	var body SessionSessionDescription1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionSessionDescription1 overwrites any union data inside the SessionSession_Description as the provided SessionSessionDescription1
+func (t *SessionSession_Description) FromSessionSessionDescription1(v SessionSessionDescription1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionSessionDescription1 performs a merge with any union data inside the SessionSession_Description, using the provided SessionSessionDescription1
+func (t *SessionSession_Description) MergeSessionSessionDescription1(v SessionSessionDescription1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SessionSession_Description) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SessionSession_Description) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSessionSessionTypes returns the union data inside the SessionSession_SessionType as a SessionSessionTypes
+func (t SessionSession_SessionType) AsSessionSessionTypes() (SessionSessionTypes, error) {
+	var body SessionSessionTypes
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionSessionTypes overwrites any union data inside the SessionSession_SessionType as the provided SessionSessionTypes
+func (t *SessionSession_SessionType) FromSessionSessionTypes(v SessionSessionTypes) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionSessionTypes performs a merge with any union data inside the SessionSession_SessionType, using the provided SessionSessionTypes
+func (t *SessionSession_SessionType) MergeSessionSessionTypes(v SessionSessionTypes) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionSessionSessionType1 returns the union data inside the SessionSession_SessionType as a SessionSessionSessionType1
+func (t SessionSession_SessionType) AsSessionSessionSessionType1() (SessionSessionSessionType1, error) {
+	var body SessionSessionSessionType1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionSessionSessionType1 overwrites any union data inside the SessionSession_SessionType as the provided SessionSessionSessionType1
+func (t *SessionSession_SessionType) FromSessionSessionSessionType1(v SessionSessionSessionType1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionSessionSessionType1 performs a merge with any union data inside the SessionSession_SessionType, using the provided SessionSessionSessionType1
+func (t *SessionSession_SessionType) MergeSessionSessionSessionType1(v SessionSessionSessionType1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SessionSession_SessionType) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SessionSession_SessionType) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

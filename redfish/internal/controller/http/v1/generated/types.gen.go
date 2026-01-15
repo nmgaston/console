@@ -71,12 +71,32 @@ const (
 	UEFI   ComputerSystemBootSourceOverrideMode = "UEFI"
 )
 
+// Defines values for ComputerSystemBootSourceOverrideTarget.
+const (
+	ComputerSystemBootSourceOverrideTargetBiosSetup    ComputerSystemBootSourceOverrideTarget = "BiosSetup"
+	ComputerSystemBootSourceOverrideTargetCd           ComputerSystemBootSourceOverrideTarget = "Cd"
+	ComputerSystemBootSourceOverrideTargetDiags        ComputerSystemBootSourceOverrideTarget = "Diags"
+	ComputerSystemBootSourceOverrideTargetFloppy       ComputerSystemBootSourceOverrideTarget = "Floppy"
+	ComputerSystemBootSourceOverrideTargetHdd          ComputerSystemBootSourceOverrideTarget = "Hdd"
+	ComputerSystemBootSourceOverrideTargetNone         ComputerSystemBootSourceOverrideTarget = "None"
+	ComputerSystemBootSourceOverrideTargetPxe          ComputerSystemBootSourceOverrideTarget = "Pxe"
+	ComputerSystemBootSourceOverrideTargetRecovery     ComputerSystemBootSourceOverrideTarget = "Recovery"
+	ComputerSystemBootSourceOverrideTargetRemoteDrive  ComputerSystemBootSourceOverrideTarget = "RemoteDrive"
+	ComputerSystemBootSourceOverrideTargetSDCard       ComputerSystemBootSourceOverrideTarget = "SDCard"
+	ComputerSystemBootSourceOverrideTargetUefiBootNext ComputerSystemBootSourceOverrideTarget = "UefiBootNext"
+	ComputerSystemBootSourceOverrideTargetUefiHttp     ComputerSystemBootSourceOverrideTarget = "UefiHttp"
+	ComputerSystemBootSourceOverrideTargetUefiShell    ComputerSystemBootSourceOverrideTarget = "UefiShell"
+	ComputerSystemBootSourceOverrideTargetUefiTarget   ComputerSystemBootSourceOverrideTarget = "UefiTarget"
+	ComputerSystemBootSourceOverrideTargetUsb          ComputerSystemBootSourceOverrideTarget = "Usb"
+	ComputerSystemBootSourceOverrideTargetUtilities    ComputerSystemBootSourceOverrideTarget = "Utilities"
+)
+
 // Defines values for ComputerSystemMemoryMirroring.
 const (
-	ComputerSystemMemoryMirroringDIMM   ComputerSystemMemoryMirroring = "DIMM"
-	ComputerSystemMemoryMirroringHybrid ComputerSystemMemoryMirroring = "Hybrid"
-	ComputerSystemMemoryMirroringNone   ComputerSystemMemoryMirroring = "None"
-	ComputerSystemMemoryMirroringSystem ComputerSystemMemoryMirroring = "System"
+	DIMM   ComputerSystemMemoryMirroring = "DIMM"
+	Hybrid ComputerSystemMemoryMirroring = "Hybrid"
+	None   ComputerSystemMemoryMirroring = "None"
+	System ComputerSystemMemoryMirroring = "System"
 )
 
 // Defines values for ComputerSystemStopBootOnFault.
@@ -401,6 +421,9 @@ type ComputerSystemBootSourceOverrideEnabled string
 
 // ComputerSystemBootSourceOverrideMode defines model for ComputerSystem_BootSourceOverrideMode.
 type ComputerSystemBootSourceOverrideMode string
+
+// ComputerSystemBootSourceOverrideTarget defines model for ComputerSystem_BootSourceOverrideTarget.
+type ComputerSystemBootSourceOverrideTarget string
 
 // ComputerSystemComputerSystem The `ComputerSystem` schema represents a computer or system instance and the software-visible resources, or items within the data plane, such as memory, CPU, and other devices that it can access.  Details of those resources or subsystems are also linked through this resource.
 type ComputerSystemComputerSystem struct {
@@ -1268,22 +1291,22 @@ func (t *ComputerSystemBoot_BootSourceOverrideMode) UnmarshalJSON(b []byte) erro
 	return err
 }
 
-// AsComputerSystemBootSource returns the union data inside the ComputerSystemBoot_BootSourceOverrideTarget as a ComputerSystemBootSource
-func (t ComputerSystemBoot_BootSourceOverrideTarget) AsComputerSystemBootSource() (ComputerSystemBootSource, error) {
-	var body ComputerSystemBootSource
+// AsComputerSystemBootSourceOverrideTarget returns the union data inside the ComputerSystemBoot_BootSourceOverrideTarget as a ComputerSystemBootSourceOverrideTarget
+func (t ComputerSystemBoot_BootSourceOverrideTarget) AsComputerSystemBootSourceOverrideTarget() (ComputerSystemBootSourceOverrideTarget, error) {
+	var body ComputerSystemBootSourceOverrideTarget
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromComputerSystemBootSource overwrites any union data inside the ComputerSystemBoot_BootSourceOverrideTarget as the provided ComputerSystemBootSource
-func (t *ComputerSystemBoot_BootSourceOverrideTarget) FromComputerSystemBootSource(v ComputerSystemBootSource) error {
+// FromComputerSystemBootSourceOverrideTarget overwrites any union data inside the ComputerSystemBoot_BootSourceOverrideTarget as the provided ComputerSystemBootSourceOverrideTarget
+func (t *ComputerSystemBoot_BootSourceOverrideTarget) FromComputerSystemBootSourceOverrideTarget(v ComputerSystemBootSourceOverrideTarget) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeComputerSystemBootSource performs a merge with any union data inside the ComputerSystemBoot_BootSourceOverrideTarget, using the provided ComputerSystemBootSource
-func (t *ComputerSystemBoot_BootSourceOverrideTarget) MergeComputerSystemBootSource(v ComputerSystemBootSource) error {
+// MergeComputerSystemBootSourceOverrideTarget performs a merge with any union data inside the ComputerSystemBoot_BootSourceOverrideTarget, using the provided ComputerSystemBootSourceOverrideTarget
+func (t *ComputerSystemBoot_BootSourceOverrideTarget) MergeComputerSystemBootSourceOverrideTarget(v ComputerSystemBootSourceOverrideTarget) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

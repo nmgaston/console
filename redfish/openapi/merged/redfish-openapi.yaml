@@ -587,7 +587,7 @@ components:
             the normal boot device, if `BootSourceOverrideEnabled` does not contain
             `Disabled`.
           oneOf:
-          - $ref: '#/components/schemas/ComputerSystem_BootSource'
+          - $ref: '#/components/schemas/ComputerSystem_BootSourceOverrideTarget'
           - enum:
             - null
           readOnly: false
@@ -744,6 +744,48 @@ components:
         Legacy: The system boots in non-UEFI boot mode to the boot source override
           target.
         UEFI: The system boots in UEFI boot mode to the boot source override target.
+    ComputerSystem_BootSourceOverrideTarget:
+      enum:
+      - None
+      - Pxe
+      - Floppy
+      - Cd
+      - Usb
+      - Hdd
+      - BiosSetup
+      - Utilities
+      - Diags
+      - UefiShell
+      - UefiTarget
+      - SDCard
+      - UefiHttp
+      - RemoteDrive
+      - UefiBootNext
+      - Recovery
+      type: string
+      x-enumDescriptions:
+        BiosSetup: Boot to the BIOS setup utility.
+        Cd: Boot from the CD or DVD.
+        Diags: Boot to the manufacturer's diagnostics program.
+        Floppy: Boot from the floppy disk drive.
+        Hdd: Boot from a hard drive.
+        None: Boot from the normal boot device.
+        Pxe: Boot from the Pre-boot eXecution Environment (PXE).
+        Recovery: Boot to a system-designated recovery process or image.
+        RemoteDrive: Boot from a remote drive, such as an iSCSI target.
+        SDCard: Boot from an SD card.
+        UefiBootNext: Boot to the UEFI device specified in the BootNext property.
+        UefiHttp: Boot from a UEFI HTTP network location.
+        UefiShell: Boot to the UEFI Shell.
+        UefiTarget: Boot to the UEFI device specified in the UefiTargetBootSourceOverride
+          property.
+        Usb: Boot from a system UEFI-compliant USB device.
+        Utilities: Boot to the manufacturer's utilities program or programs.
+      x-enumLongDescriptions:
+        BiosSetup: This value shall indicate that the system boots to the BIOS setup
+          utility or UEFI human interface infrastructure.
+        UefiTarget: This value shall indicate that the system boots to the UEFI device
+          specified in the UefiTargetBootSourceOverride property.
     ComputerSystem_ComputerSystem:
       additionalProperties: false
       description: The `ComputerSystem` schema represents a computer or system instance

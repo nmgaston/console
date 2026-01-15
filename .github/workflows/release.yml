@@ -225,8 +225,6 @@ jobs:
             @semantic-release/exec@6.0.3
         env:
           GITHUB_TOKEN: ${{ secrets.ROSIE_TOKEN }}
-<<<<<<< HEAD
-=======
 
       - name: Check if OpenAPI files changed
         id: check-openapi-changes
@@ -264,4 +262,3 @@ jobs:
             -H "Content-Type: application/json" \
             --data-binary @doc/openapi.json \
             --fail
->>>>>>> a95e2451aab7a9a79178f9f47d4865fd98c2b19b

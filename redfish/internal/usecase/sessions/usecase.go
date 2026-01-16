@@ -12,6 +12,11 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/entity"
 )
 
+const (
+	// DefaultSessionTimeout is the default session timeout in seconds (30 minutes)
+	DefaultSessionTimeout = 1800
+)
+
 // UseCase defines the session management business logic.
 type UseCase struct {
 	repo           Repository
@@ -24,7 +29,7 @@ func NewUseCase(repo Repository, cfg *config.Config) *UseCase {
 	return &UseCase{
 		repo:           repo,
 		config:         cfg,
-		sessionTimeout: 1800, // 30 minutes default
+		sessionTimeout: DefaultSessionTimeout,
 	}
 }
 

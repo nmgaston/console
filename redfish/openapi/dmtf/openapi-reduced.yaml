@@ -76,50 +76,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
-  /redfish/v1/odata:
-    get:
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                description: The OData service document from a Redfish service.
-                properties:
-                  '@odata.context':
-                    $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_context
-                  value:
-                    description: The list of services provided by the Redfish service.
-                    items:
-                      properties:
-                        kind:
-                          description: Type of resource.  Value is `Singleton` for all cases defined by Redfish.
-                          readOnly: true
-                          type: string
-                        name:
-                          description: User-friendly resource name of the resource.
-                          readOnly: true
-                          type: string
-                        url:
-                          description: Relative URL for the top-level resource.
-                          readOnly: true
-                          type: string
-                      required:
-                      - name
-                      - kind
-                      - url
-                      type: object
-                    type: array
-                required:
-                - '@odata.context'
-                - value
-                type: object
-          description: OData service document
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RedfishError'
-          description: Error condition
   /redfish/v1/SessionService:
     get:
       responses:
@@ -128,7 +84,8 @@ paths:
             application/json:
               schema:
                 $ref: http://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.yaml#/components/schemas/SessionService_v1_2_0_SessionService
-          description: The response contains a representation of the SessionService resource
+          description: The response contains a representation of the SessionService
+            resource
         default:
           content:
             application/json:
@@ -148,7 +105,8 @@ paths:
             application/json:
               schema:
                 $ref: http://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.yaml#/components/schemas/SessionService_v1_2_0_SessionService
-          description: The response contains a representation of the SessionService resource
+          description: The response contains a representation of the SessionService
+            resource
         '204':
           description: Success, but no response data
         default:
@@ -170,7 +128,8 @@ paths:
             application/json:
               schema:
                 $ref: http://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.yaml#/components/schemas/SessionService_v1_2_0_SessionService
-          description: The response contains a representation of the SessionService resource
+          description: The response contains a representation of the SessionService
+            resource
         '204':
           description: Success, but no response data
         default:
@@ -187,7 +146,8 @@ paths:
             application/json:
               schema:
                 $ref: http://redfish.dmtf.org/schemas/v1/SessionCollection.yaml#/components/schemas/SessionCollection_SessionCollection
-          description: The response contains a representation of the SessionCollection resource
+          description: The response contains a representation of the SessionCollection
+            resource
         default:
           content:
             application/json:
@@ -315,6 +275,51 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: The response contains the results of the Reset action
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+  /redfish/v1/odata:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: The OData service document from a Redfish service.
+                properties:
+                  '@odata.context':
+                    $ref: http://redfish.dmtf.org/schemas/v1/odata-v4.yaml#/components/schemas/odata-v4_context
+                  value:
+                    description: The list of services provided by the Redfish service.
+                    items:
+                      properties:
+                        kind:
+                          description: Type of resource.  Value is `Singleton` for
+                            all cases defined by Redfish.
+                          readOnly: true
+                          type: string
+                        name:
+                          description: User-friendly resource name of the resource.
+                          readOnly: true
+                          type: string
+                        url:
+                          description: Relative URL for the top-level resource.
+                          readOnly: true
+                          type: string
+                      required:
+                      - name
+                      - kind
+                      - url
+                      type: object
+                    type: array
+                required:
+                - '@odata.context'
+                - value
+                type: object
+          description: OData service document
         default:
           content:
             application/json:

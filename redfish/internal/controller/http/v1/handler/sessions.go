@@ -9,6 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
+	"github.com/device-management-toolkit/console/redfish/internal/entity"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
 
@@ -54,31 +56,84 @@ func SessionAuthMiddleware(sessionUseCase *sessions.UseCase) gin.HandlerFunc {
 // RedfishServer session endpoint implementations
 // These methods are part of RedfishServer to satisfy the generated.ServerInterface
 
-// buildSessionServiceResponse builds the SessionService response object
-// This method is shared by GET, PATCH, and PUT to avoid duplication
-func (r *RedfishServer) buildSessionServiceResponse() (map[string]interface{}, error) {
-	sessionCount, err := r.SessionUC.GetSessionCount()
-	if err != nil {
+// sessionToRedfishResponse converts entity.Session to generated.SessionSession format.
+func sessionToRedfishResponse(s *entity.Session) (*generated.SessionSession, error) {
+	context := "/redfish/v1/$metadata#Session.Session"
+	odataID := "/redfish/v1/SessionService/Sessions/" + s.ID
+	odataType := "#Session.v1_8_0.Session"
+	name := "User Session"
+	descriptionText := "User Session for " + s.Username
+
+	// Create description using union type
+	var description generated.SessionSession_Description
+	if err := description.FromResourceDescription(descriptionText); err != nil {
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"@odata.context": "/redfish/v1/$metadata#SessionService.SessionService",
-		"@odata.id":      "/redfish/v1/SessionService",
-		"@odata.type":    "#SessionService.v1_2_0.SessionService",
-		"Id":             "SessionService",
-		"Name":           "Session Service",
-		"Description":    "Session Service for DMT Console Redfish API",
-		"Status": map[string]interface{}{
-			"State":  "Enabled",
-			"Health": "OK",
+	// Create SessionType as Redfish
+	var sessionType generated.SessionSession_SessionType
+	if err := sessionType.FromSessionSessionTypes(generated.Redfish); err != nil {
+		return nil, err
+	}
+
+	return &generated.SessionSession{
+		OdataContext:          &context,
+		OdataId:               &odataID,
+		OdataType:             &odataType,
+		Id:                    s.ID,
+		Name:                  name,
+		Description:           &description,
+		UserName:              &s.Username,
+		SessionType:           &sessionType,
+		CreatedTime:           &s.CreatedTime,
+		ClientOriginIPAddress: &s.ClientIP,
+		Password:              nil, // Always null in responses per Redfish spec
+		Token:                 nil, // Always null in responses per Redfish spec
+	}, nil
+}
+
+// buildSessionServiceResponse builds the SessionService response object using generated types
+// This method is shared by GET, PATCH, and PUT to avoid duplication
+func (r *RedfishServer) buildSessionServiceResponse() (*generated.SessionServiceSessionService, error) {
+	context := "/redfish/v1/$metadata#SessionService.SessionService"
+	odataID := "/redfish/v1/SessionService"
+	odataType := "#SessionService.v1_2_0.SessionService"
+	sessionTimeout := int64(1800)
+	serviceEnabled := true
+
+	// Create description
+	var description generated.SessionServiceSessionService_Description
+	if err := description.FromResourceDescription("Session Service for DMT Console Redfish API"); err != nil {
+		return nil, fmt.Errorf("failed to create description: %w", err)
+	}
+
+	// Create status with union types
+	var statusState generated.ResourceStatus_State
+	if err := statusState.FromResourceStatusState1("Enabled"); err != nil {
+		return nil, fmt.Errorf("failed to create status state: %w", err)
+	}
+
+	var statusHealth generated.ResourceStatus_Health
+	if err := statusHealth.FromResourceStatusHealth1("OK"); err != nil {
+		return nil, fmt.Errorf("failed to create status health: %w", err)
+	}
+
+	return &generated.SessionServiceSessionService{
+		OdataContext: &context,
+		OdataId:      &odataID,
+		OdataType:    &odataType,
+		Id:           "SessionService",
+		Name:         "Session Service",
+		Description:  &description,
+		Status: &generated.ResourceStatus{
+			State:  &statusState,
+			Health: &statusHealth,
 		},
-		"ServiceEnabled": true,
-		"SessionTimeout": 1800,
-		"Sessions": map[string]interface{}{
-			"@odata.id": "/redfish/v1/SessionService/Sessions",
+		ServiceEnabled: &serviceEnabled,
+		SessionTimeout: &sessionTimeout,
+		Sessions: &generated.OdataV4IdRef{
+			OdataId: StringPtr("/redfish/v1/SessionService/Sessions"),
 		},
-		"SessionsCount": sessionCount,
 	}, nil
 }
 
@@ -107,22 +162,27 @@ func (r *RedfishServer) GetRedfishV1SessionServiceSessions(c *gin.Context) {
 		return
 	}
 
-	members := make([]map[string]interface{}, 0, len(sessionList))
+	members := make([]generated.OdataV4IdRef, 0, len(sessionList))
 	for _, session := range sessionList {
-		members = append(members, map[string]interface{}{
-			"@odata.id": "/redfish/v1/SessionService/Sessions/" + session.ID,
+		members = append(members, generated.OdataV4IdRef{
+			OdataId: StringPtr("/redfish/v1/SessionService/Sessions/" + session.ID),
 		})
 	}
 
-	response := map[string]interface{}{
-		"@odata.context":      "/redfish/v1/$metadata#SessionCollection.SessionCollection",
-		"@odata.id":           "/redfish/v1/SessionService/Sessions",
-		"@odata.type":         "#SessionCollection.SessionCollection",
-		"@odata.etag":         StringPtr("1"),
-		"Name":                "Session Collection",
-		"Description":         "Collection of user sessions",
-		"Members":             members,
-		"Members@odata.count": len(members),
+	context := "/redfish/v1/$metadata#SessionCollection.SessionCollection"
+	odataID := "/redfish/v1/SessionService/Sessions"
+	odataType := "#SessionCollection.SessionCollection"
+	etag := "1"
+	membersCount := int64(len(members))
+
+	response := generated.SessionCollectionSessionCollection{
+		OdataContext:      &context,
+		OdataId:           &odataID,
+		OdataType:         &odataType,
+		OdataEtag:         &etag,
+		Name:              "Session Collection",
+		Members:           &members,
+		MembersOdataCount: &membersCount,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -132,14 +192,18 @@ func (r *RedfishServer) GetRedfishV1SessionServiceSessions(c *gin.Context) {
 func (r *RedfishServer) PostRedfishV1SessionServiceSessions(c *gin.Context) {
 	SetRedfishHeaders(c)
 
-	// Parse request body
-	var request struct {
-		UserName string `json:"UserName" binding:"required"`
-		Password string `json:"Password" binding:"required"`
-	}
+	// Parse request body using generated type
+	var request generated.SessionSession
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		BadRequestError(c, "Invalid request body")
+
+		return
+	}
+
+	// Validate required fields
+	if request.UserName == nil || request.Password == nil {
+		BadRequestError(c, "UserName and Password are required")
 
 		return
 	}
@@ -150,8 +214,8 @@ func (r *RedfishServer) PostRedfishV1SessionServiceSessions(c *gin.Context) {
 
 	// Create session
 	session, token, err := r.SessionUC.CreateSession(
-		request.UserName,
-		request.Password,
+		*request.UserName,
+		*request.Password,
 		clientIP,
 		userAgent,
 	)
@@ -165,8 +229,15 @@ func (r *RedfishServer) PostRedfishV1SessionServiceSessions(c *gin.Context) {
 	c.Header("X-Auth-Token", token)
 	c.Header("Location", "/redfish/v1/SessionService/Sessions/"+session.ID)
 
-	// Return session resource
-	c.JSON(http.StatusCreated, session.ToRedfishResponse())
+	// Convert to Redfish response format
+	response, err := sessionToRedfishResponse(session)
+	if err != nil {
+		InternalServerError(c, fmt.Errorf("failed to build session response: %w", err))
+
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
 }
 
 // GetRedfishV1SessionServiceSessionsSessionId handles GET /redfish/v1/SessionService/Sessions/{SessionId}.
@@ -194,7 +265,15 @@ func (r *RedfishServer) GetRedfishV1SessionServiceSessionsSessionId(c *gin.Conte
 		return
 	}
 
-	c.JSON(http.StatusOK, session.ToRedfishResponse())
+	// Convert to Redfish response format
+	response, err := sessionToRedfishResponse(session)
+	if err != nil {
+		InternalServerError(c, fmt.Errorf("failed to build session response: %w", err))
+
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // DeleteRedfishV1SessionServiceSessionsSessionId handles DELETE /redfish/v1/SessionService/Sessions/{SessionId}.
@@ -229,13 +308,15 @@ func (r *RedfishServer) DeleteRedfishV1SessionServiceSessionsSessionId(c *gin.Co
 func (r *RedfishServer) PatchRedfishV1SessionService(c *gin.Context) {
 	SetRedfishHeaders(c)
 
-	var req map[string]interface{}
+	var req generated.SessionServiceSessionService
 	if err := c.BindJSON(&req); err != nil {
 		BadRequestError(c, fmt.Sprintf("Invalid request body: %v", err))
 
 		return
 	}
 
+	// For now, PATCH returns the current state without modifications
+	// TODO: Implement PATCH logic to update configurable properties
 	response, err := r.buildSessionServiceResponse()
 	if err != nil {
 		InternalServerError(c, fmt.Errorf("failed to build session service response: %w", err))
@@ -250,13 +331,15 @@ func (r *RedfishServer) PatchRedfishV1SessionService(c *gin.Context) {
 func (r *RedfishServer) PutRedfishV1SessionService(c *gin.Context) {
 	SetRedfishHeaders(c)
 
-	var req map[string]interface{}
+	var req generated.SessionServiceSessionService
 	if err := c.BindJSON(&req); err != nil {
 		BadRequestError(c, fmt.Sprintf("Invalid request body: %v", err))
 
 		return
 	}
 
+	// For now, PUT returns the current state without modifications
+	// TODO: Implement PUT logic to replace the resource
 	response, err := r.buildSessionServiceResponse()
 	if err != nil {
 		InternalServerError(c, fmt.Errorf("failed to build session service response: %w", err))

@@ -56,19 +56,3 @@ func (s *Session) Touch() {
 func (s *Session) Invalidate() {
 	s.IsActive = false
 }
-
-// ToRedfishResponse converts session to Redfish Session resource format.
-func (s *Session) ToRedfishResponse() map[string]interface{} {
-	return map[string]interface{}{
-		"@odata.context":        "/redfish/v1/$metadata#Session.Session",
-		"@odata.id":             "/redfish/v1/SessionService/Sessions/" + s.ID,
-		"@odata.type":           "#Session.v1_8_0.Session",
-		"Id":                    s.ID,
-		"Name":                  "User Session",
-		"Description":           "User Session for " + s.Username,
-		"UserName":              s.Username,
-		"CreatedTime":           s.CreatedTime.Format(time.RFC3339),
-		"SessionTimeout":        s.TimeoutSeconds,
-		"ClientOriginIPAddress": s.ClientIP,
-	}
-}

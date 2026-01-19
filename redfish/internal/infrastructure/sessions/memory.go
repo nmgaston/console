@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/device-management-toolkit/console/pkg/logger"
 	"github.com/device-management-toolkit/console/redfish/internal/entity"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
@@ -16,6 +17,7 @@ type InMemoryRepository struct {
 	mu            sync.RWMutex
 	cleanupTicker *time.Ticker
 	done          chan bool
+	logger        logger.Interface
 }
 
 // NewInMemoryRepository creates a new in-memory session repository.
@@ -25,6 +27,7 @@ func NewInMemoryRepository(cleanupInterval time.Duration) *InMemoryRepository {
 		tokenIndex:    make(map[string]string),
 		cleanupTicker: time.NewTicker(cleanupInterval),
 		done:          make(chan bool),
+		logger:        logger.New("info"),
 	}
 
 	// Start background cleanup goroutine
@@ -62,6 +65,21 @@ func (r *InMemoryRepository) Create(session *entity.Session) error {
 
 	r.sessions[session.ID] = session
 	r.tokenIndex[session.Token] = session.ID
+
+	return nil
+}
+
+// Update modifies an existing session.
+func (r *InMemoryRepository) Update(session *entity.Session) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	_, exists := r.sessions[session.ID]
+	if !exists {
+		return sessions.ErrSessionNotFound
+	}
+
+	r.sessions[session.ID] = session
 
 	return nil
 }
@@ -146,11 +164,20 @@ func (r *InMemoryRepository) DeleteExpired() (int, error) {
 
 	for id, session := range r.sessions {
 		if session.IsExpired() {
+			if r.logger != nil {
+				r.logger.Debug("deleting expired session: id=%s, username=%s, created=%s, last_access=%s",
+					id, session.Username, session.CreatedTime.Format(time.RFC3339), session.LastAccessTime.Format(time.RFC3339))
+			}
+
 			delete(r.tokenIndex, session.Token)
 			delete(r.sessions, id)
 
 			count++
 		}
+	}
+
+	if count > 0 && r.logger != nil {
+		r.logger.Info("deleted %d expired sessions", count)
 	}
 
 	return count, nil

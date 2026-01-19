@@ -247,27 +247,28 @@ func TestListSessions(t *testing.T) {
 
 	router.POST("/redfish/v1/SessionService/Sessions", server.PostRedfishV1SessionServiceSessions)
 	router.GET("/redfish/v1/SessionService/Sessions", server.GetRedfishV1SessionServiceSessions)
+	router.DELETE("/redfish/v1/SessionService/Sessions/:SessionId", func(c *gin.Context) {
+		server.DeleteRedfishV1SessionServiceSessionsSessionId(c, c.Param("SessionId"))
+	})
 
-	// Create two sessions
-	for i := 0; i < 2; i++ {
-		createReq := map[string]string{
-			"UserName": "admin",
-			"Password": "password",
-		}
-		body, _ := json.Marshal(createReq)
-
-		req := httptest.NewRequest(http.MethodPost, "/redfish/v1/SessionService/Sessions", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusCreated, w.Code)
+	// Create first session
+	createReq := map[string]string{
+		"UserName": "admin",
+		"Password": "password",
 	}
+	body, _ := json.Marshal(createReq)
 
-	// List sessions
-	req := httptest.NewRequest(http.MethodGet, "/redfish/v1/SessionService/Sessions", http.NoBody)
+	req := httptest.NewRequest(http.MethodPost, "/redfish/v1/SessionService/Sessions", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
 	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// List sessions - should have 1 session
+	req = httptest.NewRequest(http.MethodGet, "/redfish/v1/SessionService/Sessions", http.NoBody)
+	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -279,8 +280,18 @@ func TestListSessions(t *testing.T) {
 
 	members, ok := resp["Members"].([]interface{})
 	require.True(t, ok, "Members should be an array")
-	assert.Equal(t, 2, len(members), "Should have 2 active sessions")
-	assert.Equal(t, float64(2), resp["Members@odata.count"])
+	assert.Equal(t, 1, len(members), "Should have 1 active session")
+	assert.Equal(t, float64(1), resp["Members@odata.count"])
+
+	// Try to create duplicate session - should fail with 409
+	body, _ = json.Marshal(createReq)
+	req = httptest.NewRequest(http.MethodPost, "/redfish/v1/SessionService/Sessions", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusConflict, w.Code, "Duplicate session should return 409 Conflict")
 }
 
 // TestTokenCompatibility tests backward compatibility with Bearer tokens.

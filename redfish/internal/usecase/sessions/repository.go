@@ -16,12 +16,18 @@ var (
 
 	// ErrInvalidToken is returned when a token is invalid.
 	ErrInvalidToken = errors.New("invalid token")
+
+	// ErrSessionAlreadyExists is returned when trying to create a session for a user who already has an active session.
+	ErrSessionAlreadyExists = errors.New("an active session already exists for this user")
 )
 
 // Repository defines the interface for session storage.
 type Repository interface {
 	// Create stores a new session
 	Create(session *entity.Session) error
+
+	// Update modifies an existing session
+	Update(session *entity.Session) error
 
 	// Get retrieves a session by ID
 	Get(id string) (*entity.Session, error)

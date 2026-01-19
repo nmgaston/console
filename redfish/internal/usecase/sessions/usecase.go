@@ -12,6 +12,11 @@ import (
 	"github.com/device-management-toolkit/console/redfish/internal/entity"
 )
 
+const (
+	// DefaultSessionTimeout is the default session timeout in seconds (30 minutes).
+	DefaultSessionTimeout = 1800
+)
+
 // UseCase defines the session management business logic.
 type UseCase struct {
 	repo           Repository
@@ -24,16 +29,30 @@ func NewUseCase(repo Repository, cfg *config.Config) *UseCase {
 	return &UseCase{
 		repo:           repo,
 		config:         cfg,
-		sessionTimeout: 1800, // 30 minutes default
+		sessionTimeout: DefaultSessionTimeout,
 	}
 }
 
 // CreateSession creates a new session with JWT token.
 // This integrates with DMT Console's existing JWT authentication.
+// If a session already exists for this user, it returns an error to prevent multiple concurrent sessions.
 func (uc *UseCase) CreateSession(username, password, clientIP, userAgent string) (*entity.Session, string, error) {
 	// Validate credentials using DMT Console's admin credentials
 	if username != uc.config.AdminUsername || password != uc.config.AdminPassword {
 		return nil, "", ErrInvalidCredentials
+	}
+
+	// Check if an active session already exists for this user
+	existingSessions, err := uc.repo.List()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to check existing sessions: %w", err)
+	}
+
+	for _, session := range existingSessions {
+		if session.Username == username && session.IsActive {
+			// Return error - cannot create duplicate session
+			return nil, "", ErrSessionAlreadyExists
+		}
 	}
 
 	// Generate unique session ID
@@ -100,7 +119,7 @@ func (uc *UseCase) ValidateToken(tokenString string) (*entity.Session, error) {
 	// Update last access time
 	session.Touch()
 
-	if err := uc.repo.Create(session); err != nil {
+	if err := uc.repo.Update(session); err != nil {
 		return nil, fmt.Errorf("failed to update session: %w", err)
 	}
 

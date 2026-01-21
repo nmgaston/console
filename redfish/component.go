@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -16,8 +17,10 @@ import (
 	"github.com/device-management-toolkit/console/pkg/logger"
 	redfishgenerated "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	v1 "github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/handler"
+	sessioninfra "github.com/device-management-toolkit/console/redfish/internal/infrastructure/sessions"
 	"github.com/device-management-toolkit/console/redfish/internal/mocks"
 	redfishusecase "github.com/device-management-toolkit/console/redfish/internal/usecase"
+	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
 
 // Embed the OpenAPI specification at build time
@@ -81,9 +84,16 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 
 	computerSystemUC := &redfishusecase.ComputerSystemUseCase{Repo: repo}
 
+	// Create session repository and use case
+	const sessionCleanupInterval = 5 * time.Minute
+
+	sessionRepo := sessioninfra.NewInMemoryRepository(sessionCleanupInterval)
+	sessionUseCase := sessions.NewUseCase(sessionRepo, config)
+
 	// Initialize the Redfish server with configuration
 	server = &v1.RedfishServer{
 		ComputerSystemUC: computerSystemUC,
+		SessionUC:        sessionUseCase,
 		Config:           config,
 		Logger:           log,
 	}
@@ -103,6 +113,43 @@ func Initialize(_ *gin.Engine, log logger.Interface, _ *db.SQL, usecases *dmtuse
 	return nil
 }
 
+// isPublicEndpoint checks if the request path is a public endpoint.
+func isPublicEndpoint(path, method string) bool {
+	// Public endpoints as defined in OpenAPI spec (security: [{}])
+	// - ServiceRoot, Metadata, OData (read-only discovery endpoints)
+	// - SessionService Sessions POST (login endpoint - must be unauthenticated)
+	if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" || path == "/redfish/v1/odata" {
+		return true
+	}
+
+	return path == "/redfish/v1/SessionService/Sessions" && method == "POST"
+}
+
+// createAuthMiddleware creates the authentication middleware for protected endpoints.
+func createAuthMiddleware() redfishgenerated.MiddlewareFunc {
+	auth := server.Config.Auth
+	basicAuthMiddleware := v1.BasicAuthValidator(auth.AdminUsername, auth.AdminPassword)
+
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		if isPublicEndpoint(path, c.Request.Method) {
+			c.Next()
+
+			return
+		}
+
+		// Protected endpoints use Basic Auth
+		if strings.HasPrefix(path, "/redfish/v1/") {
+			basicAuthMiddleware(c)
+
+			return
+		}
+
+		c.Next()
+	}
+}
+
 // RegisterRoutes registers Redfish API routes.
 func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 	if !componentConfig.Enabled {
@@ -111,9 +158,8 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 		return nil
 	}
 
-	// Build middleware chain
+	// Build middleware chain with OData header
 	middlewares := []redfishgenerated.MiddlewareFunc{
-		// Common OData header for all Redfish responses
 		func(c *gin.Context) {
 			c.Header("OData-Version", "4.0")
 			c.Next()
@@ -121,49 +167,19 @@ func RegisterRoutes(router *gin.Engine, _ logger.Interface) error {
 	}
 
 	if componentConfig.AuthRequired {
-		// Apply Basic Auth middleware to OpenAPI-defined protected endpoints
-		// Use actual admin credentials from the DMT configuration
-		auth := server.Config.Auth
-		basicAuthMiddleware := v1.BasicAuthValidator(auth.AdminUsername, auth.AdminPassword)
+		middlewares = append(middlewares, createAuthMiddleware())
+	}
 
-		// Add authentication middleware to the chain
-		middlewares = append(middlewares, func(c *gin.Context) {
-			path := c.Request.URL.Path
+	// Register handlers with OpenAPI-spec-compliant middleware
+	redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
+		BaseURL:      "",
+		ErrorHandler: createErrorHandler(),
+		Middlewares:  middlewares,
+	})
 
-			// Public endpoints as defined in OpenAPI spec (security: [{}])
-			if path == "/redfish/v1/" || path == "/redfish/v1/$metadata" || path == "/redfish/v1/odata" {
-				c.Next()
-
-				return
-			}
-
-			// Protected endpoints as defined in OpenAPI spec (security: [{"BasicAuth": []}])
-			if strings.HasPrefix(path, "/redfish/v1/") {
-				basicAuthMiddleware(c)
-
-				return
-			}
-
-			// Default: no authentication
-			c.Next()
-		})
-
-		// Register handlers with OpenAPI-spec-compliant middleware
-		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
-			BaseURL:      "",
-			ErrorHandler: createErrorHandler(),
-			Middlewares:  middlewares,
-		})
-
-		server.Logger.Info("Redfish API routes registered with OpenAPI-spec-driven Basic Auth")
+	if componentConfig.AuthRequired {
+		server.Logger.Info("Redfish API routes registered with authentication")
 	} else {
-		// Register without authentication (all endpoints public)
-		redfishgenerated.RegisterHandlersWithOptions(router, server, redfishgenerated.GinServerOptions{
-			BaseURL:      "",
-			ErrorHandler: createErrorHandler(),
-			Middlewares:  middlewares,
-		})
-
 		server.Logger.Info("Redfish API routes registered without authentication")
 	}
 

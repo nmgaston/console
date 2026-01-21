@@ -6,6 +6,7 @@ import (
 	"github.com/device-management-toolkit/console/pkg/logger"
 	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
+	"github.com/device-management-toolkit/console/redfish/internal/usecase/sessions"
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 // RedfishServer implements the Redfish API handlers and delegates operations to specialized handlers
 type RedfishServer struct {
 	ComputerSystemUC *usecase.ComputerSystemUseCase
+	SessionUC        *sessions.UseCase
 	Config           *dmtconfig.Config
 	Logger           logger.Interface
 	Services         []ODataService // Cached OData services loaded from OpenAPI spec

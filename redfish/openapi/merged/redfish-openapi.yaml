@@ -36,6 +36,158 @@ paths:
           description: Error condition
       security:
       - {}
+  /redfish/v1/SessionService:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionService_SessionService'
+          description: The response contains a representation of the SessionService
+            resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionService_SessionService'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionService_SessionService'
+          description: The response contains a representation of the SessionService
+            resource
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionService_SessionService'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionService_SessionService'
+          description: The response contains a representation of the SessionService
+            resource
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+  /redfish/v1/SessionService/Sessions:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCollection_SessionCollection'
+          description: The response contains a representation of the SessionCollection
+            resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Session_Session'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session_Session'
+          description: A resource of type Session has been created
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+  /redfish/v1/SessionService/Sessions/{SessionId}:
+    delete:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session_Session'
+          description: The response contains a representation of the Session resource
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session_Session'
+          description: The response contains a representation of the Session resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
+    parameters:
+    - description: The value of the Id property of the Session resource
+      in: path
+      name: SessionId
+      required: true
+      schema:
+        type: string
   /redfish/v1/Systems:
     get:
       responses:
@@ -2612,6 +2764,392 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    SessionCollection_SessionCollection:
+      additionalProperties: false
+      description: The collection of `Session` resource instances.
+      properties:
+        '@odata.context':
+          $ref: '#/components/schemas/odata-v4_context'
+        '@odata.etag':
+          $ref: '#/components/schemas/odata-v4_etag'
+        '@odata.id':
+          $ref: '#/components/schemas/odata-v4_id'
+        '@odata.type':
+          $ref: '#/components/schemas/odata-v4_type'
+        Description:
+          oneOf:
+          - $ref: '#/components/schemas/Resource_Description'
+          - enum:
+            - null
+          readOnly: true
+        Members:
+          description: The members of this collection.
+          items:
+            $ref: '#/components/schemas/odata-v4_idRef'
+          readOnly: true
+          type: array
+          x-longDescription: This property shall contain an array of links to the
+            members of this collection.
+        Members@odata.count:
+          $ref: '#/components/schemas/odata-v4_count'
+        Members@odata.nextLink:
+          $ref: '#/components/schemas/odata-v4_nextLink'
+        Name:
+          $ref: '#/components/schemas/Resource_Name'
+          readOnly: true
+        Oem:
+          $ref: '#/components/schemas/Resource_Oem'
+          description: The OEM extension property.
+          x-longDescription: This property shall contain the OEM extensions.  All
+            values for properties contained in this object shall conform to the Redfish
+            Specification-described requirements.
+      required:
+      - Members
+      - Members@odata.count
+      - '@odata.id'
+      - '@odata.type'
+      - Name
+      type: object
+      x-longDescription: This resource shall represent a resource collection of `Session`
+        instances for a Redfish implementation.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    SessionService_Actions:
+      additionalProperties: false
+      description: The available actions for this resource.
+      properties: {}
+      type: object
+      x-longDescription: This type shall contain the available actions for this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    SessionService_SessionService:
+      additionalProperties: false
+      description: The `SessionService` schema describes the session service and its
+        properties, with links to the actual list of sessions.
+      properties:
+        '@odata.context':
+          $ref: '#/components/schemas/odata-v4_context'
+        '@odata.etag':
+          $ref: '#/components/schemas/odata-v4_etag'
+        '@odata.id':
+          $ref: '#/components/schemas/odata-v4_id'
+        '@odata.type':
+          $ref: '#/components/schemas/odata-v4_type'
+        AbsoluteSessionTimeout:
+          description: The maximum number of seconds that a session is open before
+            the service closes the session regardless of activity.
+          format: int64
+          maximum: 86400
+          minimum: 30
+          readOnly: false
+          type: integer
+          x-longDescription: This property shall contain the maximum number of seconds
+            that a session is open before the service closes the session regardless
+            of activity.
+          x-units: s
+          x-versionAdded: v1_2_0
+        AbsoluteSessionTimeoutEnabled:
+          description: An indication of whether an absolute session timeout is applied
+            to sessions.
+          readOnly: false
+          type: boolean
+          x-longDescription: This property shall indicate whether an absolute session
+            timeout is applied to sessions.  If `true`, the service shall close sessions
+            that are open for the number of seconds specified by the `AbsoluteSessionTimeout`
+            property regardless of session activity.  If `false` or if this property
+            is not present, the service shall not apply an absolute session timeout.
+          x-versionAdded: v1_2_0
+        Actions:
+          $ref: '#/components/schemas/SessionService_Actions'
+          description: The available actions for this resource.
+          x-longDescription: This property shall contain the available actions for
+            this resource.
+          x-versionAdded: v1_1_0
+        Description:
+          oneOf:
+          - $ref: '#/components/schemas/Resource_Description'
+          - enum:
+            - null
+          readOnly: true
+        Id:
+          $ref: '#/components/schemas/Resource_Id'
+          readOnly: true
+        Name:
+          $ref: '#/components/schemas/Resource_Name'
+          readOnly: true
+        ServiceEnabled:
+          description: An indication of whether this service is enabled.  If `true`,
+            this service is enabled.  If `false`, it is disabled, and new sessions
+            cannot be created, old sessions cannot be deleted, and established sessions
+            can continue operating.
+          nullable: true
+          readOnly: false
+          type: boolean
+          x-longDescription: This property shall indicate whether this service is
+            enabled.  If `true`, this service is enabled.  If `false`, it is disabled,
+            and new sessions shall not be created, old sessions shall not be deleted,
+            and established sessions can continue operating.
+        SessionTimeout:
+          description: The number of seconds of inactivity that a session can have
+            before the session service closes the session due to inactivity.
+          format: int64
+          maximum: 86400
+          minimum: 30
+          readOnly: false
+          type: integer
+          x-longDescription: This property shall contain the threshold of time in
+            seconds between requests on a specific session at which point the session
+            service shall close the session due to inactivity.  The session service
+            shall support any value between the schema-specified minimum and maximum
+            terms.
+          x-units: s
+        Sessions:
+          $ref: '#/components/schemas/odata-v4_idRef'
+          description: The link to a collection of sessions.
+          readOnly: true
+          x-longDescription: This property shall contain a link to a resource collection
+            of type `SessionCollection`.
+        Status:
+          $ref: '#/components/schemas/Resource_Status'
+          description: The status and health of the resource and its subordinate or
+            dependent resources.
+          x-longDescription: This property shall contain any status or health properties
+            of the resource.
+      required:
+      - '@odata.id'
+      - '@odata.type'
+      - Id
+      - Name
+      type: object
+      x-longDescription: This resource contains the session service properties for
+        a Redfish implementation.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    Session_Actions:
+      additionalProperties: false
+      description: The available actions for this resource.
+      properties: {}
+      type: object
+      x-longDescription: This type shall contain the available actions for this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    Session_Links:
+      additionalProperties: false
+      description: The links to other resources that are related to this resource.
+      properties:
+        OutboundConnection:
+          $ref: '#/components/schemas/odata-v4_idRef'
+          description: The outbound connection associated with this session.
+          readOnly: true
+          x-longDescription: This property shall contain a link to a resource of type
+            `OutboundConnection` that represents the outbound connection for this
+            session.  This property shall be present if `SessionType` contains `OutboundConnection`.
+          x-versionAdded: v1_7_0
+      type: object
+      x-longDescription: This Redfish Specification-described type shall contain links
+        to resources that are related to but are not contained by, or subordinate
+        to, this resource.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+    Session_Session:
+      additionalProperties: false
+      description: The `Session` resource describes a single connection (session)
+        between a client and a Redfish service instance.
+      properties:
+        '@odata.context':
+          $ref: '#/components/schemas/odata-v4_context'
+        '@odata.etag':
+          $ref: '#/components/schemas/odata-v4_etag'
+        '@odata.id':
+          $ref: '#/components/schemas/odata-v4_id'
+        '@odata.type':
+          $ref: '#/components/schemas/odata-v4_type'
+        Actions:
+          $ref: '#/components/schemas/Session_Actions'
+          description: The available actions for this resource.
+          x-longDescription: This property shall contain the available actions for
+            this resource.
+          x-versionAdded: v1_1_0
+        ClientOriginIPAddress:
+          description: The IP address of the client that created the session.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the IP address of the client
+            that created the session.
+          x-versionAdded: v1_3_0
+        Context:
+          description: A client-supplied string that is stored with the session.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain a client-supplied context
+            that remains with the session through the session's lifetime.
+          x-versionAdded: v1_5_0
+        CreatedTime:
+          description: The date and time when the session was created.
+          format: date-time
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the date and time when the
+            session was created.
+          x-versionAdded: v1_4_0
+        Description:
+          oneOf:
+          - $ref: '#/components/schemas/Resource_Description'
+          - enum:
+            - null
+          readOnly: true
+        ExpirationTime:
+          description: The date and time when the session expires regardless of session
+            activity.
+          format: date-time
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the date and time when the
+            session expires regardless of session activity.  The service shall delete
+            this resource when the expiration time is reached.  If this property is
+            not present, the session does not expire based on an absolute time.
+          x-versionAdded: v1_8_0
+        Id:
+          $ref: '#/components/schemas/Resource_Id'
+          readOnly: true
+        Links:
+          $ref: '#/components/schemas/Session_Links'
+          description: The links to other resources that are related to this resource.
+          x-longDescription: This property shall contain links to resources that are
+            related to but are not contained by, or subordinate to, this resource.
+          x-versionAdded: v1_7_0
+        Name:
+          $ref: '#/components/schemas/Resource_Name'
+          readOnly: true
+        Password:
+          description: The password for this session.  The value is `null` in responses.
+          nullable: true
+          readOnly: true
+          type: string
+          writeOnly: false
+          x-longDescription: This property shall contain the password for this session.  The
+            value shall be `null` in responses.  When creating a session through a
+            Redfish host interface using an `AuthNone` role, the property shall contain
+            an empty string in the request body.
+        Roles:
+          description: The Redfish roles that contain the privileges of this session.
+          items:
+            nullable: true
+            type: string
+          readOnly: true
+          type: array
+          x-longDescription: This property shall contain the Redfish roles that contain
+            the privileges of this session.
+          x-versionAdded: v1_7_0
+        SessionType:
+          description: The active session type.
+          oneOf:
+          - $ref: '#/components/schemas/Session_SessionTypes'
+          - enum:
+            - null
+          readOnly: true
+          x-longDescription: This property shall represent the type of session that
+            is currently active.
+          x-versionAdded: v1_2_0
+        Token:
+          description: The multi-factor authentication token for this session.  The
+            value is `null` in responses.
+          nullable: true
+          readOnly: true
+          type: string
+          writeOnly: false
+          x-longDescription: This property shall contain the multi-factor authentication
+            token for this session.  The value shall be `null` in responses.
+          x-versionAdded: v1_6_0
+        UserName:
+          description: The username for the account for this session.
+          nullable: true
+          readOnly: true
+          type: string
+          x-longDescription: This property shall contain the username that matches
+            an account recognized by the account service.  When a creating a session
+            through a Redfish host interface using an `AuthNone` role, the property
+            shall contain an empty string in the request body.
+      required:
+      - '@odata.id'
+      - '@odata.type'
+      - Id
+      - Name
+      type: object
+      x-longDescription: This resource shall represent a session for a Redfish implementation.
+      x-patternProperties:
+        ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
+          description: This property shall specify a valid odata or Redfish property.
+      x-requiredOnCreate:
+      - UserName
+      - Password
+    Session_SessionTypes:
+      enum:
+      - HostConsole
+      - ManagerConsole
+      - IPMI
+      - KVMIP
+      - OEM
+      - Redfish
+      - VirtualMedia
+      - WebUI
+      - OutboundConnection
+      type: string
+      x-enumDescriptions:
+        HostConsole: The host's console, which could be connected through Telnet,
+          SSH, or another protocol.
+        IPMI: Intelligent Platform Management Interface.
+        KVMIP: A Keyboard-Video-Mouse over IP session.
+        ManagerConsole: The manager's console, which could be connected through Telnet,
+          SSH, SM CLP, or another protocol.
+        OutboundConnection: A Redfish Specification-defined outbound connection.  See
+          the 'Outbound connections' clause of the Redfish Specification.
+        Redfish: A Redfish session.
+        VirtualMedia: Virtual media.
+        WebUI: A non-Redfish web user interface session, such as a graphical interface
+          or another web-based protocol.
+      x-enumLongDescriptions:
+        HostConsole: This value shall indicate the session is the host's console,
+          which could be connected through Telnet, SSH, or another protocol.  If this
+          session is terminated or deleted, the service shall close the connection
+          for the respective host console session.
+        IPMI: This value shall indicate the session is an Intelligent Platform Management
+          Interface session.  If this session is terminated or deleted, the service
+          shall close the connection for the respective IPMI session.
+        KVMIP: This value shall indicate the session is a Keyboard-Video-Mouse over
+          IP session.  If this session is terminated or deleted, the service shall
+          close the connection for the respective KVM-IP session.
+        ManagerConsole: This value shall indicate the session is the manager's console,
+          which could be connected through Telnet, SSH, SM CLP, or another protocol.  If
+          this session is terminated or deleted, the service shall close the connection
+          for the respective manager console session.
+        OutboundConnection: This value shall indicate the session is an outbound connection
+          defined by the 'Outbound connections' clause of the Redfish Specification.  The
+          `OutboundConnection` property inside the `Links` property shall contain
+          the link to the outbound connection configuration.  If this session is terminated
+          or deleted, the service shall disable the associated `OutboundConnection`
+          resource.
+        Redfish: This value shall indicate the session is a Redfish session defined
+          by the 'Redfish session login authentication' clause of the Redfish Specification.  If
+          this session is terminated or deleted, the service shall invalidate the
+          respective session token.
+        VirtualMedia: This value shall indicate the session is a virtual media session.  If
+          this session is terminated or deleted, the service shall close the connection
+          for the respective virtual media session and make the media inaccessible
+          to the host.
+        WebUI: This value shall indicate the session is a non-Redfish web user interface
+          session.  If this session is terminated or deleted, the service shall invalidate
+          the respective session token.
+      x-enumVersionAdded:
+        OutboundConnection: v1_7_0
     odata-v4_context:
       description: The OData description of a payload.
       format: uri-reference

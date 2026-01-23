@@ -2,7 +2,7 @@ package cache
 
 import "fmt"
 
-// Cache key prefixes
+// Cache key prefixes.
 const (
 	PrefixFeatures   = "features:"
 	PrefixPowerState = "power:"
@@ -10,12 +10,12 @@ const (
 	PrefixGeneral    = "general:"
 )
 
-// MakeFeaturesKey creates a cache key for device features
+// MakeFeaturesKey creates a cache key for device features.
 func MakeFeaturesKey(guid string) string {
 	return fmt.Sprintf("%s%s", PrefixFeatures, guid)
 }
 
-// MakePowerStateKey creates a cache key for power state
+// MakePowerStateKey creates a cache key for power state.
 func MakePowerStateKey(guid string) string {
 	return fmt.Sprintf("%s%s", PrefixPowerState, guid)
 }

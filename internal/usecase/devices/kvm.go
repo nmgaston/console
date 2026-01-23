@@ -19,6 +19,7 @@ func (uc *UseCase) GetKVMScreenSettings(c context.Context, guid string) (dto.KVM
 	if cached, found := uc.cache.Get(cacheKey); found {
 		if settings, ok := cached.(dto.KVMScreenSettings); ok {
 			uc.log.Info("Cache hit for KVM screen settings", "guid", guid)
+
 			return settings, nil
 		}
 	}

@@ -103,6 +103,7 @@ func (c *Cache) cleanupExpired() {
 
 	for range ticker.C {
 		c.mu.Lock()
+
 		now := time.Now()
 
 		for key, entry := range c.items {

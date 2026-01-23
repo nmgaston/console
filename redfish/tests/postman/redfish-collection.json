@@ -3538,6 +3538,704 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "SessionService",
+      "description": "Tests for Redfish SessionService endpoints and session lifecycle",
+      "item": [
+        {
+          "name": "Get SessionService - No Auth (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 without auth', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Session - Valid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('X-Auth-Token header is present', function () {",
+                  "    var token = pm.response.headers.get('X-Auth-Token');",
+                  "    pm.expect(token).to.not.be.null;",
+                  "    pm.expect(token.length).to.be.above(0);",
+                  "    // Store token for subsequent tests",
+                  "    pm.environment.set('session_token', token);",
+                  "});",
+                  "",
+                  "pm.test('Location header is present', function () {",
+                  "    var location = pm.response.headers.get('Location');",
+                  "    pm.expect(location).to.not.be.null;",
+                  "    pm.expect(location).to.include('/redfish/v1/SessionService/Sessions/');",
+                  "});",
+                  "",
+                  "pm.test('Response has session Id', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Id');",
+                  "    pm.expect(jsonData.Id).to.be.a('string');",
+                  "    // Store session ID for subsequent tests",
+                  "    pm.environment.set('session_id', jsonData.Id);",
+                  "});",
+                  "",
+                  "pm.test('Response has UserName', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('UserName');",
+                  "    pm.expect(jsonData.UserName).to.equal(pm.environment.get('admin_username'));",
+                  "});",
+                  "",
+                  "pm.test('Response has correct @odata.type', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData['@odata.type']).to.include('Session');",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is 4.0', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"UserName\": \"{{admin_username}}\",\n    \"Password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get SessionService - With Session Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Response has SessionService properties', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Id');",
+                  "    pm.expect(jsonData.Id).to.equal('SessionService');",
+                  "});",
+                  "",
+                  "pm.test('Response has correct @odata.type', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData['@odata.type']).to.include('SessionService');",
+                  "});",
+                  "",
+                  "pm.test('SessionService has Sessions link', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Sessions');",
+                  "    pm.expect(jsonData.Sessions).to.have.property('@odata.id');",
+                  "    pm.expect(jsonData.Sessions['@odata.id']).to.include('Sessions');",
+                  "});",
+                  "",
+                  "pm.test('ServiceEnabled is true', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.ServiceEnabled).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Auth-Token",
+                "value": "{{session_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session Collection - With Session Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Response has Members array', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Members');",
+                  "    pm.expect(jsonData.Members).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Response has Members@odata.count', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Members@odata.count');",
+                  "    pm.expect(jsonData['Members@odata.count']).to.be.at.least(1);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct @odata.type', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData['@odata.type']).to.include('SessionCollection');",
+                  "});",
+                  "",
+                  "pm.test('Members contain session references', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.Members.length > 0) {",
+                  "        pm.expect(jsonData.Members[0]).to.have.property('@odata.id');",
+                  "        pm.expect(jsonData.Members[0]['@odata.id']).to.include('/redfish/v1/SessionService/Sessions/');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Auth-Token",
+                "value": "{{session_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Individual Session - With Session Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Response has session Id', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Id');",
+                  "    pm.expect(jsonData.Id).to.equal(pm.environment.get('session_id'));",
+                  "});",
+                  "",
+                  "pm.test('Response has UserName', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('UserName');",
+                  "    pm.expect(jsonData.UserName).to.equal(pm.environment.get('admin_username'));",
+                  "});",
+                  "",
+                  "pm.test('Response has correct @odata.type', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData['@odata.type']).to.include('Session');",
+                  "});",
+                  "",
+                  "pm.test('Response has @odata.id matching request', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData['@odata.id']).to.include(pm.environment.get('session_id'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Auth-Token",
+                "value": "{{session_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions", "{{session_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Session - Invalid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "pm.test('No X-Auth-Token header on failure', function () {",
+                  "    var token = pm.response.headers.get('X-Auth-Token');",
+                  "    pm.expect(token).to.be.oneOf([null, undefined]);",
+                  "});",
+                  "",
+                  "pm.test('OData-Version header is still present', function () {",
+                  "    var odataVersion = pm.response.headers.get('OData-Version');",
+                  "    pm.expect(odataVersion).to.equal('4.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"UserName\": \"wronguser\",\n    \"Password\": \"wrongpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Session - Missing Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session - Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Auth-Token",
+                "value": "invalid-token-12345"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session - Nonexistent Session ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Auth-Token",
+                "value": "{{session_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions/nonexistent-session-id",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions", "nonexistent-session-id"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Session (Logout)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 204 No Content', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test('Response body is empty', function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Auth-Token",
+                "value": "{{session_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions", "{{session_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Deleted Session Returns 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 or 404 after deletion', function () {",
+                  "    // After session deletion, the token is also invalidated",
+                  "    // So we may get 401 (invalid token) or 404 (session not found)",
+                  "    pm.expect([401, 404]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});",
+                  "",
+                  "// Clean up environment variables",
+                  "pm.environment.unset('session_token');",
+                  "pm.environment.unset('session_id');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Auth-Token",
+                "value": "{{session_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions", "{{session_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SessionService - POST Not Allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('POST to SessionService returns 405', function () {",
+                  "    pm.response.to.have.status(405);",
+                  "});",
+                  "",
+                  "pm.test('Error response is valid JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Error response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sessions Collection - GET Not Allowed Without Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('GET to Sessions without auth returns 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Error response contains error object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redfish/v1/SessionService/Sessions",
+              "host": ["{{base_url}}"],
+              "path": ["redfish", "v1", "SessionService", "Sessions"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [

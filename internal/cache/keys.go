@@ -20,17 +20,17 @@ func MakePowerStateKey(guid string) string {
 	return fmt.Sprintf("%s%s", PrefixPowerState, guid)
 }
 
-// MakeKVMDisplayKey creates a cache key for KVM displays
+// MakeKVMDisplayKey creates a cache key for KVM displays.
 func MakeKVMDisplayKey(guid string) string {
 	return fmt.Sprintf("%s%s", PrefixKVMDisplay, guid)
 }
 
-// MakeGeneralSettingsKey creates a cache key for general settings
+// MakeGeneralSettingsKey creates a cache key for general settings.
 func MakeGeneralSettingsKey(guid string) string {
 	return fmt.Sprintf("%s%s", PrefixGeneral, guid)
 }
 
-// InvalidateDeviceCache removes all cached data for a device
+// InvalidateDeviceCache removes all cached data for a device.
 func InvalidateDeviceCache(c *Cache, guid string) {
 	c.Delete(MakeFeaturesKey(guid))
 	c.Delete(MakePowerStateKey(guid))

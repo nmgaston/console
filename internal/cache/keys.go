@@ -7,6 +7,7 @@ const (
 	PrefixFeatures   = "features:"
 	PrefixPowerState = "power:"
 	PrefixKVMDisplay = "kvm:display:"
+	PrefixKVMInit    = "kvm:init:"
 	PrefixGeneral    = "general:"
 )
 
@@ -30,10 +31,16 @@ func MakeGeneralSettingsKey(guid string) string {
 	return fmt.Sprintf("%s%s", PrefixGeneral, guid)
 }
 
+// MakeKVMInitKey creates a cache key for KVM initialization data.
+func MakeKVMInitKey(guid string) string {
+	return fmt.Sprintf("%s%s", PrefixKVMInit, guid)
+}
+
 // InvalidateDeviceCache removes all cached data for a device.
 func InvalidateDeviceCache(c *Cache, guid string) {
 	c.Delete(MakeFeaturesKey(guid))
 	c.Delete(MakePowerStateKey(guid))
 	c.Delete(MakeKVMDisplayKey(guid))
+	c.Delete(MakeKVMInitKey(guid))
 	c.Delete(MakeGeneralSettingsKey(guid))
 }

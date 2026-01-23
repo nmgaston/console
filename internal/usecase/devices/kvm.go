@@ -2,7 +2,6 @@ package devices
 
 import (
 	"context"
-	"time"
 
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/ips/kvmredirection"
 

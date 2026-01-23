@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/amterror"
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/amt/boot"

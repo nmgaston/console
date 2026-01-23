@@ -6,7 +6,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/amt/boot"
 	cimBoot "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/boot"

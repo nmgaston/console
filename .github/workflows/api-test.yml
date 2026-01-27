@@ -21,18 +21,7 @@ jobs:
 
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     - run: cp .env.example .env
-    - name: Create prometheus config for docker-compose
-      run: |
-        cat > prometheus.yml << 'EOF'
-        global:
-          scrape_interval: 15s
-          evaluation_interval: 15s
-        scrape_configs:
-          - job_name: 'console'
-            static_configs:
-              - targets: ['app:8181']
-        EOF
-    - run: docker compose up -d --build    
+    - run: docker compose up -d --build vault postgres app    
     - name: Let Docker Spin up
       run: sleep 5
     - name: Run Console API Tests

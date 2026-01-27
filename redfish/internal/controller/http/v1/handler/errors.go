@@ -49,6 +49,12 @@ var errorConfigMap = map[string]ErrorConfig{
 		RegistryKey: "ResourceInUse",
 		StatusCode:  http.StatusConflict,
 	},
+	"SessionConflict": {
+		RegistryKey:   "ResourceInUse",
+		StatusCode:    http.StatusConflict,
+		CustomMessage: "A session already exists for this user. Delete the existing session before creating a new one.",
+		OverrideMsg:   true,
+	},
 	"PowerStateConflict": {
 		RegistryKey: "ResourceInUse",
 		StatusCode:  http.StatusConflict,
@@ -227,6 +233,11 @@ func createErrorResponse(registryName, messageKey string, args ...interface{}) (
 // ConflictError returns a Redfish-compliant 409 error
 func ConflictError(c *gin.Context, _, message string) {
 	sendRedfishError(c, "Conflict", message)
+}
+
+// SessionConflictError returns a Redfish-compliant 409 error for duplicate sessions
+func SessionConflictError(c *gin.Context) {
+	sendRedfishError(c, "SessionConflict", "")
 }
 
 // PowerStateConflictError returns a Redfish-compliant 409 error for power state conflicts

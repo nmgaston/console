@@ -76,6 +76,144 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+  /redfish/v1/SessionService:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: http://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.yaml#/components/schemas/SessionService_v1_2_0_SessionService
+          description: The response contains a representation of the SessionService
+            resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: http://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.yaml#/components/schemas/SessionService_v1_2_0_SessionService
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: http://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.yaml#/components/schemas/SessionService_v1_2_0_SessionService
+          description: The response contains a representation of the SessionService
+            resource
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: http://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.yaml#/components/schemas/SessionService_v1_2_0_SessionService
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: http://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.yaml#/components/schemas/SessionService_v1_2_0_SessionService
+          description: The response contains a representation of the SessionService
+            resource
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+  /redfish/v1/SessionService/Sessions:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: http://redfish.dmtf.org/schemas/v1/SessionCollection.yaml#/components/schemas/SessionCollection_SessionCollection
+          description: The response contains a representation of the SessionCollection
+            resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: http://redfish.dmtf.org/schemas/v1/Session.v1_8_0.yaml#/components/schemas/Session_v1_8_0_Session
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: http://redfish.dmtf.org/schemas/v1/Session.v1_8_0.yaml#/components/schemas/Session_v1_8_0_Session
+          description: A resource of type Session has been created
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+  /redfish/v1/SessionService/Sessions/{SessionId}:
+    delete:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: http://redfish.dmtf.org/schemas/v1/Session.v1_8_0.yaml#/components/schemas/Session_v1_8_0_Session
+          description: The response contains a representation of the Session resource
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: http://redfish.dmtf.org/schemas/v1/Session.v1_8_0.yaml#/components/schemas/Session_v1_8_0_Session
+          description: The response contains a representation of the Session resource
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+    parameters:
+    - description: The value of the Id property of the Session resource
+      in: path
+      name: SessionId
+      required: true
+      schema:
+        type: string
   /redfish/v1/Systems:
     get:
       responses:
@@ -159,7 +297,8 @@ paths:
                     items:
                       properties:
                         kind:
-                          description: Type of resource.  Value is `Singleton` for all cases defined by Redfish.
+                          description: Type of resource.  Value is `Singleton` for
+                            all cases defined by Redfish.
                           readOnly: true
                           type: string
                         name:

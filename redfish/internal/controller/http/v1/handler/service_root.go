@@ -223,14 +223,15 @@ func ExtractServicesFromOpenAPIData(data []byte) ([]ODataService, error) {
 			continue
 		}
 
-		// Extract top-level services: /redfish/v1/Systems, /redfish/v1/Chassis, etc.
+		// Extract top-level services only: /redfish/v1/Systems, /redfish/v1/SessionService, etc.
 		// Skip parametrized paths like /redfish/v1/Systems/{ComputerSystemId}
+		// Skip sub-resources like /redfish/v1/SessionService/Sessions
 		if strings.HasPrefix(pathStr, "/redfish/v1/") && !strings.Contains(pathStr, "{") {
 			// Extract service name (e.g., "Systems" from "/redfish/v1/Systems")
 			serviceName := strings.TrimPrefix(pathStr, "/redfish/v1/")
 
-			// Skip metadata, odata endpoints, and root path (empty name)
-			if serviceName != "" && serviceName != "odata" && serviceName != "$metadata" {
+			// Skip metadata, odata endpoints, root path (empty name), and sub-resources (containing /)
+			if serviceName != "" && serviceName != "odata" && serviceName != "$metadata" && !strings.Contains(serviceName, "/") {
 				serviceMap[serviceName] = ODataService{
 					Name: serviceName,
 					Kind: "Singleton",
@@ -281,19 +282,36 @@ func (s *RedfishServer) GetRedfishV1(c *gin.Context) {
 	// Set Redfish-compliant headers
 	SetRedfishHeaders(c)
 
-	serviceRoot := generated.ServiceRootServiceRoot{
-		OdataContext:   StringPtr(odataContextServiceRoot),
-		OdataId:        StringPtr(odataIDServiceRoot),
-		OdataType:      StringPtr(odataTypeServiceRoot),
-		Id:             serviceRootID,
-		Name:           serviceRootName,
-		RedfishVersion: StringPtr(redfishVersion),
-		UUID:           StringPtr(generateServiceUUID(s.Config.EnvironmentUUID)),
-		Product:        StringPtr("Device Management Toolkit - Redfish Service"),
-		Vendor:         StringPtr("Device Management Toolkit"),
-		Links:          &generated.ServiceRootLinks{},
-		Systems: &generated.OdataV4IdRef{
-			OdataId: StringPtr("/redfish/v1/Systems"),
+	type ServiceRootWithSessionService struct {
+		generated.ServiceRootServiceRoot
+		SessionService *generated.OdataV4IdRef `json:"SessionService,omitempty"`
+	}
+
+	// Create Links with Sessions for redfishtool compatibility
+	links := generated.ServiceRootLinks{
+		"Sessions": map[string]interface{}{
+			"@odata.id": "/redfish/v1/SessionService/Sessions",
+		},
+	}
+
+	serviceRoot := ServiceRootWithSessionService{
+		ServiceRootServiceRoot: generated.ServiceRootServiceRoot{
+			OdataContext:   StringPtr(odataContextServiceRoot),
+			OdataId:        StringPtr(odataIDServiceRoot),
+			OdataType:      StringPtr(odataTypeServiceRoot),
+			Id:             serviceRootID,
+			Name:           serviceRootName,
+			RedfishVersion: StringPtr(redfishVersion),
+			UUID:           StringPtr(generateServiceUUID("")),
+			Product:        StringPtr("Device Management Toolkit - Redfish Service"),
+			Vendor:         StringPtr("Device Management Toolkit"),
+			Links:          &links,
+			Systems: &generated.OdataV4IdRef{
+				OdataId: StringPtr("/redfish/v1/Systems"),
+			},
+		},
+		SessionService: &generated.OdataV4IdRef{
+			OdataId: StringPtr("/redfish/v1/SessionService"),
 		},
 	}
 

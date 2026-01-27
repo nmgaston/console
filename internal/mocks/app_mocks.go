@@ -10,8 +10,8 @@ import (
 	http "net/http"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
 	websocket "github.com/gorilla/websocket"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockDB is a mock of DB interface.

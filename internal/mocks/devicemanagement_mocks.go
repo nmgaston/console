@@ -15,8 +15,8 @@ import (
 	wsman "github.com/device-management-toolkit/console/internal/usecase/devices/wsman"
 	wsman0 "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman"
 	power "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/power"
-	gomock "go.uber.org/mock/gomock"
 	websocket "github.com/gorilla/websocket"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockWSMAN is a mock of WSMAN interface.

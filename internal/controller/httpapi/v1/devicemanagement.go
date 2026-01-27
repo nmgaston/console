@@ -62,7 +62,7 @@ func NewAmtRoutes(handler *gin.RouterGroup, d devices.Feature, amt amtexplorer.F
 		// KVM display settings
 		h.GET("kvm/displays/:guid", r.getKVMDisplays)
 		h.PUT("kvm/displays/:guid", r.setKVMDisplays)
-		
+
 		// KVM initialization - combines display, power, redirection, and features
 		h.GET("kvm/init/:guid", r.getKVMInitData)
 

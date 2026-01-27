@@ -19,6 +19,12 @@ var (
 
 	// ErrInvalidResetType is returned when an invalid reset type is provided.
 	ErrInvalidResetType = errors.New("invalid reset type")
+
+	// ErrInvalidBootSettings is returned when invalid boot settings are provided.
+	ErrInvalidBootSettings = errors.New("invalid boot settings")
+
+	// ErrSystemNotFound is returned when a system is not found.
+	ErrSystemNotFound = errors.New("system not found")
 )
 
 // OData and schema constants for ComputerSystem.
@@ -132,6 +138,12 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		}
 	}
 
+	// Fetch boot settings
+	boot, err := uc.Repo.GetBootSettings(ctx, systemID)
+	if err != nil {
+		// Log error but don't fail the entire request - boot settings may not be available
+		boot = nil
+	}
 	// Create Actions for this system using the generated Actions type
 	actions := uc.createActionsStruct(systemID)
 
@@ -156,6 +168,7 @@ func (uc *ComputerSystemUseCase) GetComputerSystem(ctx context.Context, systemID
 		PowerState:       powerState,
 		SystemType:       &systemType,
 		Status:           status,
+		Boot:             boot,
 		Actions:          actions,
 		MemorySummary:    memorySummary,
 		ProcessorSummary: processorSummary,
@@ -242,6 +255,126 @@ func convertToEntityResetType(resetType generated.ResourceResetType) redfishv1.P
 	}
 }
 
+// UpdateBootSettings updates the boot configuration for a ComputerSystem.
+func (uc *ComputerSystemUseCase) UpdateBootSettings(ctx context.Context, systemID string, boot *generated.ComputerSystemBoot) error {
+	if boot == nil {
+		return nil // Nothing to update
+	}
+
+	// Validate all boot settings
+	if err := uc.validateBootSettings(boot); err != nil {
+		return err
+	}
+
+	// Update boot settings in repository
+	return uc.Repo.UpdateBootSettings(ctx, systemID, boot)
+}
+
+// validateBootSettings validates all boot configuration fields.
+func (uc *ComputerSystemUseCase) validateBootSettings(boot *generated.ComputerSystemBoot) error {
+	if err := uc.validateBootTargetField(boot.BootSourceOverrideTarget); err != nil {
+		return err
+	}
+
+	if err := uc.validateBootEnabledField(boot.BootSourceOverrideEnabled); err != nil {
+		return err
+	}
+
+	return uc.validateBootModeField(boot.BootSourceOverrideMode)
+}
+
+// validateBootTargetField validates the boot source override target field.
+func (uc *ComputerSystemUseCase) validateBootTargetField(targetField *generated.ComputerSystemBoot_BootSourceOverrideTarget) error {
+	if targetField == nil {
+		return nil
+	}
+
+	target, err := targetField.AsComputerSystemBootSourceOverrideTarget()
+	if err != nil {
+		return nil
+	}
+
+	return validateBootTarget(target)
+}
+
+// validateBootEnabledField validates the boot source override enabled field.
+func (uc *ComputerSystemUseCase) validateBootEnabledField(enabledField *generated.ComputerSystemBoot_BootSourceOverrideEnabled) error {
+	if enabledField == nil {
+		return nil
+	}
+
+	enabled, err := enabledField.AsComputerSystemBootSourceOverrideEnabled()
+	if err != nil {
+		return nil
+	}
+
+	return validateBootEnabled(enabled)
+}
+
+// validateBootModeField validates the boot source override mode field.
+func (uc *ComputerSystemUseCase) validateBootModeField(modeField *generated.ComputerSystemBoot_BootSourceOverrideMode) error {
+	if modeField == nil {
+		return nil
+	}
+
+	mode, err := modeField.AsComputerSystemBootSourceOverrideMode()
+	if err != nil {
+		return nil
+	}
+
+	return validateBootMode(mode)
+}
+
+// validateBootTarget validates the boot source override target.
+func validateBootTarget(target generated.ComputerSystemBootSourceOverrideTarget) error {
+	validTargets := map[generated.ComputerSystemBootSourceOverrideTarget]bool{
+		generated.ComputerSystemBootSourceOverrideTargetBiosSetup:    true,
+		generated.ComputerSystemBootSourceOverrideTargetCd:           true,
+		generated.ComputerSystemBootSourceOverrideTargetDiags:        true,
+		generated.ComputerSystemBootSourceOverrideTargetFloppy:       true,
+		generated.ComputerSystemBootSourceOverrideTargetHdd:          true,
+		generated.ComputerSystemBootSourceOverrideTargetNone:         true,
+		generated.ComputerSystemBootSourceOverrideTargetPxe:          true,
+		generated.ComputerSystemBootSourceOverrideTargetRecovery:     true,
+		generated.ComputerSystemBootSourceOverrideTargetRemoteDrive:  true,
+		generated.ComputerSystemBootSourceOverrideTargetSDCard:       true,
+		generated.ComputerSystemBootSourceOverrideTargetUefiBootNext: true,
+		generated.ComputerSystemBootSourceOverrideTargetUefiHttp:     true,
+		generated.ComputerSystemBootSourceOverrideTargetUefiShell:    true,
+		generated.ComputerSystemBootSourceOverrideTargetUefiTarget:   true,
+		generated.ComputerSystemBootSourceOverrideTargetUsb:          true,
+		generated.ComputerSystemBootSourceOverrideTargetUtilities:    true,
+	}
+
+	if validTargets[target] {
+		return nil
+	}
+
+	return fmt.Errorf("%w: invalid boot target %s", ErrInvalidBootSettings, target)
+}
+
+// validateBootEnabled validates the boot source override enabled setting.
+func validateBootEnabled(enabled generated.ComputerSystemBootSourceOverrideEnabled) error {
+	switch enabled {
+	case generated.ComputerSystemBootSourceOverrideEnabledContinuous,
+		generated.ComputerSystemBootSourceOverrideEnabledDisabled,
+		generated.ComputerSystemBootSourceOverrideEnabledOnce:
+		return nil
+	default:
+		return fmt.Errorf("%w: invalid boot enabled setting %s", ErrInvalidBootSettings, enabled)
+	}
+}
+
+// validateBootMode validates the boot source override mode.
+func validateBootMode(mode generated.ComputerSystemBootSourceOverrideMode) error {
+	switch mode {
+	case generated.Legacy, generated.UEFI:
+		return nil
+	default:
+		return fmt.Errorf("%w: invalid boot mode %s", ErrInvalidBootSettings, mode)
+	}
+}
+
 // convertStatusToGenerated converts entity Status to generated ResourceStatus.
 func (uc *ComputerSystemUseCase) convertStatusToGenerated(status *redfishv1.Status) *generated.ResourceStatus {
 	if status == nil {
@@ -305,45 +438,43 @@ func (uc *ComputerSystemUseCase) convertHealthToGenerated(health string) *genera
 
 // convertStateToGenerated converts State string to generated ResourceStatus_State.
 func (uc *ComputerSystemUseCase) convertStateToGenerated(state string) *generated.ResourceStatus_State {
-	if state == "" {
-		return nil
-	}
+	var stateEnum generated.ResourceState
 
-	stateEnum := uc.mapStateStringToEnum(state)
-	if stateEnum == nil {
-		return nil
+	switch state {
+	case StateEnabled:
+		stateEnum = generated.ResourceStateEnabled
+	case StateDisabled:
+		stateEnum = generated.ResourceStateDisabled
+	case StateStandbyOffline:
+		stateEnum = generated.ResourceStateStandbyOffline
+	case StateStandbySpare:
+		stateEnum = generated.ResourceStateStandbySpare
+	case StateInTest:
+		stateEnum = generated.ResourceStateInTest
+	case StateStarting:
+		stateEnum = generated.ResourceStateStarting
+	case StateAbsent:
+		stateEnum = generated.ResourceStateAbsent
+	case StateUnavailableOffline:
+		stateEnum = generated.ResourceStateUnavailableOffline
+	case StateDeferring:
+		stateEnum = generated.ResourceStateDeferring
+	case StateQuiesced:
+		stateEnum = generated.ResourceStateQuiesced
+	case StateUpdating:
+		stateEnum = generated.ResourceStateUpdating
+	case StateDegraded:
+		stateEnum = generated.ResourceStateDegraded
+	default:
+		return nil // Don't create state if unknown value
 	}
 
 	stateObj := generated.ResourceStatus_State{}
-	if err := stateObj.FromResourceState(*stateEnum); err != nil {
+	if err := stateObj.FromResourceState(stateEnum); err != nil {
 		return nil
 	}
 
 	return &stateObj
-}
-
-// mapStateStringToEnum maps state string to ResourceState enum.
-func (uc *ComputerSystemUseCase) mapStateStringToEnum(state string) *generated.ResourceState {
-	stateMap := map[string]generated.ResourceState{
-		StateEnabled:            generated.Enabled,
-		StateDisabled:           generated.Disabled,
-		StateStandbyOffline:     generated.StandbyOffline,
-		StateStandbySpare:       generated.StandbySpare,
-		StateInTest:             generated.InTest,
-		StateStarting:           generated.Starting,
-		StateAbsent:             generated.Absent,
-		StateUnavailableOffline: generated.UnavailableOffline,
-		StateDeferring:          generated.Deferring,
-		StateQuiesced:           generated.Quiesced,
-		StateUpdating:           generated.Updating,
-		StateDegraded:           generated.Degraded,
-	}
-
-	if stateEnum, exists := stateMap[state]; exists {
-		return &stateEnum
-	}
-
-	return nil
 }
 
 // createActionsStruct builds the Actions property using generated types.

@@ -37,7 +37,7 @@ services:
       HTTP_TLS_ENABLED: "false"
       GIN_MODE: "debug"
       DB_URL: "postgres://postgresadmin:admin123@postgres:5432/rpsdb"
-      AUTH_DISABLED: "true"
+      AUTH_DISABLED: true
     ports:
       - 8181:8181
     depends_on:

@@ -19,6 +19,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
   /redfish/v1/$metadata:
     get:
       responses:
@@ -32,6 +34,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
   /redfish/v1/SessionService:
     get:
       responses:
@@ -48,6 +52,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     patch:
       requestBody:
         content:
@@ -71,6 +77,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     put:
       requestBody:
         content:
@@ -94,6 +102,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/SessionService/Sessions:
     get:
       responses:
@@ -110,6 +120,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     post:
       requestBody:
         content:
@@ -132,6 +144,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/SessionService/Sessions/{SessionId}:
     delete:
       responses:
@@ -149,6 +163,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     get:
       responses:
         '200':
@@ -163,6 +179,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     parameters:
     - description: The value of the Id property of the Session resource
       in: path
@@ -186,6 +204,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/Systems/{ComputerSystemId}:
     get:
       responses:
@@ -202,6 +222,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
     parameters:
     - description: The value of the Id property of the ComputerSystem resource
       in: path
@@ -237,6 +259,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - BasicAuth: []
   /redfish/v1/odata:
     get:
       responses:
@@ -282,6 +306,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RedfishError'
           description: Error condition
+      security:
+      - {}
 components:
   schemas:
     ActionInfo_ActionInfo:
@@ -836,18 +862,19 @@ components:
         Recovery: Boot to a system-designated recovery process or image.
         RemoteDrive: Boot from a remote drive, such as an iSCSI target.
         SDCard: Boot from an SD card.
-        UefiBootNext: Boot to the UEFI device specified in the BootNext property.
+        UefiBootNext: Boot to the UEFI device that the `BootNext` property specifies.
         UefiHttp: Boot from a UEFI HTTP network location.
         UefiShell: Boot to the UEFI Shell.
-        UefiTarget: Boot to the UEFI device specified in the UefiTargetBootSourceOverride
+        UefiTarget: Boot to the UEFI device specified in the `UefiTargetBootSourceOverride`
           property.
-        Usb: Boot from a system UEFI-compliant USB device.
+        Usb: Boot from a system BIOS-specified USB device.
         Utilities: Boot to the manufacturer's utilities program or programs.
-      x-enumLongDescriptions:
-        BiosSetup: This value shall indicate that the system boots to the BIOS setup
-          utility or UEFI human interface infrastructure.
-        UefiTarget: This value shall indicate that the system boots to the UEFI device
-          specified in the UefiTargetBootSourceOverride property.
+      x-enumVersionAdded:
+        Recovery: v1_19_0
+        RemoteDrive: v1_2_0
+        SDCard: v1_1_0
+        UefiBootNext: v1_5_0
+        UefiHttp: v1_1_0
     ComputerSystem_BootSourceOverrideEnabled:
       enum:
       - Disabled
@@ -3575,3 +3602,15 @@ components:
       x-longDescription: The value of this property shall be a URI fragment that specifies
         the type of the resource and it shall be of the form defined in the Redfish
         specification.
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic Authentication for Redfish API
+security:
+- BasicAuth: []
+- {}
+x-basic-auth:
+  default-auth: BasicAuth
+  redfish-compliant: true
+  service-root-public: true

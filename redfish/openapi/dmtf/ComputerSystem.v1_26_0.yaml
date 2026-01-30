@@ -242,48 +242,6 @@ components:
           persistent boot order.
         BootOrder: The system uses the `BootOrder` property to specify the persistent
           boot order.
-    ComputerSystem_v1_26_0_BootSource:
-      enum:
-      - None
-      - Pxe
-      - Floppy
-      - Cd
-      - Usb
-      - Hdd
-      - BiosSetup
-      - Utilities
-      - Diags
-      - UefiShell
-      - UefiTarget
-      - SDCard
-      - UefiHttp
-      - RemoteDrive
-      - UefiBootNext
-      - Recovery
-      type: string
-      x-enumDescriptions:
-        BiosSetup: Boot to the BIOS setup utility.
-        Cd: Boot from the CD or DVD.
-        Diags: Boot to the manufacturer's diagnostics program.
-        Floppy: Boot from the floppy disk drive.
-        Hdd: Boot from a hard drive.
-        None: Boot from the normal boot device.
-        Pxe: Boot from the Pre-boot eXecution Environment (PXE).
-        Recovery: Boot to a system-designated recovery process or image.
-        RemoteDrive: Boot from a remote drive, such as an iSCSI target.
-        SDCard: Boot from an SD card.
-        UefiBootNext: Boot to the UEFI device specified in the BootNext property.
-        UefiHttp: Boot from a UEFI HTTP network location.
-        UefiShell: Boot to the UEFI Shell.
-        UefiTarget: Boot to the UEFI device specified in the UefiTargetBootSourceOverride
-          property.
-        Usb: Boot from a system UEFI-compliant USB device.
-        Utilities: Boot to the manufacturer's utilities program or programs.
-      x-enumLongDescriptions:
-        BiosSetup: This value shall indicate that the system boots to the BIOS setup
-          utility or UEFI human interface infrastructure.
-        UefiTarget: This value shall indicate that the system boots to the UEFI device
-          specified in the UefiTargetBootSourceOverride property.
     ComputerSystem_v1_26_0_BootSourceOverrideEnabled:
       enum:
       - Disabled

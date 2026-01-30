@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
@@ -68,6 +69,23 @@ func (r *TestComputerSystemRepository) UpdatePowerState(_ context.Context, syste
 			system.PowerState = redfishv1.PowerStateOff
 		}
 
+		return nil
+	}
+
+	return usecase.ErrSystemNotFound
+}
+
+func (r *TestComputerSystemRepository) GetBootSettings(_ context.Context, systemID string) (*generated.ComputerSystemBoot, error) {
+	if _, exists := r.systems[systemID]; exists {
+		// Return empty boot settings for tests
+		return &generated.ComputerSystemBoot{}, nil
+	}
+
+	return nil, usecase.ErrSystemNotFound
+}
+
+func (r *TestComputerSystemRepository) UpdateBootSettings(_ context.Context, systemID string, _ *generated.ComputerSystemBoot) error {
+	if _, exists := r.systems[systemID]; exists {
 		return nil
 	}
 

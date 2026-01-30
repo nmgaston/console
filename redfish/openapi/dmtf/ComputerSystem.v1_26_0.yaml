@@ -39,7 +39,7 @@ components:
             boot order associated with this computer system.
           items:
             oneOf:
-            - $ref: '#/components/schemas/ComputerSystem_v1_26_0_BootSource'
+            - $ref: http://redfish.dmtf.org/schemas/v1/ComputerSystem.yaml#/components/schemas/ComputerSystem_BootSource
             - enum:
               - null
           readOnly: false

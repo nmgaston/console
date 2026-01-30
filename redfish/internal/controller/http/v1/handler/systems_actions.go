@@ -101,8 +101,6 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 
 // applyBootSettings processes boot override parameters from reset request and applies them to the system.
 // Returns error if boot settings cannot be applied, nil otherwise.
-//
-//nolint:gocognit // Complexity is inherent to boot parameter conversion logic
 func (s *RedfishServer) applyBootSettings(
 	c *gin.Context,
 	computerSystemID string,
@@ -155,12 +153,14 @@ func (s *RedfishServer) convertBootTarget(
 	targetVal, err := req.BootSourceOverrideTarget.AsComputerSystemBootSourceOverrideTarget()
 	if err != nil {
 		log.Warnf("Failed to convert boot target: %v", err)
+
 		return nil
 	}
 
 	bootTarget := &generated.ComputerSystemBoot_BootSourceOverrideTarget{}
 	if err := bootTarget.FromComputerSystemBootSourceOverrideTarget(targetVal); err != nil {
 		log.Warnf("Failed to set boot target: %v", err)
+
 		return nil
 	}
 
@@ -180,12 +180,14 @@ func (s *RedfishServer) convertBootEnabled(
 	enabledVal, err := req.BootSourceOverrideEnabled.AsComputerSystemBootSourceOverrideEnabled()
 	if err != nil {
 		log.Warnf("Failed to convert boot enabled: %v", err)
+
 		return nil
 	}
 
 	bootEnabled := &generated.ComputerSystemBoot_BootSourceOverrideEnabled{}
 	if err := bootEnabled.FromComputerSystemBootSourceOverrideEnabled(enabledVal); err != nil {
 		log.Warnf("Failed to set boot enabled: %v", err)
+
 		return nil
 	}
 
@@ -205,12 +207,14 @@ func (s *RedfishServer) convertBootMode(
 	modeVal, err := req.BootSourceOverrideMode.AsComputerSystemBootSourceOverrideMode()
 	if err != nil {
 		log.Warnf("Failed to convert boot mode: %v", err)
+
 		return nil
 	}
 
 	bootMode := &generated.ComputerSystemBoot_BootSourceOverrideMode{}
 	if err := bootMode.FromComputerSystemBootSourceOverrideMode(modeVal); err != nil {
 		log.Warnf("Failed to set boot mode: %v", err)
+
 		return nil
 	}
 

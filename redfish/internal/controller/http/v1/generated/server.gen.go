@@ -96,8 +96,6 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1Metadata(c *gin.Context) {
 // GetRedfishV1SessionService operation middleware
 func (siw *ServerInterfaceWrapper) GetRedfishV1SessionService(c *gin.Context) {
 
-	c.Set(BasicAuthScopes, []string{})
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -110,8 +108,6 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SessionService(c *gin.Context) {
 
 // PatchRedfishV1SessionService operation middleware
 func (siw *ServerInterfaceWrapper) PatchRedfishV1SessionService(c *gin.Context) {
-
-	c.Set(BasicAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -126,8 +122,6 @@ func (siw *ServerInterfaceWrapper) PatchRedfishV1SessionService(c *gin.Context) 
 // PutRedfishV1SessionService operation middleware
 func (siw *ServerInterfaceWrapper) PutRedfishV1SessionService(c *gin.Context) {
 
-	c.Set(BasicAuthScopes, []string{})
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -141,8 +135,6 @@ func (siw *ServerInterfaceWrapper) PutRedfishV1SessionService(c *gin.Context) {
 // GetRedfishV1SessionServiceSessions operation middleware
 func (siw *ServerInterfaceWrapper) GetRedfishV1SessionServiceSessions(c *gin.Context) {
 
-	c.Set(BasicAuthScopes, []string{})
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -155,8 +147,6 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SessionServiceSessions(c *gin.Con
 
 // PostRedfishV1SessionServiceSessions operation middleware
 func (siw *ServerInterfaceWrapper) PostRedfishV1SessionServiceSessions(c *gin.Context) {
-
-	c.Set(BasicAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -182,8 +172,6 @@ func (siw *ServerInterfaceWrapper) DeleteRedfishV1SessionServiceSessionsSessionI
 		return
 	}
 
-	c.Set(BasicAuthScopes, []string{})
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -208,8 +196,6 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SessionServiceSessionsSessionId(c
 		return
 	}
 
-	c.Set(BasicAuthScopes, []string{})
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -222,8 +208,6 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SessionServiceSessionsSessionId(c
 
 // GetRedfishV1Systems operation middleware
 func (siw *ServerInterfaceWrapper) GetRedfishV1Systems(c *gin.Context) {
-
-	c.Set(BasicAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -249,8 +233,6 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SystemsComputerSystemId(c *gin.Co
 		return
 	}
 
-	c.Set(BasicAuthScopes, []string{})
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -274,8 +256,6 @@ func (siw *ServerInterfaceWrapper) PostRedfishV1SystemsComputerSystemIdActionsCo
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter ComputerSystemId: %w", err), http.StatusBadRequest)
 		return
 	}
-
-	c.Set(BasicAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)

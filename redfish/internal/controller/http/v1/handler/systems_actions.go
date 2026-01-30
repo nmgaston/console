@@ -42,6 +42,60 @@ func (s *RedfishServer) PostRedfishV1SystemsComputerSystemIdActionsComputerSyste
 
 	log.Infof("Received reset request for ComputerSystem %s with ResetType %s", computerSystemID, *req.ResetType)
 
+	// Handle boot settings if provided
+	if req.BootSourceOverrideTarget != nil || req.BootSourceOverrideEnabled != nil || req.BootSourceOverrideMode != nil {
+		// Create boot object by converting the union types
+		boot := &generated.ComputerSystemBoot{}
+		
+		if req.BootSourceOverrideTarget != nil {
+			targetVal, err := req.BootSourceOverrideTarget.AsComputerSystemBootSourceOverrideTarget()
+			if err == nil {
+				bootTarget := &generated.ComputerSystemBoot_BootSourceOverrideTarget{}
+				bootTarget.FromComputerSystemBootSourceOverrideTarget(targetVal)
+				boot.BootSourceOverrideTarget = bootTarget
+			} else {
+				log.Warnf("Failed to convert boot target: %v", err)
+			}
+		}
+		
+		if req.BootSourceOverrideEnabled != nil {
+			enabledVal, err := req.BootSourceOverrideEnabled.AsComputerSystemBootSourceOverrideEnabled()
+			if err == nil {
+				bootEnabled := &generated.ComputerSystemBoot_BootSourceOverrideEnabled{}
+				bootEnabled.FromComputerSystemBootSourceOverrideEnabled(enabledVal)
+				boot.BootSourceOverrideEnabled = bootEnabled
+			} else {
+				log.Warnf("Failed to convert boot enabled: %v", err)
+			}
+		}
+		
+		if req.BootSourceOverrideMode != nil {
+			modeVal, err := req.BootSourceOverrideMode.AsComputerSystemBootSourceOverrideMode()
+			if err == nil {
+				bootMode := &generated.ComputerSystemBoot_BootSourceOverrideMode{}
+				bootMode.FromComputerSystemBootSourceOverrideMode(modeVal)
+				boot.BootSourceOverrideMode = bootMode
+			} else {
+				log.Warnf("Failed to convert boot mode: %v", err)
+			}
+		}
+
+		if err := s.ComputerSystemUC.UpdateBootSettings(c.Request.Context(), computerSystemID, boot); err != nil {
+			switch {
+			case errors.Is(err, usecase.ErrSystemNotFound):
+				NotFoundError(c, "System", computerSystemID)
+			case errors.Is(err, usecase.ErrInvalidBootSettings):
+				BadRequestError(c, fmt.Sprintf("Invalid boot settings: %s", err.Error()))
+			default:
+				InternalServerError(c, err)
+			}
+
+			return
+		}
+
+		log.Infof("Boot settings updated for ComputerSystem %s", computerSystemID)
+	}
+
 	if err := s.ComputerSystemUC.SetPowerState(c.Request.Context(), computerSystemID, *req.ResetType); err != nil {
 		switch {
 		case errors.Is(err, usecase.ErrSystemNotFound):

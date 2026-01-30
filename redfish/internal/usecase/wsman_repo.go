@@ -4,11 +4,16 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
+
+	amtBoot "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/amt/boot"
+	cimBoot "github.com/device-management-toolkit/go-wsman-messages/v2/pkg/wsman/cim/boot"
 
 	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
 	"github.com/device-management-toolkit/console/internal/usecase/devices"
 	"github.com/device-management-toolkit/console/pkg/logger"
+	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
 )
 
@@ -74,11 +79,17 @@ const (
 )
 
 var (
-	// ErrSystemNotFound is returned when a system is not found.
-	ErrSystemNotFound = errors.New("system not found")
+	// ErrGetAllNotImplemented is returned when GetAll is called (not yet implemented).
+	ErrGetAllNotImplemented = errors.New("GetAll not implemented")
 
 	// ErrUnsupportedPowerState is returned when an unsupported power state is requested.
 	ErrUnsupportedPowerState = errors.New("unsupported power state")
+
+	// ErrBootSettingsNotAvailable is returned when boot settings cannot be retrieved.
+	ErrBootSettingsNotAvailable = errors.New("boot settings not available")
+
+	// ErrUnsupportedBootTarget is returned when an unsupported boot target is requested.
+	ErrUnsupportedBootTarget = errors.New("unsupported boot target")
 )
 
 // CIMObjectType represents different types of CIM objects.
@@ -885,4 +896,204 @@ func (r *WsmanComputerSystemRepo) UpdatePowerState(ctx context.Context, systemID
 	}
 
 	return err
+}
+
+// GetBootSettings retrieves the current boot configuration for a system.
+func (r *WsmanComputerSystemRepo) GetBootSettings(ctx context.Context, systemID string) (*generated.ComputerSystemBoot, error) {
+	// Get current boot data from AMT via devices use case
+	bootData, err := r.usecase.GetBootData(ctx, systemID)
+	if err != nil {
+		if r.isDeviceNotFoundError(err) {
+			return nil, ErrSystemNotFound
+		}
+
+		r.log.Warn("Failed to get boot data from device", "systemID", systemID, "error", err)
+
+		return nil, ErrBootSettingsNotAvailable
+	}
+
+	// Map AMT boot data to Redfish Boot structure
+	boot := &generated.ComputerSystemBoot{}
+
+	// Map BootSourceOverrideEnabled
+	if bootData.BootMediaIndex == 0 {
+		// No override, boot from normal sources
+		enabled := generated.ComputerSystemBoot_BootSourceOverrideEnabled{}
+		_ = enabled.FromComputerSystemBootSourceOverrideEnabled(generated.ComputerSystemBootSourceOverrideEnabledDisabled)
+		boot.BootSourceOverrideEnabled = &enabled
+	} else {
+		// Boot override is active - assume "Once" for AMT
+		enabled := generated.ComputerSystemBoot_BootSourceOverrideEnabled{}
+		_ = enabled.FromComputerSystemBootSourceOverrideEnabled(generated.ComputerSystemBootSourceOverrideEnabledOnce)
+		boot.BootSourceOverrideEnabled = &enabled
+	}
+
+	// Map boot target based on boot configuration
+	target := generated.ComputerSystemBoot_BootSourceOverrideTarget{}
+
+	switch {
+	case bootData.BIOSSetup:
+		_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetBiosSetup)
+	case bootData.UseIDER:
+		// IDER can be CD or Floppy
+		if bootData.IDERBootDevice == 1 {
+			_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetCd)
+		} else {
+			_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetFloppy)
+		}
+	default:
+		// Default or PXE boot - would need additional logic to determine exact source
+		_ = target.FromComputerSystemBootSourceOverrideTarget(generated.ComputerSystemBootSourceOverrideTargetNone)
+	}
+
+	boot.BootSourceOverrideTarget = &target
+
+	// Map boot mode based on UEFI boot parameters
+	mode := generated.ComputerSystemBoot_BootSourceOverrideMode{}
+
+	if bootData.UEFILocalPBABootEnabled || bootData.UEFIHTTPSBootEnabled || len(bootData.UEFIBootParametersArray) > 0 {
+		_ = mode.FromComputerSystemBootSourceOverrideMode(generated.UEFI)
+	} else {
+		_ = mode.FromComputerSystemBootSourceOverrideMode(generated.Legacy)
+	}
+
+	boot.BootSourceOverrideMode = &mode
+
+	return boot, nil
+}
+
+// UpdateBootSettings updates the boot configuration for a system.
+func (r *WsmanComputerSystemRepo) UpdateBootSettings(ctx context.Context, systemID string, boot *generated.ComputerSystemBoot) error {
+	// Get current boot data to preserve settings
+	bootData, err := r.usecase.GetBootData(ctx, systemID)
+	if err != nil {
+		if r.isDeviceNotFoundError(err) {
+			return ErrSystemNotFound
+		}
+
+		return fmt.Errorf("failed to get current boot data: %w", err)
+	}
+
+	// Create new boot settings based on current data
+	newBootData := r.createBootDataRequest(bootData)
+
+	// Parse and apply boot target
+	bootSource, err := r.applyBootTarget(boot, &newBootData)
+	if err != nil {
+		return err
+	}
+
+	// Apply boot mode if specified
+	r.applyBootMode(boot, systemID)
+
+	// Use devices use case methods to configure boot
+	if err := r.usecase.SetBootData(ctx, systemID, newBootData); err != nil {
+		return fmt.Errorf("failed to set boot settings: %w", err)
+	}
+
+	// Set boot order if we have a boot source
+	if bootSource != "" {
+		if err := r.usecase.ChangeBootOrder(ctx, systemID, bootSource); err != nil {
+			return fmt.Errorf("failed to change boot order: %w", err)
+		}
+	}
+
+	r.log.Info("Boot settings updated successfully",
+		"systemID", systemID,
+		"target", boot.BootSourceOverrideTarget,
+		"enabled", boot.BootSourceOverrideEnabled,
+		"mode", boot.BootSourceOverrideMode,
+	)
+
+	return nil
+}
+
+// createBootDataRequest creates a new boot data request from current settings.
+func (r *WsmanComputerSystemRepo) createBootDataRequest(bootData amtBoot.BootSettingDataResponse) amtBoot.BootSettingDataRequest {
+	return amtBoot.BootSettingDataRequest{
+		BIOSLastStatus:         bootData.BIOSLastStatus,
+		BIOSPause:              false,
+		BIOSSetup:              false,
+		BootMediaIndex:         0,
+		ConfigurationDataReset: false,
+		ElementName:            bootData.ElementName,
+		EnforceSecureBoot:      bootData.EnforceSecureBoot,
+		FirmwareVerbosity:      bootData.FirmwareVerbosity,
+		ForcedProgressEvents:   false,
+		InstanceID:             bootData.InstanceID,
+		LockKeyboard:           false,
+		LockPowerButton:        false,
+		LockResetButton:        false,
+		LockSleepButton:        false,
+		OptionsCleared:         true,
+		OwningEntity:           bootData.OwningEntity,
+		ReflashBIOS:            false,
+		UseIDER:                false,
+		UseSOL:                 bootData.UseSOL,
+		UseSafeMode:            false,
+		UserPasswordBypass:     false,
+		SecureErase:            false,
+	}
+}
+
+// applyBootTarget applies the boot target to the boot data and returns the boot source.
+func (r *WsmanComputerSystemRepo) applyBootTarget(boot *generated.ComputerSystemBoot, newBootData *amtBoot.BootSettingDataRequest) (string, error) {
+	if boot.BootSourceOverrideTarget == nil {
+		return "", nil
+	}
+
+	target, err := boot.BootSourceOverrideTarget.AsComputerSystemBootSourceOverrideTarget()
+	if err != nil {
+		return "", nil
+	}
+
+	switch target {
+	case generated.ComputerSystemBootSourceOverrideTargetBiosSetup:
+		newBootData.BIOSSetup = true
+
+		return "", nil // Clear boot order for BIOS setup
+	case generated.ComputerSystemBootSourceOverrideTargetPxe:
+		return string(cimBoot.PXE), nil
+	case generated.ComputerSystemBootSourceOverrideTargetCd:
+		newBootData.UseIDER = true
+		newBootData.IDERBootDevice = 1 // CD-ROM
+
+		return string(cimBoot.CD), nil
+	case generated.ComputerSystemBootSourceOverrideTargetFloppy:
+		newBootData.UseIDER = true
+		newBootData.IDERBootDevice = 0 // Floppy
+
+		return "", nil
+	case generated.ComputerSystemBootSourceOverrideTargetHdd, generated.ComputerSystemBootSourceOverrideTargetNone:
+		return "", nil // Default boot or clear override
+	case generated.ComputerSystemBootSourceOverrideTargetUsb:
+		return "", ErrUnsupportedBootTarget
+	case generated.ComputerSystemBootSourceOverrideTargetDiags, generated.ComputerSystemBootSourceOverrideTargetRecovery,
+		generated.ComputerSystemBootSourceOverrideTargetRemoteDrive, generated.ComputerSystemBootSourceOverrideTargetSDCard,
+		generated.ComputerSystemBootSourceOverrideTargetUefiBootNext, generated.ComputerSystemBootSourceOverrideTargetUefiHttp,
+		generated.ComputerSystemBootSourceOverrideTargetUefiShell, generated.ComputerSystemBootSourceOverrideTargetUefiTarget,
+		generated.ComputerSystemBootSourceOverrideTargetUtilities:
+		return "", ErrUnsupportedBootTarget
+	default:
+		return "", ErrUnsupportedBootTarget
+	}
+}
+
+// applyBootMode logs the requested boot mode.
+func (r *WsmanComputerSystemRepo) applyBootMode(boot *generated.ComputerSystemBoot, systemID string) {
+	if boot.BootSourceOverrideMode == nil {
+		return
+	}
+
+	mode, err := boot.BootSourceOverrideMode.AsComputerSystemBootSourceOverrideMode()
+	if err != nil {
+		return
+	}
+
+	switch mode {
+	case generated.UEFI:
+		r.log.Info("UEFI boot mode requested", "systemID", systemID)
+	case generated.Legacy:
+		r.log.Info("Legacy boot mode requested", "systemID", systemID)
+	}
 }

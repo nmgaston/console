@@ -10,10 +10,6 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
-const (
-	BasicAuthScopes = "BasicAuth.Scopes"
-)
-
 // Defines values for ActionInfoParameterTypes.
 const (
 	Boolean     ActionInfoParameterTypes = "Boolean"
@@ -25,12 +21,84 @@ const (
 	StringArray ActionInfoParameterTypes = "StringArray"
 )
 
+// Defines values for ComputerSystemAutomaticRetryConfig.
+const (
+	ComputerSystemAutomaticRetryConfigDisabled      ComputerSystemAutomaticRetryConfig = "Disabled"
+	ComputerSystemAutomaticRetryConfigRetryAlways   ComputerSystemAutomaticRetryConfig = "RetryAlways"
+	ComputerSystemAutomaticRetryConfigRetryAttempts ComputerSystemAutomaticRetryConfig = "RetryAttempts"
+)
+
+// Defines values for ComputerSystemBootOrderTypes.
+const (
+	AliasBootOrder ComputerSystemBootOrderTypes = "AliasBootOrder"
+	BootOrder      ComputerSystemBootOrderTypes = "BootOrder"
+)
+
+// Defines values for ComputerSystemBootSource.
+const (
+	ComputerSystemBootSourceBiosSetup    ComputerSystemBootSource = "BiosSetup"
+	ComputerSystemBootSourceCd           ComputerSystemBootSource = "Cd"
+	ComputerSystemBootSourceDiags        ComputerSystemBootSource = "Diags"
+	ComputerSystemBootSourceFloppy       ComputerSystemBootSource = "Floppy"
+	ComputerSystemBootSourceHdd          ComputerSystemBootSource = "Hdd"
+	ComputerSystemBootSourceNone         ComputerSystemBootSource = "None"
+	ComputerSystemBootSourcePxe          ComputerSystemBootSource = "Pxe"
+	ComputerSystemBootSourceRecovery     ComputerSystemBootSource = "Recovery"
+	ComputerSystemBootSourceRemoteDrive  ComputerSystemBootSource = "RemoteDrive"
+	ComputerSystemBootSourceSDCard       ComputerSystemBootSource = "SDCard"
+	ComputerSystemBootSourceUefiBootNext ComputerSystemBootSource = "UefiBootNext"
+	ComputerSystemBootSourceUefiHttp     ComputerSystemBootSource = "UefiHttp"
+	ComputerSystemBootSourceUefiShell    ComputerSystemBootSource = "UefiShell"
+	ComputerSystemBootSourceUefiTarget   ComputerSystemBootSource = "UefiTarget"
+	ComputerSystemBootSourceUsb          ComputerSystemBootSource = "Usb"
+	ComputerSystemBootSourceUtilities    ComputerSystemBootSource = "Utilities"
+)
+
+// Defines values for ComputerSystemBootSourceOverrideEnabled.
+const (
+	ComputerSystemBootSourceOverrideEnabledContinuous ComputerSystemBootSourceOverrideEnabled = "Continuous"
+	ComputerSystemBootSourceOverrideEnabledDisabled   ComputerSystemBootSourceOverrideEnabled = "Disabled"
+	ComputerSystemBootSourceOverrideEnabledOnce       ComputerSystemBootSourceOverrideEnabled = "Once"
+)
+
+// Defines values for ComputerSystemBootSourceOverrideMode.
+const (
+	Legacy ComputerSystemBootSourceOverrideMode = "Legacy"
+	UEFI   ComputerSystemBootSourceOverrideMode = "UEFI"
+)
+
+// Defines values for ComputerSystemBootSourceOverrideTarget.
+const (
+	ComputerSystemBootSourceOverrideTargetBiosSetup    ComputerSystemBootSourceOverrideTarget = "BiosSetup"
+	ComputerSystemBootSourceOverrideTargetCd           ComputerSystemBootSourceOverrideTarget = "Cd"
+	ComputerSystemBootSourceOverrideTargetDiags        ComputerSystemBootSourceOverrideTarget = "Diags"
+	ComputerSystemBootSourceOverrideTargetFloppy       ComputerSystemBootSourceOverrideTarget = "Floppy"
+	ComputerSystemBootSourceOverrideTargetHdd          ComputerSystemBootSourceOverrideTarget = "Hdd"
+	ComputerSystemBootSourceOverrideTargetNone         ComputerSystemBootSourceOverrideTarget = "None"
+	ComputerSystemBootSourceOverrideTargetPxe          ComputerSystemBootSourceOverrideTarget = "Pxe"
+	ComputerSystemBootSourceOverrideTargetRecovery     ComputerSystemBootSourceOverrideTarget = "Recovery"
+	ComputerSystemBootSourceOverrideTargetRemoteDrive  ComputerSystemBootSourceOverrideTarget = "RemoteDrive"
+	ComputerSystemBootSourceOverrideTargetSDCard       ComputerSystemBootSourceOverrideTarget = "SDCard"
+	ComputerSystemBootSourceOverrideTargetUefiBootNext ComputerSystemBootSourceOverrideTarget = "UefiBootNext"
+	ComputerSystemBootSourceOverrideTargetUefiHttp     ComputerSystemBootSourceOverrideTarget = "UefiHttp"
+	ComputerSystemBootSourceOverrideTargetUefiShell    ComputerSystemBootSourceOverrideTarget = "UefiShell"
+	ComputerSystemBootSourceOverrideTargetUefiTarget   ComputerSystemBootSourceOverrideTarget = "UefiTarget"
+	ComputerSystemBootSourceOverrideTargetUsb          ComputerSystemBootSourceOverrideTarget = "Usb"
+	ComputerSystemBootSourceOverrideTargetUtilities    ComputerSystemBootSourceOverrideTarget = "Utilities"
+)
+
 // Defines values for ComputerSystemMemoryMirroring.
 const (
 	DIMM   ComputerSystemMemoryMirroring = "DIMM"
 	Hybrid ComputerSystemMemoryMirroring = "Hybrid"
 	None   ComputerSystemMemoryMirroring = "None"
 	System ComputerSystemMemoryMirroring = "System"
+)
+
+// Defines values for ComputerSystemStopBootOnFault.
+const (
+	AnyFault ComputerSystemStopBootOnFault = "AnyFault"
+	Never    ComputerSystemStopBootOnFault = "Never"
 )
 
 // Defines values for ComputerSystemSystemType.
@@ -42,6 +110,12 @@ const (
 	PhysicallyPartitioned ComputerSystemSystemType = "PhysicallyPartitioned"
 	Virtual               ComputerSystemSystemType = "Virtual"
 	VirtuallyPartitioned  ComputerSystemSystemType = "VirtuallyPartitioned"
+)
+
+// Defines values for ComputerSystemTrustedModuleRequiredToBoot.
+const (
+	ComputerSystemTrustedModuleRequiredToBootDisabled ComputerSystemTrustedModuleRequiredToBoot = "Disabled"
+	ComputerSystemTrustedModuleRequiredToBootRequired ComputerSystemTrustedModuleRequiredToBoot = "Required"
 )
 
 // Defines values for ResolutionStepResolutionType.
@@ -98,19 +172,19 @@ const (
 
 // Defines values for ResourceState.
 const (
-	Absent             ResourceState = "Absent"
-	Deferring          ResourceState = "Deferring"
-	Degraded           ResourceState = "Degraded"
-	Disabled           ResourceState = "Disabled"
-	Enabled            ResourceState = "Enabled"
-	InTest             ResourceState = "InTest"
-	Qualified          ResourceState = "Qualified"
-	Quiesced           ResourceState = "Quiesced"
-	StandbyOffline     ResourceState = "StandbyOffline"
-	StandbySpare       ResourceState = "StandbySpare"
-	Starting           ResourceState = "Starting"
-	UnavailableOffline ResourceState = "UnavailableOffline"
-	Updating           ResourceState = "Updating"
+	ResourceStateAbsent             ResourceState = "Absent"
+	ResourceStateDeferring          ResourceState = "Deferring"
+	ResourceStateDegraded           ResourceState = "Degraded"
+	ResourceStateDisabled           ResourceState = "Disabled"
+	ResourceStateEnabled            ResourceState = "Enabled"
+	ResourceStateInTest             ResourceState = "InTest"
+	ResourceStateQualified          ResourceState = "Qualified"
+	ResourceStateQuiesced           ResourceState = "Quiesced"
+	ResourceStateStandbyOffline     ResourceState = "StandbyOffline"
+	ResourceStateStandbySpare       ResourceState = "StandbySpare"
+	ResourceStateStarting           ResourceState = "Starting"
+	ResourceStateUnavailableOffline ResourceState = "UnavailableOffline"
+	ResourceStateUpdating           ResourceState = "Updating"
 )
 
 // Defines values for SessionSessionTypes.
@@ -227,6 +301,139 @@ type ComputerSystemActions struct {
 	HashComputerSystemReset *ComputerSystemReset `json:"#ComputerSystem.Reset,omitempty"`
 }
 
+// ComputerSystemAutomaticRetryConfig defines model for ComputerSystem_AutomaticRetryConfig.
+type ComputerSystemAutomaticRetryConfig string
+
+// ComputerSystemBoot The boot information for this resource.
+type ComputerSystemBoot struct {
+	// AliasBootOrder Ordered array of boot source aliases representing the persistent boot order associated with this computer system.
+	AliasBootOrder *[]ComputerSystemBoot_AliasBootOrder_Item `json:"AliasBootOrder,omitempty"`
+
+	// AutomaticRetryAttempts The number of attempts the system will automatically retry booting.
+	AutomaticRetryAttempts *int64 `json:"AutomaticRetryAttempts"`
+
+	// AutomaticRetryConfig The configuration of how the system retries booting automatically.
+	AutomaticRetryConfig *ComputerSystemBoot_AutomaticRetryConfig `json:"AutomaticRetryConfig,omitempty"`
+
+	// BootNext The `BootOptionReference` of the Boot Option to perform a one-time boot from when `BootSourceOverrideTarget` is `UefiBootNext`.
+	BootNext *string `json:"BootNext"`
+
+	// BootOptions A reference to a resource.
+	BootOptions *OdataV4IdRef `json:"BootOptions,omitempty"`
+
+	// BootOrder An array of `BootOptionReference` strings that represent the persistent boot order for with this computer system.  Changes to the boot order typically require a system reset before they take effect.  It is likely that a client finds the `@Redfish.Settings` term in this resource, and if it is found, the client makes requests to change boot order settings by modifying the resource identified by the `@Redfish.Settings` term.
+	BootOrder *[]string `json:"BootOrder,omitempty"`
+
+	// BootOrderPropertySelection The name of the boot order property that the system uses for the persistent boot order.
+	BootOrderPropertySelection *ComputerSystemBoot_BootOrderPropertySelection `json:"BootOrderPropertySelection,omitempty"`
+
+	// BootSourceOverrideEnabled The state of the boot source override feature.
+	BootSourceOverrideEnabled *ComputerSystemBoot_BootSourceOverrideEnabled `json:"BootSourceOverrideEnabled,omitempty"`
+
+	// BootSourceOverrideMode The BIOS boot mode to use when the system boots from the `BootSourceOverrideTarget` boot source.
+	BootSourceOverrideMode *ComputerSystemBoot_BootSourceOverrideMode `json:"BootSourceOverrideMode,omitempty"`
+
+	// BootSourceOverrideTarget The current boot source to use at the next boot instead of the normal boot device, if `BootSourceOverrideEnabled` does not contain `Disabled`.
+	BootSourceOverrideTarget *ComputerSystemBoot_BootSourceOverrideTarget `json:"BootSourceOverrideTarget,omitempty"`
+
+	// Certificates A reference to a resource.
+	Certificates *OdataV4IdRef `json:"Certificates,omitempty"`
+
+	// HttpBootUri The URI to boot from when `BootSourceOverrideTarget` is set to `UefiHttp`.
+	HttpBootUri *string `json:"HttpBootUri"`
+
+	// RemainingAutomaticRetryAttempts The number of remaining automatic retry boots.
+	RemainingAutomaticRetryAttempts *int64 `json:"RemainingAutomaticRetryAttempts"`
+
+	// StopBootOnFault If the boot should stop on a fault.
+	StopBootOnFault *ComputerSystemBoot_StopBootOnFault `json:"StopBootOnFault,omitempty"`
+
+	// TrustedModuleRequiredToBoot The Trusted Module boot requirement.
+	TrustedModuleRequiredToBoot *ComputerSystemBoot_TrustedModuleRequiredToBoot `json:"TrustedModuleRequiredToBoot,omitempty"`
+
+	// UefiTargetBootSourceOverride The UEFI device path of the device from which to boot when `BootSourceOverrideTarget` is `UefiTarget`.
+	UefiTargetBootSourceOverride *string `json:"UefiTargetBootSourceOverride"`
+}
+
+// ComputerSystemBootAliasBootOrder1 defines model for .
+type ComputerSystemBootAliasBootOrder1 = interface{}
+
+// ComputerSystemBoot_AliasBootOrder_Item defines model for ComputerSystem_Boot.AliasBootOrder.Item.
+type ComputerSystemBoot_AliasBootOrder_Item struct {
+	union json.RawMessage
+}
+
+// ComputerSystemBootAutomaticRetryConfig1 defines model for .
+type ComputerSystemBootAutomaticRetryConfig1 = interface{}
+
+// ComputerSystemBoot_AutomaticRetryConfig The configuration of how the system retries booting automatically.
+type ComputerSystemBoot_AutomaticRetryConfig struct {
+	union json.RawMessage
+}
+
+// ComputerSystemBootBootOrderPropertySelection1 defines model for .
+type ComputerSystemBootBootOrderPropertySelection1 = interface{}
+
+// ComputerSystemBoot_BootOrderPropertySelection The name of the boot order property that the system uses for the persistent boot order.
+type ComputerSystemBoot_BootOrderPropertySelection struct {
+	union json.RawMessage
+}
+
+// ComputerSystemBootBootSourceOverrideEnabled1 defines model for .
+type ComputerSystemBootBootSourceOverrideEnabled1 = interface{}
+
+// ComputerSystemBoot_BootSourceOverrideEnabled The state of the boot source override feature.
+type ComputerSystemBoot_BootSourceOverrideEnabled struct {
+	union json.RawMessage
+}
+
+// ComputerSystemBootBootSourceOverrideMode1 defines model for .
+type ComputerSystemBootBootSourceOverrideMode1 = interface{}
+
+// ComputerSystemBoot_BootSourceOverrideMode The BIOS boot mode to use when the system boots from the `BootSourceOverrideTarget` boot source.
+type ComputerSystemBoot_BootSourceOverrideMode struct {
+	union json.RawMessage
+}
+
+// ComputerSystemBootBootSourceOverrideTarget1 defines model for .
+type ComputerSystemBootBootSourceOverrideTarget1 = interface{}
+
+// ComputerSystemBoot_BootSourceOverrideTarget The current boot source to use at the next boot instead of the normal boot device, if `BootSourceOverrideEnabled` does not contain `Disabled`.
+type ComputerSystemBoot_BootSourceOverrideTarget struct {
+	union json.RawMessage
+}
+
+// ComputerSystemBootStopBootOnFault1 defines model for .
+type ComputerSystemBootStopBootOnFault1 = interface{}
+
+// ComputerSystemBoot_StopBootOnFault If the boot should stop on a fault.
+type ComputerSystemBoot_StopBootOnFault struct {
+	union json.RawMessage
+}
+
+// ComputerSystemBootTrustedModuleRequiredToBoot1 defines model for .
+type ComputerSystemBootTrustedModuleRequiredToBoot1 = interface{}
+
+// ComputerSystemBoot_TrustedModuleRequiredToBoot The Trusted Module boot requirement.
+type ComputerSystemBoot_TrustedModuleRequiredToBoot struct {
+	union json.RawMessage
+}
+
+// ComputerSystemBootOrderTypes The enumerations of `BootOrderTypes` specify the choice of boot order property to use when controller the persistent boot order for this computer system.
+type ComputerSystemBootOrderTypes string
+
+// ComputerSystemBootSource defines model for ComputerSystem_BootSource.
+type ComputerSystemBootSource string
+
+// ComputerSystemBootSourceOverrideEnabled defines model for ComputerSystem_BootSourceOverrideEnabled.
+type ComputerSystemBootSourceOverrideEnabled string
+
+// ComputerSystemBootSourceOverrideMode defines model for ComputerSystem_BootSourceOverrideMode.
+type ComputerSystemBootSourceOverrideMode string
+
+// ComputerSystemBootSourceOverrideTarget defines model for ComputerSystem_BootSourceOverrideTarget.
+type ComputerSystemBootSourceOverrideTarget string
+
 // ComputerSystemComputerSystem The `ComputerSystem` schema represents a computer or system instance and the software-visible resources, or items within the data plane, such as memory, CPU, and other devices that it can access.  Details of those resources or subsystems are also linked through this resource.
 type ComputerSystemComputerSystem struct {
 	// OdataContext The OData description of a payload.
@@ -242,7 +449,10 @@ type ComputerSystemComputerSystem struct {
 	Actions *ComputerSystemActions `json:"Actions,omitempty"`
 
 	// BiosVersion The version of the system BIOS or primary system firmware.
-	BiosVersion *string                                   `json:"BiosVersion"`
+	BiosVersion *string `json:"BiosVersion"`
+
+	// Boot The boot information for this resource.
+	Boot        *ComputerSystemBoot                       `json:"Boot,omitempty"`
 	Description *ComputerSystemComputerSystem_Description `json:"Description,omitempty"`
 
 	// HostName The DNS host name, without any domain information.
@@ -354,11 +564,49 @@ type ComputerSystemReset struct {
 
 // ComputerSystemResetRequestBody This action resets the system.
 type ComputerSystemResetRequestBody struct {
-	ResetType *ResourceResetType `json:"ResetType,omitempty"`
+	// BootSourceOverrideEnabled The state of the boot source override feature.
+	BootSourceOverrideEnabled *ComputerSystemResetRequestBody_BootSourceOverrideEnabled `json:"BootSourceOverrideEnabled,omitempty"`
+
+	// BootSourceOverrideMode The BIOS boot mode to use when the system boots from the `BootSourceOverrideTarget` boot source.
+	BootSourceOverrideMode *ComputerSystemResetRequestBody_BootSourceOverrideMode `json:"BootSourceOverrideMode,omitempty"`
+
+	// BootSourceOverrideTarget The boot source to use at the next boot instead of the normal boot device.
+	BootSourceOverrideTarget *ComputerSystemResetRequestBody_BootSourceOverrideTarget `json:"BootSourceOverrideTarget,omitempty"`
+	ResetType                *ResourceResetType                                       `json:"ResetType,omitempty"`
 }
+
+// ComputerSystemResetRequestBodyBootSourceOverrideEnabled1 defines model for .
+type ComputerSystemResetRequestBodyBootSourceOverrideEnabled1 = interface{}
+
+// ComputerSystemResetRequestBody_BootSourceOverrideEnabled The state of the boot source override feature.
+type ComputerSystemResetRequestBody_BootSourceOverrideEnabled struct {
+	union json.RawMessage
+}
+
+// ComputerSystemResetRequestBodyBootSourceOverrideMode1 defines model for .
+type ComputerSystemResetRequestBodyBootSourceOverrideMode1 = interface{}
+
+// ComputerSystemResetRequestBody_BootSourceOverrideMode The BIOS boot mode to use when the system boots from the `BootSourceOverrideTarget` boot source.
+type ComputerSystemResetRequestBody_BootSourceOverrideMode struct {
+	union json.RawMessage
+}
+
+// ComputerSystemResetRequestBodyBootSourceOverrideTarget1 defines model for .
+type ComputerSystemResetRequestBodyBootSourceOverrideTarget1 = interface{}
+
+// ComputerSystemResetRequestBody_BootSourceOverrideTarget The boot source to use at the next boot instead of the normal boot device.
+type ComputerSystemResetRequestBody_BootSourceOverrideTarget struct {
+	union json.RawMessage
+}
+
+// ComputerSystemStopBootOnFault defines model for ComputerSystem_StopBootOnFault.
+type ComputerSystemStopBootOnFault string
 
 // ComputerSystemSystemType defines model for ComputerSystem_SystemType.
 type ComputerSystemSystemType string
+
+// ComputerSystemTrustedModuleRequiredToBoot defines model for ComputerSystem_TrustedModuleRequiredToBoot.
+type ComputerSystemTrustedModuleRequiredToBoot string
 
 // MessageMessage The message that the Redfish service returns.
 type MessageMessage struct {
@@ -959,6 +1207,502 @@ func (t *ComputerSystemCollectionComputerSystemCollection_Description) Unmarshal
 	return err
 }
 
+// AsComputerSystemBootSource returns the union data inside the ComputerSystemBoot_AliasBootOrder_Item as a ComputerSystemBootSource
+func (t ComputerSystemBoot_AliasBootOrder_Item) AsComputerSystemBootSource() (ComputerSystemBootSource, error) {
+	var body ComputerSystemBootSource
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootSource overwrites any union data inside the ComputerSystemBoot_AliasBootOrder_Item as the provided ComputerSystemBootSource
+func (t *ComputerSystemBoot_AliasBootOrder_Item) FromComputerSystemBootSource(v ComputerSystemBootSource) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootSource performs a merge with any union data inside the ComputerSystemBoot_AliasBootOrder_Item, using the provided ComputerSystemBootSource
+func (t *ComputerSystemBoot_AliasBootOrder_Item) MergeComputerSystemBootSource(v ComputerSystemBootSource) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemBootAliasBootOrder1 returns the union data inside the ComputerSystemBoot_AliasBootOrder_Item as a ComputerSystemBootAliasBootOrder1
+func (t ComputerSystemBoot_AliasBootOrder_Item) AsComputerSystemBootAliasBootOrder1() (ComputerSystemBootAliasBootOrder1, error) {
+	var body ComputerSystemBootAliasBootOrder1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootAliasBootOrder1 overwrites any union data inside the ComputerSystemBoot_AliasBootOrder_Item as the provided ComputerSystemBootAliasBootOrder1
+func (t *ComputerSystemBoot_AliasBootOrder_Item) FromComputerSystemBootAliasBootOrder1(v ComputerSystemBootAliasBootOrder1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootAliasBootOrder1 performs a merge with any union data inside the ComputerSystemBoot_AliasBootOrder_Item, using the provided ComputerSystemBootAliasBootOrder1
+func (t *ComputerSystemBoot_AliasBootOrder_Item) MergeComputerSystemBootAliasBootOrder1(v ComputerSystemBootAliasBootOrder1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemBoot_AliasBootOrder_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemBoot_AliasBootOrder_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemAutomaticRetryConfig returns the union data inside the ComputerSystemBoot_AutomaticRetryConfig as a ComputerSystemAutomaticRetryConfig
+func (t ComputerSystemBoot_AutomaticRetryConfig) AsComputerSystemAutomaticRetryConfig() (ComputerSystemAutomaticRetryConfig, error) {
+	var body ComputerSystemAutomaticRetryConfig
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemAutomaticRetryConfig overwrites any union data inside the ComputerSystemBoot_AutomaticRetryConfig as the provided ComputerSystemAutomaticRetryConfig
+func (t *ComputerSystemBoot_AutomaticRetryConfig) FromComputerSystemAutomaticRetryConfig(v ComputerSystemAutomaticRetryConfig) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemAutomaticRetryConfig performs a merge with any union data inside the ComputerSystemBoot_AutomaticRetryConfig, using the provided ComputerSystemAutomaticRetryConfig
+func (t *ComputerSystemBoot_AutomaticRetryConfig) MergeComputerSystemAutomaticRetryConfig(v ComputerSystemAutomaticRetryConfig) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemBootAutomaticRetryConfig1 returns the union data inside the ComputerSystemBoot_AutomaticRetryConfig as a ComputerSystemBootAutomaticRetryConfig1
+func (t ComputerSystemBoot_AutomaticRetryConfig) AsComputerSystemBootAutomaticRetryConfig1() (ComputerSystemBootAutomaticRetryConfig1, error) {
+	var body ComputerSystemBootAutomaticRetryConfig1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootAutomaticRetryConfig1 overwrites any union data inside the ComputerSystemBoot_AutomaticRetryConfig as the provided ComputerSystemBootAutomaticRetryConfig1
+func (t *ComputerSystemBoot_AutomaticRetryConfig) FromComputerSystemBootAutomaticRetryConfig1(v ComputerSystemBootAutomaticRetryConfig1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootAutomaticRetryConfig1 performs a merge with any union data inside the ComputerSystemBoot_AutomaticRetryConfig, using the provided ComputerSystemBootAutomaticRetryConfig1
+func (t *ComputerSystemBoot_AutomaticRetryConfig) MergeComputerSystemBootAutomaticRetryConfig1(v ComputerSystemBootAutomaticRetryConfig1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemBoot_AutomaticRetryConfig) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemBoot_AutomaticRetryConfig) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemBootOrderTypes returns the union data inside the ComputerSystemBoot_BootOrderPropertySelection as a ComputerSystemBootOrderTypes
+func (t ComputerSystemBoot_BootOrderPropertySelection) AsComputerSystemBootOrderTypes() (ComputerSystemBootOrderTypes, error) {
+	var body ComputerSystemBootOrderTypes
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootOrderTypes overwrites any union data inside the ComputerSystemBoot_BootOrderPropertySelection as the provided ComputerSystemBootOrderTypes
+func (t *ComputerSystemBoot_BootOrderPropertySelection) FromComputerSystemBootOrderTypes(v ComputerSystemBootOrderTypes) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootOrderTypes performs a merge with any union data inside the ComputerSystemBoot_BootOrderPropertySelection, using the provided ComputerSystemBootOrderTypes
+func (t *ComputerSystemBoot_BootOrderPropertySelection) MergeComputerSystemBootOrderTypes(v ComputerSystemBootOrderTypes) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemBootBootOrderPropertySelection1 returns the union data inside the ComputerSystemBoot_BootOrderPropertySelection as a ComputerSystemBootBootOrderPropertySelection1
+func (t ComputerSystemBoot_BootOrderPropertySelection) AsComputerSystemBootBootOrderPropertySelection1() (ComputerSystemBootBootOrderPropertySelection1, error) {
+	var body ComputerSystemBootBootOrderPropertySelection1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootBootOrderPropertySelection1 overwrites any union data inside the ComputerSystemBoot_BootOrderPropertySelection as the provided ComputerSystemBootBootOrderPropertySelection1
+func (t *ComputerSystemBoot_BootOrderPropertySelection) FromComputerSystemBootBootOrderPropertySelection1(v ComputerSystemBootBootOrderPropertySelection1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootBootOrderPropertySelection1 performs a merge with any union data inside the ComputerSystemBoot_BootOrderPropertySelection, using the provided ComputerSystemBootBootOrderPropertySelection1
+func (t *ComputerSystemBoot_BootOrderPropertySelection) MergeComputerSystemBootBootOrderPropertySelection1(v ComputerSystemBootBootOrderPropertySelection1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemBoot_BootOrderPropertySelection) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemBoot_BootOrderPropertySelection) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemBootSourceOverrideEnabled returns the union data inside the ComputerSystemBoot_BootSourceOverrideEnabled as a ComputerSystemBootSourceOverrideEnabled
+func (t ComputerSystemBoot_BootSourceOverrideEnabled) AsComputerSystemBootSourceOverrideEnabled() (ComputerSystemBootSourceOverrideEnabled, error) {
+	var body ComputerSystemBootSourceOverrideEnabled
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootSourceOverrideEnabled overwrites any union data inside the ComputerSystemBoot_BootSourceOverrideEnabled as the provided ComputerSystemBootSourceOverrideEnabled
+func (t *ComputerSystemBoot_BootSourceOverrideEnabled) FromComputerSystemBootSourceOverrideEnabled(v ComputerSystemBootSourceOverrideEnabled) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootSourceOverrideEnabled performs a merge with any union data inside the ComputerSystemBoot_BootSourceOverrideEnabled, using the provided ComputerSystemBootSourceOverrideEnabled
+func (t *ComputerSystemBoot_BootSourceOverrideEnabled) MergeComputerSystemBootSourceOverrideEnabled(v ComputerSystemBootSourceOverrideEnabled) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemBootBootSourceOverrideEnabled1 returns the union data inside the ComputerSystemBoot_BootSourceOverrideEnabled as a ComputerSystemBootBootSourceOverrideEnabled1
+func (t ComputerSystemBoot_BootSourceOverrideEnabled) AsComputerSystemBootBootSourceOverrideEnabled1() (ComputerSystemBootBootSourceOverrideEnabled1, error) {
+	var body ComputerSystemBootBootSourceOverrideEnabled1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootBootSourceOverrideEnabled1 overwrites any union data inside the ComputerSystemBoot_BootSourceOverrideEnabled as the provided ComputerSystemBootBootSourceOverrideEnabled1
+func (t *ComputerSystemBoot_BootSourceOverrideEnabled) FromComputerSystemBootBootSourceOverrideEnabled1(v ComputerSystemBootBootSourceOverrideEnabled1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootBootSourceOverrideEnabled1 performs a merge with any union data inside the ComputerSystemBoot_BootSourceOverrideEnabled, using the provided ComputerSystemBootBootSourceOverrideEnabled1
+func (t *ComputerSystemBoot_BootSourceOverrideEnabled) MergeComputerSystemBootBootSourceOverrideEnabled1(v ComputerSystemBootBootSourceOverrideEnabled1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemBoot_BootSourceOverrideEnabled) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemBoot_BootSourceOverrideEnabled) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemBootSourceOverrideMode returns the union data inside the ComputerSystemBoot_BootSourceOverrideMode as a ComputerSystemBootSourceOverrideMode
+func (t ComputerSystemBoot_BootSourceOverrideMode) AsComputerSystemBootSourceOverrideMode() (ComputerSystemBootSourceOverrideMode, error) {
+	var body ComputerSystemBootSourceOverrideMode
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootSourceOverrideMode overwrites any union data inside the ComputerSystemBoot_BootSourceOverrideMode as the provided ComputerSystemBootSourceOverrideMode
+func (t *ComputerSystemBoot_BootSourceOverrideMode) FromComputerSystemBootSourceOverrideMode(v ComputerSystemBootSourceOverrideMode) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootSourceOverrideMode performs a merge with any union data inside the ComputerSystemBoot_BootSourceOverrideMode, using the provided ComputerSystemBootSourceOverrideMode
+func (t *ComputerSystemBoot_BootSourceOverrideMode) MergeComputerSystemBootSourceOverrideMode(v ComputerSystemBootSourceOverrideMode) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemBootBootSourceOverrideMode1 returns the union data inside the ComputerSystemBoot_BootSourceOverrideMode as a ComputerSystemBootBootSourceOverrideMode1
+func (t ComputerSystemBoot_BootSourceOverrideMode) AsComputerSystemBootBootSourceOverrideMode1() (ComputerSystemBootBootSourceOverrideMode1, error) {
+	var body ComputerSystemBootBootSourceOverrideMode1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootBootSourceOverrideMode1 overwrites any union data inside the ComputerSystemBoot_BootSourceOverrideMode as the provided ComputerSystemBootBootSourceOverrideMode1
+func (t *ComputerSystemBoot_BootSourceOverrideMode) FromComputerSystemBootBootSourceOverrideMode1(v ComputerSystemBootBootSourceOverrideMode1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootBootSourceOverrideMode1 performs a merge with any union data inside the ComputerSystemBoot_BootSourceOverrideMode, using the provided ComputerSystemBootBootSourceOverrideMode1
+func (t *ComputerSystemBoot_BootSourceOverrideMode) MergeComputerSystemBootBootSourceOverrideMode1(v ComputerSystemBootBootSourceOverrideMode1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemBoot_BootSourceOverrideMode) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemBoot_BootSourceOverrideMode) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemBootSourceOverrideTarget returns the union data inside the ComputerSystemBoot_BootSourceOverrideTarget as a ComputerSystemBootSourceOverrideTarget
+func (t ComputerSystemBoot_BootSourceOverrideTarget) AsComputerSystemBootSourceOverrideTarget() (ComputerSystemBootSourceOverrideTarget, error) {
+	var body ComputerSystemBootSourceOverrideTarget
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootSourceOverrideTarget overwrites any union data inside the ComputerSystemBoot_BootSourceOverrideTarget as the provided ComputerSystemBootSourceOverrideTarget
+func (t *ComputerSystemBoot_BootSourceOverrideTarget) FromComputerSystemBootSourceOverrideTarget(v ComputerSystemBootSourceOverrideTarget) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootSourceOverrideTarget performs a merge with any union data inside the ComputerSystemBoot_BootSourceOverrideTarget, using the provided ComputerSystemBootSourceOverrideTarget
+func (t *ComputerSystemBoot_BootSourceOverrideTarget) MergeComputerSystemBootSourceOverrideTarget(v ComputerSystemBootSourceOverrideTarget) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemBootBootSourceOverrideTarget1 returns the union data inside the ComputerSystemBoot_BootSourceOverrideTarget as a ComputerSystemBootBootSourceOverrideTarget1
+func (t ComputerSystemBoot_BootSourceOverrideTarget) AsComputerSystemBootBootSourceOverrideTarget1() (ComputerSystemBootBootSourceOverrideTarget1, error) {
+	var body ComputerSystemBootBootSourceOverrideTarget1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootBootSourceOverrideTarget1 overwrites any union data inside the ComputerSystemBoot_BootSourceOverrideTarget as the provided ComputerSystemBootBootSourceOverrideTarget1
+func (t *ComputerSystemBoot_BootSourceOverrideTarget) FromComputerSystemBootBootSourceOverrideTarget1(v ComputerSystemBootBootSourceOverrideTarget1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootBootSourceOverrideTarget1 performs a merge with any union data inside the ComputerSystemBoot_BootSourceOverrideTarget, using the provided ComputerSystemBootBootSourceOverrideTarget1
+func (t *ComputerSystemBoot_BootSourceOverrideTarget) MergeComputerSystemBootBootSourceOverrideTarget1(v ComputerSystemBootBootSourceOverrideTarget1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemBoot_BootSourceOverrideTarget) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemBoot_BootSourceOverrideTarget) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemStopBootOnFault returns the union data inside the ComputerSystemBoot_StopBootOnFault as a ComputerSystemStopBootOnFault
+func (t ComputerSystemBoot_StopBootOnFault) AsComputerSystemStopBootOnFault() (ComputerSystemStopBootOnFault, error) {
+	var body ComputerSystemStopBootOnFault
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemStopBootOnFault overwrites any union data inside the ComputerSystemBoot_StopBootOnFault as the provided ComputerSystemStopBootOnFault
+func (t *ComputerSystemBoot_StopBootOnFault) FromComputerSystemStopBootOnFault(v ComputerSystemStopBootOnFault) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemStopBootOnFault performs a merge with any union data inside the ComputerSystemBoot_StopBootOnFault, using the provided ComputerSystemStopBootOnFault
+func (t *ComputerSystemBoot_StopBootOnFault) MergeComputerSystemStopBootOnFault(v ComputerSystemStopBootOnFault) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemBootStopBootOnFault1 returns the union data inside the ComputerSystemBoot_StopBootOnFault as a ComputerSystemBootStopBootOnFault1
+func (t ComputerSystemBoot_StopBootOnFault) AsComputerSystemBootStopBootOnFault1() (ComputerSystemBootStopBootOnFault1, error) {
+	var body ComputerSystemBootStopBootOnFault1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootStopBootOnFault1 overwrites any union data inside the ComputerSystemBoot_StopBootOnFault as the provided ComputerSystemBootStopBootOnFault1
+func (t *ComputerSystemBoot_StopBootOnFault) FromComputerSystemBootStopBootOnFault1(v ComputerSystemBootStopBootOnFault1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootStopBootOnFault1 performs a merge with any union data inside the ComputerSystemBoot_StopBootOnFault, using the provided ComputerSystemBootStopBootOnFault1
+func (t *ComputerSystemBoot_StopBootOnFault) MergeComputerSystemBootStopBootOnFault1(v ComputerSystemBootStopBootOnFault1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemBoot_StopBootOnFault) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemBoot_StopBootOnFault) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemTrustedModuleRequiredToBoot returns the union data inside the ComputerSystemBoot_TrustedModuleRequiredToBoot as a ComputerSystemTrustedModuleRequiredToBoot
+func (t ComputerSystemBoot_TrustedModuleRequiredToBoot) AsComputerSystemTrustedModuleRequiredToBoot() (ComputerSystemTrustedModuleRequiredToBoot, error) {
+	var body ComputerSystemTrustedModuleRequiredToBoot
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemTrustedModuleRequiredToBoot overwrites any union data inside the ComputerSystemBoot_TrustedModuleRequiredToBoot as the provided ComputerSystemTrustedModuleRequiredToBoot
+func (t *ComputerSystemBoot_TrustedModuleRequiredToBoot) FromComputerSystemTrustedModuleRequiredToBoot(v ComputerSystemTrustedModuleRequiredToBoot) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemTrustedModuleRequiredToBoot performs a merge with any union data inside the ComputerSystemBoot_TrustedModuleRequiredToBoot, using the provided ComputerSystemTrustedModuleRequiredToBoot
+func (t *ComputerSystemBoot_TrustedModuleRequiredToBoot) MergeComputerSystemTrustedModuleRequiredToBoot(v ComputerSystemTrustedModuleRequiredToBoot) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemBootTrustedModuleRequiredToBoot1 returns the union data inside the ComputerSystemBoot_TrustedModuleRequiredToBoot as a ComputerSystemBootTrustedModuleRequiredToBoot1
+func (t ComputerSystemBoot_TrustedModuleRequiredToBoot) AsComputerSystemBootTrustedModuleRequiredToBoot1() (ComputerSystemBootTrustedModuleRequiredToBoot1, error) {
+	var body ComputerSystemBootTrustedModuleRequiredToBoot1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootTrustedModuleRequiredToBoot1 overwrites any union data inside the ComputerSystemBoot_TrustedModuleRequiredToBoot as the provided ComputerSystemBootTrustedModuleRequiredToBoot1
+func (t *ComputerSystemBoot_TrustedModuleRequiredToBoot) FromComputerSystemBootTrustedModuleRequiredToBoot1(v ComputerSystemBootTrustedModuleRequiredToBoot1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootTrustedModuleRequiredToBoot1 performs a merge with any union data inside the ComputerSystemBoot_TrustedModuleRequiredToBoot, using the provided ComputerSystemBootTrustedModuleRequiredToBoot1
+func (t *ComputerSystemBoot_TrustedModuleRequiredToBoot) MergeComputerSystemBootTrustedModuleRequiredToBoot1(v ComputerSystemBootTrustedModuleRequiredToBoot1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemBoot_TrustedModuleRequiredToBoot) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemBoot_TrustedModuleRequiredToBoot) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsResourceDescription returns the union data inside the ComputerSystemComputerSystem_Description as a ResourceDescription
 func (t ComputerSystemComputerSystem_Description) AsResourceDescription() (ResourceDescription, error) {
 	var body ResourceDescription
@@ -1141,6 +1885,192 @@ func (t ComputerSystemMemorySummary_MemoryMirroring) MarshalJSON() ([]byte, erro
 }
 
 func (t *ComputerSystemMemorySummary_MemoryMirroring) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemBootSourceOverrideEnabled returns the union data inside the ComputerSystemResetRequestBody_BootSourceOverrideEnabled as a ComputerSystemBootSourceOverrideEnabled
+func (t ComputerSystemResetRequestBody_BootSourceOverrideEnabled) AsComputerSystemBootSourceOverrideEnabled() (ComputerSystemBootSourceOverrideEnabled, error) {
+	var body ComputerSystemBootSourceOverrideEnabled
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootSourceOverrideEnabled overwrites any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideEnabled as the provided ComputerSystemBootSourceOverrideEnabled
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideEnabled) FromComputerSystemBootSourceOverrideEnabled(v ComputerSystemBootSourceOverrideEnabled) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootSourceOverrideEnabled performs a merge with any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideEnabled, using the provided ComputerSystemBootSourceOverrideEnabled
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideEnabled) MergeComputerSystemBootSourceOverrideEnabled(v ComputerSystemBootSourceOverrideEnabled) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemResetRequestBodyBootSourceOverrideEnabled1 returns the union data inside the ComputerSystemResetRequestBody_BootSourceOverrideEnabled as a ComputerSystemResetRequestBodyBootSourceOverrideEnabled1
+func (t ComputerSystemResetRequestBody_BootSourceOverrideEnabled) AsComputerSystemResetRequestBodyBootSourceOverrideEnabled1() (ComputerSystemResetRequestBodyBootSourceOverrideEnabled1, error) {
+	var body ComputerSystemResetRequestBodyBootSourceOverrideEnabled1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemResetRequestBodyBootSourceOverrideEnabled1 overwrites any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideEnabled as the provided ComputerSystemResetRequestBodyBootSourceOverrideEnabled1
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideEnabled) FromComputerSystemResetRequestBodyBootSourceOverrideEnabled1(v ComputerSystemResetRequestBodyBootSourceOverrideEnabled1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemResetRequestBodyBootSourceOverrideEnabled1 performs a merge with any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideEnabled, using the provided ComputerSystemResetRequestBodyBootSourceOverrideEnabled1
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideEnabled) MergeComputerSystemResetRequestBodyBootSourceOverrideEnabled1(v ComputerSystemResetRequestBodyBootSourceOverrideEnabled1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemResetRequestBody_BootSourceOverrideEnabled) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideEnabled) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemBootSourceOverrideMode returns the union data inside the ComputerSystemResetRequestBody_BootSourceOverrideMode as a ComputerSystemBootSourceOverrideMode
+func (t ComputerSystemResetRequestBody_BootSourceOverrideMode) AsComputerSystemBootSourceOverrideMode() (ComputerSystemBootSourceOverrideMode, error) {
+	var body ComputerSystemBootSourceOverrideMode
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootSourceOverrideMode overwrites any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideMode as the provided ComputerSystemBootSourceOverrideMode
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideMode) FromComputerSystemBootSourceOverrideMode(v ComputerSystemBootSourceOverrideMode) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootSourceOverrideMode performs a merge with any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideMode, using the provided ComputerSystemBootSourceOverrideMode
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideMode) MergeComputerSystemBootSourceOverrideMode(v ComputerSystemBootSourceOverrideMode) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemResetRequestBodyBootSourceOverrideMode1 returns the union data inside the ComputerSystemResetRequestBody_BootSourceOverrideMode as a ComputerSystemResetRequestBodyBootSourceOverrideMode1
+func (t ComputerSystemResetRequestBody_BootSourceOverrideMode) AsComputerSystemResetRequestBodyBootSourceOverrideMode1() (ComputerSystemResetRequestBodyBootSourceOverrideMode1, error) {
+	var body ComputerSystemResetRequestBodyBootSourceOverrideMode1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemResetRequestBodyBootSourceOverrideMode1 overwrites any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideMode as the provided ComputerSystemResetRequestBodyBootSourceOverrideMode1
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideMode) FromComputerSystemResetRequestBodyBootSourceOverrideMode1(v ComputerSystemResetRequestBodyBootSourceOverrideMode1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemResetRequestBodyBootSourceOverrideMode1 performs a merge with any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideMode, using the provided ComputerSystemResetRequestBodyBootSourceOverrideMode1
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideMode) MergeComputerSystemResetRequestBodyBootSourceOverrideMode1(v ComputerSystemResetRequestBodyBootSourceOverrideMode1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemResetRequestBody_BootSourceOverrideMode) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideMode) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsComputerSystemBootSourceOverrideTarget returns the union data inside the ComputerSystemResetRequestBody_BootSourceOverrideTarget as a ComputerSystemBootSourceOverrideTarget
+func (t ComputerSystemResetRequestBody_BootSourceOverrideTarget) AsComputerSystemBootSourceOverrideTarget() (ComputerSystemBootSourceOverrideTarget, error) {
+	var body ComputerSystemBootSourceOverrideTarget
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemBootSourceOverrideTarget overwrites any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideTarget as the provided ComputerSystemBootSourceOverrideTarget
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideTarget) FromComputerSystemBootSourceOverrideTarget(v ComputerSystemBootSourceOverrideTarget) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemBootSourceOverrideTarget performs a merge with any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideTarget, using the provided ComputerSystemBootSourceOverrideTarget
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideTarget) MergeComputerSystemBootSourceOverrideTarget(v ComputerSystemBootSourceOverrideTarget) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComputerSystemResetRequestBodyBootSourceOverrideTarget1 returns the union data inside the ComputerSystemResetRequestBody_BootSourceOverrideTarget as a ComputerSystemResetRequestBodyBootSourceOverrideTarget1
+func (t ComputerSystemResetRequestBody_BootSourceOverrideTarget) AsComputerSystemResetRequestBodyBootSourceOverrideTarget1() (ComputerSystemResetRequestBodyBootSourceOverrideTarget1, error) {
+	var body ComputerSystemResetRequestBodyBootSourceOverrideTarget1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComputerSystemResetRequestBodyBootSourceOverrideTarget1 overwrites any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideTarget as the provided ComputerSystemResetRequestBodyBootSourceOverrideTarget1
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideTarget) FromComputerSystemResetRequestBodyBootSourceOverrideTarget1(v ComputerSystemResetRequestBodyBootSourceOverrideTarget1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComputerSystemResetRequestBodyBootSourceOverrideTarget1 performs a merge with any union data inside the ComputerSystemResetRequestBody_BootSourceOverrideTarget, using the provided ComputerSystemResetRequestBodyBootSourceOverrideTarget1
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideTarget) MergeComputerSystemResetRequestBodyBootSourceOverrideTarget1(v ComputerSystemResetRequestBodyBootSourceOverrideTarget1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ComputerSystemResetRequestBody_BootSourceOverrideTarget) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ComputerSystemResetRequestBody_BootSourceOverrideTarget) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

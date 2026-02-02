@@ -115,7 +115,7 @@ done
 # Run tests
 echo "Running Newman tests..."
 echo ""
-# Bypass proxy for localhost - critical for Intel proxy
+# Bypass proxy for localhost
 export no_proxy=localhost,127.0.0.1,::1
 export NO_PROXY=localhost,127.0.0.1,::1
 newman run "${SCRIPT_DIR}/postman/redfish-collection.json" \

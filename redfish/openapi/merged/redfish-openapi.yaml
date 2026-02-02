@@ -739,7 +739,7 @@ components:
             the normal boot device, if `BootSourceOverrideEnabled` does not contain
             `Disabled`.
           oneOf:
-          - $ref: '#/components/schemas/ComputerSystem_BootSourceOverrideTarget'
+          - $ref: '#/components/schemas/ComputerSystem_BootSource'
           - enum:
             - null
           readOnly: false
@@ -897,48 +897,6 @@ components:
         Legacy: The system boots in non-UEFI boot mode to the boot source override
           target.
         UEFI: The system boots in UEFI boot mode to the boot source override target.
-    ComputerSystem_BootSourceOverrideTarget:
-      enum:
-      - None
-      - Pxe
-      - Floppy
-      - Cd
-      - Usb
-      - Hdd
-      - BiosSetup
-      - Utilities
-      - Diags
-      - UefiShell
-      - UefiTarget
-      - SDCard
-      - UefiHttp
-      - RemoteDrive
-      - UefiBootNext
-      - Recovery
-      type: string
-      x-enumDescriptions:
-        BiosSetup: Boot to the BIOS setup utility.
-        Cd: Boot from the CD or DVD.
-        Diags: Boot to the manufacturer's diagnostics program.
-        Floppy: Boot from the floppy disk drive.
-        Hdd: Boot from a hard drive.
-        None: Boot from the normal boot device.
-        Pxe: Boot from the Pre-boot eXecution Environment (PXE).
-        Recovery: Boot to a system-designated recovery process or image.
-        RemoteDrive: Boot from a remote drive, such as an iSCSI target.
-        SDCard: Boot from an SD card.
-        UefiBootNext: Boot to the UEFI device specified in the BootNext property.
-        UefiHttp: Boot from a UEFI HTTP network location.
-        UefiShell: Boot to the UEFI Shell.
-        UefiTarget: Boot to the UEFI device specified in the UefiTargetBootSourceOverride
-          property.
-        Usb: Boot from a system UEFI-compliant USB device.
-        Utilities: Boot to the manufacturer's utilities program or programs.
-      x-enumLongDescriptions:
-        BiosSetup: This value shall indicate that the system boots to the BIOS setup
-          utility or UEFI human interface infrastructure.
-        UefiTarget: This value shall indicate that the system boots to the UEFI device
-          specified in the UefiTargetBootSourceOverride property.
     ComputerSystem_ComputerSystem:
       additionalProperties: false
       description: The `ComputerSystem` schema represents a computer or system instance
@@ -1025,8 +983,10 @@ components:
         ProcessorSummary:
           $ref: '#/components/schemas/ComputerSystem_ProcessorSummary'
           description: The central processors of the system in general detail.
-          x-longDescription: This property shall describe the processors for this
-            resource.
+          x-longDescription: This property shall describe the central processors for
+            this resource.  Processors described by this property shall be limited
+            to the processors that execute system code, and shall not include processors
+            used for offload functionality.
         SerialNumber:
           description: The serial number for this system.
           nullable: true
@@ -1223,37 +1183,6 @@ components:
       additionalProperties: false
       description: This action resets the system.
       properties:
-        BootSourceOverrideEnabled:
-          description: The state of the boot source override feature.
-          oneOf:
-          - $ref: '#/components/schemas/ComputerSystem_BootSourceOverrideEnabled'
-          - enum:
-            - null
-          x-longDescription: This parameter shall contain `Once` for a one-time boot
-            override, and `Continuous` for a remain-active-until-cancelled override.
-            This parameter allows setting the boot override concurrently with the
-            reset action.
-        BootSourceOverrideMode:
-          description: The BIOS boot mode to use when the system boots from the `BootSourceOverrideTarget`
-            boot source.
-          oneOf:
-          - $ref: '#/components/schemas/ComputerSystem_BootSourceOverrideMode'
-          - enum:
-            - null
-          x-longDescription: This parameter shall contain the BIOS boot mode to use
-            when the system boots from the `BootSourceOverrideTarget` boot source.
-            This parameter allows setting the boot mode concurrently with the reset
-            action.
-        BootSourceOverrideTarget:
-          description: The boot source to use at the next boot instead of the normal
-            boot device.
-          oneOf:
-          - $ref: '#/components/schemas/ComputerSystem_BootSourceOverrideTarget'
-          - enum:
-            - null
-          x-longDescription: This parameter shall contain the source to boot the system
-            from, overriding the normal boot order. This parameter allows setting
-            the boot source override concurrently with the reset action.
         ResetType:
           $ref: '#/components/schemas/Resource_ResetType'
           description: The type of reset.

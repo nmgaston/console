@@ -567,6 +567,21 @@ components:
       x-patternProperties:
         ^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message)\.[a-zA-Z_][a-zA-Z0-9_]*$:
           description: This property shall specify a valid odata or Redfish property.
+    ComputerSystem_v1_26_0_StopBootOnFault:
+      enum:
+      - Never
+      - AnyFault
+      type: string
+      x-enumDescriptions:
+        AnyFault: The system should stop the boot on any fault.
+        Never: The system performs any normal recovery actions during boot if a fault
+          occurs.
+      x-enumLongDescriptions:
+        AnyFault: This value shall indicate the system will stop the boot if a fault
+          occurs.  This includes, but is not limited to, faults that affect performance,
+          fault tolerance, or capacity.
+        Never: This value shall indicate the system will continue to attempt to boot
+          if a fault occurs.
     ComputerSystem_v1_26_0_SystemType:
       enum:
       - Physical

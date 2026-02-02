@@ -23,6 +23,12 @@ var (
 	// ErrInvalidBootSettings is returned when invalid boot settings are provided.
 	ErrInvalidBootSettings = errors.New("invalid boot settings")
 
+	// ErrInvalidBootTarget is returned when an invalid boot target is provided.
+	ErrInvalidBootTarget = errors.New("invalid boot target")
+
+	// ErrInvalidBootEnabled is returned when an invalid boot enabled setting is provided.
+	ErrInvalidBootEnabled = errors.New("invalid boot enabled setting")
+
 	// ErrSystemNotFound is returned when a system is not found.
 	ErrSystemNotFound = errors.New("system not found")
 )
@@ -291,7 +297,7 @@ func (uc *ComputerSystemUseCase) validateBootTargetField(targetField *generated.
 
 	target, err := targetField.AsComputerSystemBootSource()
 	if err != nil {
-		return nil
+		return ErrInvalidBootTarget
 	}
 
 	return validateBootTarget(target)
@@ -305,7 +311,7 @@ func (uc *ComputerSystemUseCase) validateBootEnabledField(enabledField *generate
 
 	enabled, err := enabledField.AsComputerSystemBootSourceOverrideEnabled()
 	if err != nil {
-		return nil
+		return ErrInvalidBootEnabled
 	}
 
 	return validateBootEnabled(enabled)

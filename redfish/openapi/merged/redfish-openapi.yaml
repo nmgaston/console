@@ -224,6 +224,31 @@ paths:
           description: Error condition
       security:
       - BasicAuth: []
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComputerSystem_ComputerSystem'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputerSystem_ComputerSystem'
+          description: The response contains a representation of the ComputerSystem
+            resource
+        '204':
+          description: Success, but no response data
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedfishError'
+          description: Error condition
+      security:
+      - BasicAuth: []
     parameters:
     - description: The value of the Id property of the ComputerSystem resource
       in: path

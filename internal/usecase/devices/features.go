@@ -51,13 +51,10 @@ func (uc *UseCase) GetFeatures(c context.Context, guid string) (settingsResults 
 	cacheKey := cache.MakeFeaturesKey(guid)
 	if cached, found := uc.cache.Get(cacheKey); found {
 		if features, ok := cached.(cachedFeatures); ok {
-			uc.log.Info("Cache hit for features", "guid", guid)
 
 			return features.V1, features.V2, nil
 		}
 	}
-
-	uc.log.Info("Cache miss for features, fetching from AMT", "guid", guid)
 
 	item, err := uc.repo.GetByID(c, guid, "")
 	if err != nil {

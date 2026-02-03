@@ -132,13 +132,10 @@ func (uc *UseCase) GetPowerState(c context.Context, guid string) (dto.PowerState
 	cacheKey := cache.MakePowerStateKey(guid)
 	if cached, found := uc.cache.Get(cacheKey); found {
 		if state, ok := cached.(dto.PowerState); ok {
-			uc.log.Info("Cache hit for power state", "guid", guid)
 
 			return state, nil
 		}
 	}
-
-	uc.log.Info("Cache miss for power state, fetching from AMT", "guid", guid)
 
 	item, err := uc.repo.GetByID(c, guid, "")
 	if err != nil {

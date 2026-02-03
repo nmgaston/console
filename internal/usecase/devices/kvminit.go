@@ -17,13 +17,10 @@ func (uc *UseCase) GetKVMInitData(ctx context.Context, guid string) (dto.KVMInit
 	cacheKey := cache.MakeKVMInitKey(guid)
 	if cached, found := uc.cache.Get(cacheKey); found {
 		if initData, ok := cached.(dto.KVMInitResponse); ok {
-			uc.log.Info("Cache hit for KVM init data", "guid", guid)
 
 			return initData, nil
 		}
 	}
-
-	uc.log.Info("Cache miss for KVM init data, fetching from AMT", "guid", guid)
 
 	// Fetch all required data
 	displaySettings, err := uc.GetKVMScreenSettings(ctx, guid)

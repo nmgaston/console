@@ -17,7 +17,6 @@ func (uc *UseCase) GetKVMInitData(ctx context.Context, guid string) (dto.KVMInit
 	cacheKey := cache.MakeKVMInitKey(guid)
 	if cached, found := uc.cache.Get(cacheKey); found {
 		if initData, ok := cached.(dto.KVMInitResponse); ok {
-
 			return initData, nil
 		}
 	}

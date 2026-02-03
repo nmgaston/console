@@ -132,7 +132,6 @@ func (uc *UseCase) GetPowerState(c context.Context, guid string) (dto.PowerState
 	cacheKey := cache.MakePowerStateKey(guid)
 	if cached, found := uc.cache.Get(cacheKey); found {
 		if state, ok := cached.(dto.PowerState); ok {
-
 			return state, nil
 		}
 	}

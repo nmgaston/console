@@ -18,7 +18,6 @@ func (uc *UseCase) GetKVMScreenSettings(c context.Context, guid string) (dto.KVM
 	cacheKey := cache.MakeKVMDisplayKey(guid)
 	if cached, found := uc.cache.Get(cacheKey); found {
 		if settings, ok := cached.(dto.KVMScreenSettings); ok {
-
 			return settings, nil
 		}
 	}

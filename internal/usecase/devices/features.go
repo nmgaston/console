@@ -51,7 +51,6 @@ func (uc *UseCase) GetFeatures(c context.Context, guid string) (settingsResults 
 	cacheKey := cache.MakeFeaturesKey(guid)
 	if cached, found := uc.cache.Get(cacheKey); found {
 		if features, ok := cached.(cachedFeatures); ok {
-
 			return features.V1, features.V2, nil
 		}
 	}

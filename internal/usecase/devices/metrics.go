@@ -138,15 +138,6 @@ var (
 		},
 		[]string{"mode"},
 	)
-
-	kvmAPIRequestSeconds = promauto.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "kvm_api_request_seconds",
-			Help:    "Time for API requests during KVM connection setup (KVM_TIMING)",
-			Buckets: []float64{0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2},
-		},
-		[]string{"endpoint"},
-	)
 )
 
 // RecordWebsocketUpgrade records the WebSocket upgrade duration metric.
@@ -162,11 +153,6 @@ func RecordTotalConnection(duration time.Duration, mode string) {
 // RecordConsentCodeWait records the consent code wait time metric.
 func RecordConsentCodeWait(duration time.Duration, mode string) {
 	kvmConsentCodeWaitSeconds.WithLabelValues(mode).Observe(duration.Seconds())
-}
-
-// RecordAPIRequest records the API request duration metric.
-func RecordAPIRequest(duration time.Duration, endpoint string) {
-	kvmAPIRequestSeconds.WithLabelValues(endpoint).Observe(duration.Seconds())
 }
 
 // RecordDeviceLookup records the device lookup duration metric.

@@ -398,9 +398,9 @@ func (mr *MockFeatureMockRecorder) GetEventLog(ctx, startIndex, maxReadRecords, 
 }
 
 // GetFeatures mocks base method.
-func (m *MockFeature) GetFeatures(ctx context.Context, guid string) (v1.Features, v2.Features, error) {
+func (m *MockFeature) GetFeatures(ctx context.Context, guid string, bypassCache bool) (v1.Features, v2.Features, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFeatures", ctx, guid)
+	ret := m.ctrl.Call(m, "GetFeatures", ctx, guid, bypassCache)
 	ret0, _ := ret[0].(v1.Features)
 	ret1, _ := ret[1].(v2.Features)
 	ret2, _ := ret[2].(error)
@@ -408,9 +408,9 @@ func (m *MockFeature) GetFeatures(ctx context.Context, guid string) (v1.Features
 }
 
 // GetFeatures indicates an expected call of GetFeatures.
-func (mr *MockFeatureMockRecorder) GetFeatures(ctx, guid interface{}) *gomock.Call {
+func (mr *MockFeatureMockRecorder) GetFeatures(ctx, guid, bypassCache interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFeatures", reflect.TypeOf((*MockFeature)(nil).GetFeatures), ctx, guid)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFeatures", reflect.TypeOf((*MockFeature)(nil).GetFeatures), ctx, guid, bypassCache)
 }
 
 // GetGeneralSettings mocks base method.

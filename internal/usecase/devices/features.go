@@ -46,12 +46,14 @@ type cachedFeatures struct {
 	V2 dtov2.Features
 }
 
-func (uc *UseCase) GetFeatures(c context.Context, guid string) (settingsResults dto.Features, settingsResultsV2 dtov2.Features, err error) {
-	// Check cache first
+func (uc *UseCase) GetFeatures(c context.Context, guid string, bypassCache bool) (settingsResults dto.Features, settingsResultsV2 dtov2.Features, err error) {
+	// Check cache first (unless bypass is requested)
 	cacheKey := cache.MakeFeaturesKey(guid)
-	if cached, found := uc.cache.Get(cacheKey); found {
-		if features, ok := cached.(cachedFeatures); ok {
-			return features.V1, features.V2, nil
+	if !bypassCache {
+		if cached, found := uc.cache.Get(cacheKey); found {
+			if features, ok := cached.(cachedFeatures); ok {
+				return features.V1, features.V2, nil
+			}
 		}
 	}
 
@@ -111,11 +113,11 @@ func (uc *UseCase) GetFeatures(c context.Context, guid string) (settingsResults 
 	settingsResults.WinREBootSupported = settingsResultsV2.WinREBootSupported
 	settingsResults.LocalPBABootSupported = settingsResultsV2.LocalPBABootSupported
 
-	// Cache the results
+	// Cache the results (uses configured TTL)
 	uc.cache.Set(cacheKey, cachedFeatures{
 		V1: settingsResults,
 		V2: settingsResultsV2,
-	}, cache.FeaturesTTL)
+	}, 0) // 0 means use default TTL from config
 
 	return settingsResults, settingsResultsV2, nil
 }

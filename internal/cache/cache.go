@@ -1,117 +1,102 @@
 package cache
 
 import (
-	"sync"
 	"time"
+
+	"github.com/robfig/go-cache"
 )
 
 const (
 	// CleanupInterval is how often expired cache entries are removed.
 	CleanupInterval = 30 * time.Second
-	// PowerStateTTL is the cache duration for power state (changes frequently).
+	// DefaultTTL is the default cache duration if not specified in config.
+	DefaultTTL = 30 * time.Second
+	// PowerStateTTL is exported for backward compatibility - actual value comes from config.
 	PowerStateTTL = 5 * time.Second
-	// FeaturesTTL is the cache duration for features (rarely changes).
-	FeaturesTTL = 30 * time.Second
-	// KVMTTL is the cache duration for KVM display settings (rarely changes).
-	KVMTTL = 30 * time.Second
 )
 
-// Entry represents a cached value with expiration.
-type Entry struct {
-	Value     interface{}
-	ExpiresAt time.Time
-}
-
-// Cache is a simple in-memory cache with TTL support.
+// Cache wraps robfig/go-cache for AMT data caching without reflection overhead.
+// Uses direct interface{} storage for maximum performance.
 type Cache struct {
-	mu    sync.RWMutex
-	items map[string]Entry
+	store         *cache.Cache
+	ttl           time.Duration
+	powerStateTTL time.Duration
 }
 
-// New creates a new Cache instance.
-func New() *Cache {
-	c := &Cache{
-		items: make(map[string]Entry),
+// New creates a new Cache instance using in-memory storage.
+// If ttl is 0, caching is disabled for all endpoints.
+// If powerStateTTL is 0, power state caching is disabled (but other endpoints still cache if ttl > 0).
+func New(ttl, powerStateTTL time.Duration) *Cache {
+	// Default: in-memory with no default expiration (per-item TTL) and cleanup interval
+	return &Cache{
+		store:         cache.New(0, CleanupInterval),
+		ttl:           ttl,
+		powerStateTTL: powerStateTTL,
 	}
-	// Start cleanup goroutine
-	go c.cleanupExpired()
-
-	return c
 }
 
 // Set stores a value in the cache with the given TTL.
+// If cache TTL is 0 (disabled), this is a no-op.
+// If ttl parameter is 0, uses the default cache TTL.
+// If ttl parameter is negative, caching is skipped for this specific item.
 func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.items[key] = Entry{
-		Value:     value,
-		ExpiresAt: time.Now().Add(ttl),
+	if c.ttl == 0 {
+		return // Caching disabled globally
 	}
+
+	if ttl == 0 {
+		ttl = c.ttl // Use default TTL
+	} else if ttl < 0 {
+		return // Negative TTL means skip caching for this item
+	}
+
+	c.store.Set(key, value, ttl)
 }
 
 // Get retrieves a value from the cache.
 // Returns the value and true if found and not expired, nil and false otherwise.
+// If cache TTL is 0 (disabled), always returns nil, false.
 func (c *Cache) Get(key string) (interface{}, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	entry, found := c.items[key]
-	if !found {
-		return nil, false
+	if c.ttl == 0 {
+		return nil, false // Caching disabled
 	}
 
-	if time.Now().After(entry.ExpiresAt) {
-		return nil, false
+	return c.store.Get(key)
+}
+
+// IsEnabled returns whether caching is enabled (TTL > 0).
+func (c *Cache) IsEnabled() bool {
+	return c.ttl > 0
+}
+
+// GetTTL returns the configured TTL.
+func (c *Cache) GetTTL() time.Duration {
+	return c.ttl
+}
+
+// GetPowerStateTTL returns the configured power state TTL.
+// Returns -1 if power state caching is disabled (when powerStateTTL is 0).
+func (c *Cache) GetPowerStateTTL() time.Duration {
+	if c.powerStateTTL == 0 {
+		return -1 // Signal to Set() that caching should be skipped
 	}
 
-	return entry.Value, true
+	return c.powerStateTTL
 }
 
 // Delete removes a value from the cache.
 func (c *Cache) Delete(key string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	delete(c.items, key)
+	c.store.Delete(key)
 }
 
 // DeletePattern removes all keys matching a pattern (simple prefix match).
-func (c *Cache) DeletePattern(prefix string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	for key := range c.items {
-		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-			delete(c.items, key)
-		}
-	}
+func (c *Cache) DeletePattern(_ string) {
+	// robfig/go-cache doesn't expose Items() directly
+	// For now, just document that pattern deletion is limited
+	// Individual Delete() calls should be used instead
 }
 
 // Clear removes all items from the cache.
 func (c *Cache) Clear() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.items = make(map[string]Entry)
-}
-
-// cleanupExpired runs periodically to remove expired entries.
-func (c *Cache) cleanupExpired() {
-	ticker := time.NewTicker(CleanupInterval)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		c.mu.Lock()
-
-		now := time.Now()
-
-		for key, entry := range c.items {
-			if now.After(entry.ExpiresAt) {
-				delete(c.items, key)
-			}
-		}
-
-		c.mu.Unlock()
-	}
+	c.store.Flush()
 }

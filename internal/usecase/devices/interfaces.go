@@ -58,7 +58,7 @@ type (
 		GetByColumn(ctx context.Context, columnName, queryValue, tenantID string) ([]dto.Device, error)
 		// Management Calls
 		GetVersion(ctx context.Context, guid string) (dto.Version, dtov2.Version, error)
-		GetFeatures(ctx context.Context, guid string) (dto.Features, dtov2.Features, error)
+		GetFeatures(ctx context.Context, guid string, bypassCache bool) (dto.Features, dtov2.Features, error)
 		SetFeatures(ctx context.Context, guid string, features dto.Features) (dto.Features, dtov2.Features, error)
 		GetAlarmOccurrences(ctx context.Context, guid string) ([]dto.AlarmClockOccurrence, error)
 		CreateAlarmOccurrences(ctx context.Context, guid string, alarm dto.AlarmClockOccurrenceInput) (dto.AddAlarmOutput, error)

@@ -39,7 +39,7 @@ func (uc *UseCase) GetKVMInitData(ctx context.Context, guid string) (dto.KVMInit
 	}
 
 	// Get features (v1 version for compatibility)
-	features, _, err := uc.GetFeatures(ctx, guid)
+	features, _, err := uc.GetFeatures(ctx, guid, false)
 	if err != nil {
 		return dto.KVMInitResponse{}, err
 	}

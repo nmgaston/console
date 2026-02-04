@@ -162,7 +162,7 @@ func (uc *UseCase) GetPowerState(c context.Context, guid string) (dto.PowerState
 			OSPowerSavingState: 0, // UNKNOWN
 		}
 		// Still cache partial result
-		uc.cache.Set(cacheKey, powerState, cache.PowerStateTTL)
+		uc.cache.Set(cacheKey, powerState, uc.cache.GetPowerStateTTL())
 
 		return powerState, err
 	}
@@ -173,7 +173,7 @@ func (uc *UseCase) GetPowerState(c context.Context, guid string) (dto.PowerState
 	}
 
 	// Cache power state
-	uc.cache.Set(cacheKey, powerState, cache.PowerStateTTL)
+	uc.cache.Set(cacheKey, powerState, uc.cache.GetPowerStateTTL())
 
 	return powerState, nil
 }

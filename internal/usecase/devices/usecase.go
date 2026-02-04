@@ -52,7 +52,7 @@ type UseCase struct {
 var ErrAMT = AMTError{Console: consoleerrors.CreateConsoleError("DevicesUseCase")}
 
 // New -.
-func New(r Repository, d WSMAN, redirection Redirection, log logger.Interface, safeRequirements security.Cryptor) *UseCase {
+func New(r Repository, d WSMAN, redirection Redirection, log logger.Interface, safeRequirements security.Cryptor, cacheInstance *cache.Cache) *UseCase {
 	uc := &UseCase{
 		repo:             r,
 		device:           d,
@@ -60,7 +60,7 @@ func New(r Repository, d WSMAN, redirection Redirection, log logger.Interface, s
 		redirConnections: make(map[string]*DeviceConnection),
 		log:              log,
 		safeRequirements: safeRequirements,
-		cache:            cache.New(),
+		cache:            cacheInstance,
 	}
 	// start up the worker
 	go d.Worker()

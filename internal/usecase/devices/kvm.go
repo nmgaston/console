@@ -79,8 +79,8 @@ func (uc *UseCase) GetKVMScreenSettings(c context.Context, guid string) (dto.KVM
 
 	settings := dto.KVMScreenSettings{Displays: displays}
 
-	// Cache display settings
-	uc.cache.Set(cacheKey, settings, cache.KVMTTL)
+	// Cache display settings (use default TTL - KVM settings are relatively static)
+	uc.cache.Set(cacheKey, settings, 0)
 
 	return settings, nil
 }

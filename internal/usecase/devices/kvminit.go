@@ -4,24 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/device-management-toolkit/console/internal/cache"
 	"github.com/device-management-toolkit/console/internal/entity/dto/v1"
 )
 
-const kvmInitCacheTTL = 30 * time.Second
-
 // GetKVMInitData retrieves all data needed to initialize a KVM session in a single call.
 // This combines display settings, power state, redirection status, and features.
+// Note: This endpoint does NOT use cache because it needs to reflect current session state.
 func (uc *UseCase) GetKVMInitData(ctx context.Context, guid string) (dto.KVMInitResponse, error) {
-	// Check cache first - use medium TTL since this is initialization data
-	cacheKey := cache.MakeKVMInitKey(guid)
-	if cached, found := uc.cache.Get(cacheKey); found {
-		if initData, ok := cached.(dto.KVMInitResponse); ok {
-			return initData, nil
-		}
-	}
-
-	// Fetch all required data
+	// Fetch all required data (no caching for init endpoint)
 	displaySettings, err := uc.GetKVMScreenSettings(ctx, guid)
 	if err != nil {
 		return dto.KVMInitResponse{}, err
@@ -32,11 +22,8 @@ func (uc *UseCase) GetKVMInitData(ctx context.Context, guid string) (dto.KVMInit
 		return dto.KVMInitResponse{}, err
 	}
 
-	// Redirection status is currently just placeholders
-	redirectionStatus := dto.KVMRedirectionStatus{
-		IsSOLConnected:  false,
-		IsIDERConnected: false,
-	}
+	// Check for active redirection sessions
+	redirectionStatus := uc.getRedirectionStatus(guid)
 
 	// Get features (v1 version for compatibility)
 	features, _, err := uc.GetFeatures(ctx, guid, false)
@@ -64,8 +51,34 @@ func (uc *UseCase) GetKVMInitData(ctx context.Context, guid string) (dto.KVMInit
 		},
 	}
 
-	// Cache with 30 second TTL - short since power state can change
-	uc.cache.Set(cacheKey, response, kvmInitCacheTTL)
-
+	// Do NOT cache this endpoint - it needs to reflect current session state
 	return response, nil
+}
+
+// getRedirectionStatus checks if there are active redirection sessions for the device.
+func (uc *UseCase) getRedirectionStatus(guid string) dto.KVMRedirectionStatus {
+	status := dto.KVMRedirectionStatus{
+		IsSOLConnected:  false,
+		IsIDERConnected: false,
+	}
+
+	uc.redirMutex.RLock()
+	defer uc.redirMutex.RUnlock()
+
+	// Check for SOL connection
+	if conn, exists := uc.redirConnections[guid+"-sol"]; exists {
+		conn.mu.RLock()
+		// Consider connected if not expired
+		status.IsSOLConnected = time.Since(conn.lastActivity) <= ConnectionTimeout
+		conn.mu.RUnlock()
+	}
+
+	// Check for IDER connection
+	if conn, exists := uc.redirConnections[guid+"-ider"]; exists {
+		conn.mu.RLock()
+		status.IsIDERConnected = time.Since(conn.lastActivity) <= ConnectionTimeout
+		conn.mu.RUnlock()
+	}
+
+	return status
 }

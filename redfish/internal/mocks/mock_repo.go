@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/device-management-toolkit/console/redfish/internal/controller/http/v1/generated"
 	redfishv1 "github.com/device-management-toolkit/console/redfish/internal/entity/v1"
 	"github.com/device-management-toolkit/console/redfish/internal/usecase"
 )
@@ -162,4 +163,45 @@ func (r *MockComputerSystemRepo) AddSystem(system *redfishv1.ComputerSystem) {
 // RemoveSystem removes a system from the mock repository (for testing).
 func (r *MockComputerSystemRepo) RemoveSystem(systemID string) {
 	delete(r.systems, systemID)
+}
+
+// GetBootSettings retrieves the current boot configuration for a system (mock implementation).
+func (r *MockComputerSystemRepo) GetBootSettings(_ context.Context, systemID string) (*generated.ComputerSystemBoot, error) {
+	_, exists := r.systems[systemID]
+	if !exists {
+		return nil, usecase.ErrSystemNotFound
+	}
+
+	// Return mock boot settings - defaults to disabled override
+	boot := &generated.ComputerSystemBoot{}
+
+	enabled := generated.ComputerSystemBoot_BootSourceOverrideEnabled{}
+	_ = enabled.FromComputerSystemBootSourceOverrideEnabled(generated.ComputerSystemBootSourceOverrideEnabledDisabled)
+	boot.BootSourceOverrideEnabled = &enabled
+
+	target := generated.ComputerSystemBoot_BootSourceOverrideTarget{}
+	_ = target.FromComputerSystemBootSource(generated.ComputerSystemBootSourceNone)
+	boot.BootSourceOverrideTarget = &target
+
+	mode := generated.ComputerSystemBoot_BootSourceOverrideMode{}
+	_ = mode.FromComputerSystemBootSourceOverrideMode(generated.UEFI)
+	boot.BootSourceOverrideMode = &mode
+
+	return boot, nil
+}
+
+// UpdateBootSettings updates the boot configuration for a system (mock implementation).
+func (r *MockComputerSystemRepo) UpdateBootSettings(_ context.Context, systemID string, boot *generated.ComputerSystemBoot) error {
+	system, exists := r.systems[systemID]
+	if !exists {
+		return usecase.ErrSystemNotFound
+	}
+
+	// For mock purposes, just log that boot settings were updated
+	// In a real implementation, this would update the system's boot configuration
+	_ = system
+	_ = boot
+
+	// Mock implementation accepts any valid boot settings
+	return nil
 }

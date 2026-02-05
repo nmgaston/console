@@ -59,8 +59,9 @@ EOF
 fi
 
 # Kill any existing servers
+pkill -9 -f "redfish_test_app" 2>/dev/null || true
 pkill -9 -f "go run.*cmd/app" 2>/dev/null || true
-sleep 1
+sleep 2
 
 # Start server with mock repository
 echo "Starting server with mock WSMAN repository on port ${PORT}..."
@@ -114,6 +115,9 @@ done
 # Run tests
 echo "Running Newman tests..."
 echo ""
+# Bypass proxy for localhost
+export no_proxy=localhost,127.0.0.1,::1
+export NO_PROXY=localhost,127.0.0.1,::1
 newman run "${SCRIPT_DIR}/postman/redfish-collection.json" \
     --environment "${SCRIPT_DIR}/postman/test-environment.json" \
     --reporters cli,json \

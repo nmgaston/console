@@ -51,6 +51,9 @@ type ServerInterface interface {
 	// (GET /redfish/v1/Systems/{ComputerSystemId})
 	GetRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemId string)
 
+	// (PATCH /redfish/v1/Systems/{ComputerSystemId})
+	PatchRedfishV1SystemsComputerSystemId(c *gin.Context, computerSystemId string)
+
 	// (POST /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset)
 	PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context, computerSystemId string)
 
@@ -261,6 +264,32 @@ func (siw *ServerInterfaceWrapper) GetRedfishV1SystemsComputerSystemId(c *gin.Co
 	siw.Handler.GetRedfishV1SystemsComputerSystemId(c, computerSystemId)
 }
 
+// PatchRedfishV1SystemsComputerSystemId operation middleware
+func (siw *ServerInterfaceWrapper) PatchRedfishV1SystemsComputerSystemId(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "ComputerSystemId" -------------
+	var computerSystemId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ComputerSystemId", c.Param("ComputerSystemId"), &computerSystemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter ComputerSystemId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BasicAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PatchRedfishV1SystemsComputerSystemId(c, computerSystemId)
+}
+
 // PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset operation middleware
 func (siw *ServerInterfaceWrapper) PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(c *gin.Context) {
 
@@ -338,6 +367,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/redfish/v1/SessionService/Sessions/:SessionId", wrapper.GetRedfishV1SessionServiceSessionsSessionId)
 	router.GET(options.BaseURL+"/redfish/v1/Systems", wrapper.GetRedfishV1Systems)
 	router.GET(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId", wrapper.GetRedfishV1SystemsComputerSystemId)
+	router.PATCH(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId", wrapper.PatchRedfishV1SystemsComputerSystemId)
 	router.POST(options.BaseURL+"/redfish/v1/Systems/:ComputerSystemId/Actions/ComputerSystem.Reset", wrapper.PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset)
 	router.GET(options.BaseURL+"/redfish/v1/odata", wrapper.GetRedfishV1Odata)
 }
@@ -698,6 +728,44 @@ func (response GetRedfishV1SystemsComputerSystemIddefaultJSONResponse) VisitGetR
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type PatchRedfishV1SystemsComputerSystemIdRequestObject struct {
+	ComputerSystemId string `json:"ComputerSystemId"`
+	Body             *PatchRedfishV1SystemsComputerSystemIdJSONRequestBody
+}
+
+type PatchRedfishV1SystemsComputerSystemIdResponseObject interface {
+	VisitPatchRedfishV1SystemsComputerSystemIdResponse(w http.ResponseWriter) error
+}
+
+type PatchRedfishV1SystemsComputerSystemId200JSONResponse ComputerSystemComputerSystem
+
+func (response PatchRedfishV1SystemsComputerSystemId200JSONResponse) VisitPatchRedfishV1SystemsComputerSystemIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PatchRedfishV1SystemsComputerSystemId204Response struct {
+}
+
+func (response PatchRedfishV1SystemsComputerSystemId204Response) VisitPatchRedfishV1SystemsComputerSystemIdResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PatchRedfishV1SystemsComputerSystemIddefaultJSONResponse struct {
+	Body       RedfishError
+	StatusCode int
+}
+
+func (response PatchRedfishV1SystemsComputerSystemIddefaultJSONResponse) VisitPatchRedfishV1SystemsComputerSystemIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 type PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetRequestObject struct {
 	ComputerSystemId string `json:"ComputerSystemId"`
 	Body             *PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetJSONRequestBody
@@ -806,6 +874,9 @@ type StrictServerInterface interface {
 
 	// (GET /redfish/v1/Systems/{ComputerSystemId})
 	GetRedfishV1SystemsComputerSystemId(ctx context.Context, request GetRedfishV1SystemsComputerSystemIdRequestObject) (GetRedfishV1SystemsComputerSystemIdResponseObject, error)
+
+	// (PATCH /redfish/v1/Systems/{ComputerSystemId})
+	PatchRedfishV1SystemsComputerSystemId(ctx context.Context, request PatchRedfishV1SystemsComputerSystemIdRequestObject) (PatchRedfishV1SystemsComputerSystemIdResponseObject, error)
 
 	// (POST /redfish/v1/Systems/{ComputerSystemId}/Actions/ComputerSystem.Reset)
 	PostRedfishV1SystemsComputerSystemIdActionsComputerSystemReset(ctx context.Context, request PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetRequestObject) (PostRedfishV1SystemsComputerSystemIdActionsComputerSystemResetResponseObject, error)
@@ -1124,6 +1195,41 @@ func (sh *strictHandler) GetRedfishV1SystemsComputerSystemId(ctx *gin.Context, c
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(GetRedfishV1SystemsComputerSystemIdResponseObject); ok {
 		if err := validResponse.VisitGetRedfishV1SystemsComputerSystemIdResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchRedfishV1SystemsComputerSystemId operation middleware
+func (sh *strictHandler) PatchRedfishV1SystemsComputerSystemId(ctx *gin.Context, computerSystemId string) {
+	var request PatchRedfishV1SystemsComputerSystemIdRequestObject
+
+	request.ComputerSystemId = computerSystemId
+
+	var body PatchRedfishV1SystemsComputerSystemIdJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchRedfishV1SystemsComputerSystemId(ctx, request.(PatchRedfishV1SystemsComputerSystemIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchRedfishV1SystemsComputerSystemId")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(PatchRedfishV1SystemsComputerSystemIdResponseObject); ok {
+		if err := validResponse.VisitPatchRedfishV1SystemsComputerSystemIdResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

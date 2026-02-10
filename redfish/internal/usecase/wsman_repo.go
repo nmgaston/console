@@ -912,21 +912,35 @@ func (r *WsmanComputerSystemRepo) GetBootSettings(ctx context.Context, systemID 
 		return nil, ErrBootSettingsNotAvailable
 	}
 
+	// Log the boot data retrieved from AMT for debugging
+	r.log.Info("Retrieved boot data from AMT",
+		"systemID", systemID,
+		"BIOSSetup", bootData.BIOSSetup,
+		"UseIDER", bootData.UseIDER,
+		"IDERBootDevice", bootData.IDERBootDevice,
+		"BootMediaIndex", bootData.BootMediaIndex,
+		"UEFILocalPBABootEnabled", bootData.UEFILocalPBABootEnabled,
+		"UEFIHTTPSBootEnabled", bootData.UEFIHTTPSBootEnabled,
+		"UEFIBootParametersArrayLen", len(bootData.UEFIBootParametersArray),
+	)
+
 	// Map AMT boot data to Redfish Boot structure
 	boot := &generated.ComputerSystemBoot{}
 
-	// Map BootSourceOverrideEnabled
-	if bootData.BootMediaIndex == 0 {
-		// No override, boot from normal sources
-		enabled := generated.ComputerSystemBoot_BootSourceOverrideEnabled{}
-		_ = enabled.FromComputerSystemBootSourceOverrideEnabled(generated.ComputerSystemBootSourceOverrideEnabledDisabled)
-		boot.BootSourceOverrideEnabled = &enabled
+	// Map BootSourceOverrideEnabled based on AMT firmware state
+	// Note: Intel AMT firmware treats all boot overrides as "Continuous" until explicitly cleared.
+	// It does not have a native "Once" mode that auto-clears after boot.
+	enabled := generated.ComputerSystemBoot_BootSourceOverrideEnabled{}
+
+	if bootData.BIOSSetup || bootData.UseIDER || bootData.BootMediaIndex != 0 {
+		// Boot override is active in AMT - report as "Continuous"
+		_ = enabled.FromComputerSystemBootSourceOverrideEnabled(generated.ComputerSystemBootSourceOverrideEnabledContinuous)
 	} else {
-		// Boot override is active - assume "Once" for AMT
-		enabled := generated.ComputerSystemBoot_BootSourceOverrideEnabled{}
-		_ = enabled.FromComputerSystemBootSourceOverrideEnabled(generated.ComputerSystemBootSourceOverrideEnabledOnce)
-		boot.BootSourceOverrideEnabled = &enabled
+		// No override active
+		_ = enabled.FromComputerSystemBootSourceOverrideEnabled(generated.ComputerSystemBootSourceOverrideEnabledDisabled)
 	}
+
+	boot.BootSourceOverrideEnabled = &enabled
 
 	// Map boot target based on boot configuration
 	target := generated.ComputerSystemBoot_BootSourceOverrideTarget{}
@@ -977,6 +991,32 @@ func (r *WsmanComputerSystemRepo) UpdateBootSettings(ctx context.Context, system
 	// Create new boot settings based on current data
 	newBootData := r.createBootDataRequest(bootData)
 
+	// Check if boot override should be disabled
+	if boot.BootSourceOverrideEnabled != nil {
+		enabled, err := boot.BootSourceOverrideEnabled.AsComputerSystemBootSourceOverrideEnabled()
+		if err == nil {
+			if enabled == generated.ComputerSystemBootSourceOverrideEnabledDisabled {
+				// Clear all boot overrides - set to defaults
+				newBootData.BIOSSetup = false
+				newBootData.UseIDER = false
+				newBootData.BootMediaIndex = 0
+
+				r.log.Info("Clearing boot override", "systemID", systemID)
+
+				// Apply the cleared settings
+				if err := r.usecase.SetBootData(ctx, systemID, newBootData); err != nil {
+					return fmt.Errorf("failed to clear boot settings: %w", err)
+				}
+
+				return nil
+			} else if enabled == generated.ComputerSystemBootSourceOverrideEnabledOnce {
+				// AMT doesn't support "Once" mode - treat as Continuous and log warning
+				r.log.Warn("Intel AMT does not support 'Once' boot override mode. Treating as 'Continuous'. "+
+					"Boot override will remain active until explicitly disabled.", "systemID", systemID)
+			}
+		}
+	}
+
 	// Parse and apply boot target
 	bootSource, err := r.applyBootTarget(boot, &newBootData)
 	if err != nil {
@@ -985,6 +1025,16 @@ func (r *WsmanComputerSystemRepo) UpdateBootSettings(ctx context.Context, system
 
 	// Apply boot mode if specified
 	r.applyBootMode(boot, systemID)
+
+	// Log the boot data being sent to AMT for debugging
+	r.log.Info("Sending boot data to AMT",
+		"systemID", systemID,
+		"BIOSSetup", newBootData.BIOSSetup,
+		"UseIDER", newBootData.UseIDER,
+		"IDERBootDevice", newBootData.IDERBootDevice,
+		"BootMediaIndex", newBootData.BootMediaIndex,
+		"bootSource", bootSource,
+	)
 
 	// Use devices use case methods to configure boot
 	if err := r.usecase.SetBootData(ctx, systemID, newBootData); err != nil {

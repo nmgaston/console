@@ -196,20 +196,6 @@ func (mr *MockFeatureMockRecorder) DeleteAlarmOccurrences(ctx, guid, instanceID 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAlarmOccurrences", reflect.TypeOf((*MockFeature)(nil).DeleteAlarmOccurrences), ctx, guid, instanceID)
 }
 
-// DeleteCertificate mocks base method.
-func (m *MockFeature) DeleteCertificate(c context.Context, guid, instanceID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteCertificate", c, guid, instanceID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteCertificate indicates an expected call of DeleteCertificate.
-func (mr *MockFeatureMockRecorder) DeleteCertificate(c, guid, instanceID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCertificate", reflect.TypeOf((*MockFeature)(nil).DeleteCertificate), c, guid, instanceID)
-}
-
 // Get mocks base method.
 func (m *MockFeature) Get(ctx context.Context, top, skip int, tenantID string) ([]dto.Device, error) {
 	m.ctrl.T.Helper()

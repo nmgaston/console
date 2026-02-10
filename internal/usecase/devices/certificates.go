@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -33,9 +34,9 @@ const (
 )
 
 var (
-	ErrCertificateNotFound           = fmt.Errorf("certificate not found")
-	ErrCertificateAssociatedProfiles = fmt.Errorf("certificate is associated with profiles")
-	ErrCertificateReadOnly           = fmt.Errorf("certificate is read-only")
+	ErrCertificateNotFound           = errors.New("certificate not found")
+	ErrCertificateAssociatedProfiles = errors.New("certificate is associated with one or more profiles")
+	ErrCertificateReadOnly           = errors.New("certificate is read-only and cannot be deleted")
 )
 
 func processConcreteDependencies(certificateHandle string, profileAssociation *dto.ProfileAssociation, dependencyItems []concrete.ConcreteDependency, securitySettings dto.SecuritySettings) {

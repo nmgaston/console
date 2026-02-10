@@ -11,6 +11,9 @@
 **/*.yml
 **/*.yaml
 !config/config.yml
+# Redfish OpenAPI files
+!redfish/openapi/dmtf/*.yaml
+!redfish/openapi/merged/*.yaml
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -37,3 +40,5 @@ vendor/
 !**/ui/.gitkeep
 # Documentation files
 doc/openapi.json
+# Newman test results
+**/postman/results/
